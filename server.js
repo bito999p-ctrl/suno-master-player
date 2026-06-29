@@ -1,4 +1,4 @@
-// Version: 2.3.9 (Re-deployed to ensure complete file sync)
+// Version: 2.4.0 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -250,18 +250,35 @@ app.get('/api/suno', async (req, res) => {
             const image_url = imageMatch ? imageMatch[1] : `https://cdn1.suno.ai/image_${uuid}.png`;
             
             let artist_name = 'Suno Artist';
-            const userDisplayMatch = trackBlock.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
-            const displayNameMatch = trackBlock.match(/"display_name"\s*:\s*"([^"]+)"/i);
-            const handleMatch = trackBlock.match(/"handle"\s*:\s*"([^"]+)"/i);
             
-            if (userDisplayMatch) {
-              artist_name = userDisplayMatch[1];
-            } else if (displayNameMatch && !/^v[0-9]/i.test(displayNameMatch[1])) {
-              artist_name = displayNameMatch[1];
-            } else if (handleMatch) {
-              artist_name = handleMatch[1];
+            // Try to find display_name inside the "user" object first to prevent matching model version display_name
+            const userObjMatch = trackBlock.match(/"user"\s*:\s*\{([^\}]+)\}/i);
+            if (userObjMatch) {
+              const userContent = userObjMatch[1];
+              const dispMatch = userContent.match(/"display_name"\s*:\s*"([^"]+)"/i);
+              const handMatch = userContent.match(/"handle"\s*:\s*"([^"]+)"/i);
+              if (dispMatch && !/^[uv][0-9]/i.test(dispMatch[1])) {
+                artist_name = dispMatch[1];
+              } else if (handMatch) {
+                artist_name = handMatch[1];
+              }
             }
             
+            // Fallbacks if not resolved yet
+            if (artist_name === 'Suno Artist') {
+              const legacyUserDisplay = trackBlock.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
+              const legacyDisp = trackBlock.match(/"display_name"\s*:\s*"([^"]+)"/i);
+              const legacyHand = trackBlock.match(/"handle"\s*:\s*"([^"]+)"/i);
+              
+              if (legacyUserDisplay) {
+                artist_name = legacyUserDisplay[1];
+              } else if (legacyDisp && !/^[uv][0-9]/i.test(legacyDisp[1])) {
+                artist_name = legacyDisp[1];
+              } else if (legacyHand) {
+                artist_name = legacyHand[1];
+              }
+            }
+
             // Normalize bito999 handles to 'Bito'
             if (artist_name.toLowerCase().includes('bito999') || artist_name.toLowerCase() === 'bito') {
               artist_name = 'Bito';
