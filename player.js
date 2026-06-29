@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.1.8';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.1.9';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -842,13 +842,14 @@ async function selectTrack(idx) {
     // Play immediately with correct parameters applied!
     startPlayback(track.audio_url);
   } else {
-    // Show Analyzing loader UI in player, lock controls
-    updateAiStatus('analyzing');
+    // Show Loading loader UI in player, lock controls
+    updateAiStatus('loading');
     playPauseBtn.disabled = true;
     playPauseBtn.style.opacity = '0.5';
     trackTitle.textContent = track.title; // Keep title clean
     const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
     if (analyzingIndicator) {
+      analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> ファイル読み込み中...';
       analyzingIndicator.classList.remove('hidden');
     }
 
@@ -864,6 +865,12 @@ async function selectTrack(idx) {
       
       const arrayBuffer = await response.arrayBuffer();
       if (analysisId !== currentAnalysisId) return;
+
+      // Swap to analyzing state before CPU-bound decode and resonance calculation
+      updateAiStatus('analyzing');
+      if (analyzingIndicator) {
+        analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> マスタリング分析中...';
+      }
 
       console.log('[AI Auto] Decoding audio channel buffers...');
       const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
@@ -990,7 +997,9 @@ function checkAndPreFetchNextTrack() {
 // --- UI HUD Updates ---
 function updateAiStatus(status) {
   aiStatusEl.className = `status-badge ${status}`;
-  if (status === 'analyzing') {
+  if (status === 'loading') {
+    aiStatusEl.textContent = 'LOADING...';
+  } else if (status === 'analyzing') {
     aiStatusEl.textContent = 'ANALYZING...';
   } else if (status === 'active') {
     aiStatusEl.textContent = 'ACTIVE';
