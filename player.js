@@ -1,3 +1,42 @@
+function updateMediaSession(track) {
+  if ('mediaSession' in navigator && window.MediaMetadata) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.title,
+      artist: getNormalizedArtist(track.artist_name),
+      album: 'AetherPlayer',
+      artwork: [
+        { src: track.image_url, sizes: '512x512', type: 'image/png' }
+      ]
+    });
+  }
+}
+
+function setupMediaSessionActions() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => {
+      togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      playPrev();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      playNext();
+    });
+    try {
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (audioPlayer) {
+          audioPlayer.currentTime = details.seekTime;
+        }
+      });
+    } catch (e) {
+      console.warn('MediaSession seekto handler failed to register:', e);
+    }
+  }
+}
+
 function getNormalizedArtist(name) {
   if (!name) return 'Suno Artist';
   if (name.toLowerCase().includes('bito999') || name.toLowerCase() === 'bito') {
@@ -6,8 +45,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 2.4.1 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.4.1';
+// Version: 2.4.2 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.4.2';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -168,6 +207,7 @@ document.addEventListener('visibilitychange', async () => {
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  setupMediaSessionActions();
   
   // Default to OFF (low power) visualizer mode on mobile to prevent heating!
   if (window.innerWidth <= 768 && visModeSelect) {
@@ -359,6 +399,9 @@ function setupEventListeners() {
       if (audioCtx && audioCtx.state === 'running') {
         audioCtx.suspend();
       }
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
       if (window.lucide) lucide.createIcons();
     });
 
@@ -372,6 +415,9 @@ function setupEventListeners() {
         audioCtx.resume();
       }
       startVisualizerLoop();
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
       if (window.lucide) lucide.createIcons();
     });
   }
@@ -860,6 +906,9 @@ async function selectTrack(idx) {
   audioPlayer.pause();
   audioPlayer.src = '';
 
+  // Update Media Session Metadata
+  updateMediaSession(track);
+
   // Trigger analysis or use cache
   currentAnalysisId++;
   const analysisId = currentAnalysisId;
@@ -880,107 +929,92 @@ async function selectTrack(idx) {
     // Play immediately with correct parameters applied!
     startPlayback(track.audio_url);
   } else {
-    // Show Loading loader UI in player, lock controls
+    // Play IMMEDIATELY (unmastered) to prevent background autoplay blocks in mobile browsers!
+    applyDefaultAutoParams();
     updateAiStatus('loading');
-    playPauseBtn.disabled = true;
-    playPauseBtn.style.opacity = '0.5';
-    trackTitle.textContent = track.title; // Keep title clean
+    startPlayback(track.audio_url);
+
+    // Show Loading loader UI in player, but don't disable playback!
+    playPauseBtn.disabled = false;
+    playPauseBtn.style.opacity = '1';
+    trackTitle.textContent = track.title;
+    
     const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
     if (analyzingIndicator) {
       analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> ファイル読み込み中...';
       analyzingIndicator.classList.remove('hidden');
     }
 
-    try {
-      if (activeAbortController) {
-        activeAbortController.abort();
-      }
-      activeAbortController = new AbortController();
-
-      console.log(`[AI Auto] Fetching audio for analysis: ${track.audio_url}`);
-      let response;
+    // Run async analysis in background
+    (async () => {
       try {
-        // Try direct CDN fetch first (bypasses Vercel AWS IP block, uses client IP)
-        // Append a cache-buster query parameter to force CloudFront to return native CORS headers (access-control-allow-origin: *)
-        const directUrl = track.audio_url + (track.audio_url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
-        response = await fetch(directUrl, { signal: activeAbortController.signal });
-        if (!response.ok) throw new Error(`Direct fetch status ${response.status}`);
-      } catch (directErr) {
-        console.warn('[AI Auto] Direct fetch failed, trying proxy:', directErr.message);
-        // Fall back to server proxy
-        const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(track.audio_url)}`;
-        response = await fetch(proxyUrl, { signal: activeAbortController.signal });
-        if (!response.ok) throw new Error(`Proxy fetch status ${response.status}`);
+        if (activeAbortController) {
+          activeAbortController.abort();
+        }
+        activeAbortController = new AbortController();
+
+        console.log(`[AI Auto] Fetching audio for analysis: ${track.audio_url}`);
+        let response;
+        try {
+          const directUrl = track.audio_url + (track.audio_url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+          response = await fetch(directUrl, { signal: activeAbortController.signal });
+          if (!response.ok) throw new Error(`Direct fetch status ${response.status}`);
+        } catch (directErr) {
+          console.warn('[AI Auto] Direct fetch failed, trying proxy:', directErr.message);
+          const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(track.audio_url)}`;
+          response = await fetch(proxyUrl, { signal: activeAbortController.signal });
+          if (!response.ok) throw new Error(`Proxy fetch status ${response.status}`);
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        if (analysisId !== currentAnalysisId) return;
+
+        updateAiStatus('analyzing');
+        if (analyzingIndicator) {
+          analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> マスタリング分析中...';
+        }
+
+        console.log('[AI Auto] Decoding audio channel buffers...');
+        const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        if (analysisId !== currentAnalysisId) return;
+
+        console.log('[AI Auto] Running AetherMaster spectral resonance & dynamics analysis...');
+        const result = analyzeAudioResonances(decodedBuffer);
+        if (analysisId !== currentAnalysisId) return;
+
+        // Cache the result and buffer for instant replay/gapless next transitions
+        analysisCache.set(track.audio_url, { result, buffer: decodedBuffer });
+
+        currentAnalysisResult = result;
+        currentAudioBuffer = decodedBuffer;
+        if (presetSelect) presetSelect.value = 'auto';
+        if (mobilePresetSelect) mobilePresetSelect.value = 'auto';
+
+        // Apply mastering params dynamically to the running audio stream
+        if (enhancer) {
+          enhancer.setMasteringParams(result.suggestedParams, result.notches);
+        }
+
+        // Update AI HUD UI
+        updateAiHudUI(result);
+        updateAiStatus('active');
+        
+        if (analyzingIndicator) {
+          analyzingIndicator.classList.add('hidden');
+        }
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('[AI Auto] Analysis aborted (track changed).');
+          return;
+        }
+        console.error('[AI Auto] AI Analysis failed:', err);
+        updateAiStatus('failed');
+        if (analyzingIndicator) {
+          analyzingIndicator.classList.add('hidden');
+        }
       }
-      
-      const arrayBuffer = await response.arrayBuffer();
-      if (analysisId !== currentAnalysisId) return;
-
-      // Swap to analyzing state before CPU-bound decode and resonance calculation
-      updateAiStatus('analyzing');
-      if (analyzingIndicator) {
-        analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> マスタリング分析中...';
-      }
-
-      console.log('[AI Auto] Decoding audio channel buffers...');
-      const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      if (analysisId !== currentAnalysisId) return;
-
-      console.log('[AI Auto] Running AetherMaster spectral resonance & dynamics analysis...');
-      const result = analyzeAudioResonances(decodedBuffer);
-      if (analysisId !== currentAnalysisId) return;
-
-      // Cache the result and buffer for instant replay/gapless next transitions
-      analysisCache.set(track.audio_url, { result, buffer: decodedBuffer });
-
-      currentAnalysisResult = result;
-      currentAudioBuffer = decodedBuffer;
-      if (presetSelect) presetSelect.value = 'auto';
-      if (mobilePresetSelect) mobilePresetSelect.value = 'auto';
-
-      // Apply the optimal dynamic mastering parameters to the Web Audio engine
-      if (enhancer) {
-        enhancer.setMasteringParams(result.suggestedParams, result.notches);
-      }
-
-      // Update AI HUD UI
-      updateAiHudUI(result);
-      updateAiStatus('active');
-
-      // Enable controls & Start Playback with mastered audio!
-      playPauseBtn.disabled = false;
-      playPauseBtn.style.opacity = '1';
-      trackTitle.textContent = track.title;
-      
-      const analyzingIndicatorEl = document.getElementById('ai-analyzing-indicator');
-      if (analyzingIndicatorEl) {
-        analyzingIndicatorEl.classList.add('hidden');
-      }
-      
-      startPlayback(track.audio_url);
-
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        console.log('[AI Auto] Analysis aborted (track changed).');
-        return;
-      }
-      console.error('[AI Auto] AI Analysis failed:', err);
-      alert(`【AI解析エラー】\nエラー名: ${err.name}\n内容: ${err.message}\n\n※このエラーによりマスタリング処理が適用されませんでした。`);
-      updateAiStatus('failed');
-
-      // Enable controls & Start default playback
-      playPauseBtn.disabled = false;
-      playPauseBtn.style.opacity = '1';
-      trackTitle.textContent = track.title;
-      
-      const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
-      if (analyzingIndicator) {
-        analyzingIndicator.classList.add('hidden');
-      }
-      
-      applyDefaultAutoParams();
-      startPlayback(track.audio_url);
-    }
+    })();
   }
 }
 
