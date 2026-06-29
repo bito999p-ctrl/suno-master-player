@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=2.0.2">
+  <link rel="stylesheet" href="styles.css?v=2.0.3">
 </head>
 <body>
   <div class="app-container">
@@ -162,8 +162,9 @@
         <!-- Left Sidebar: Playlist & Songs list -->
         <section class="workspace-sidebar card">
           <div class="sidebar-header">
-            <button id="sidebar-back-btn" class="sidebar-back-btn" title="ホームに戻る">
-              <span>⬅ 閉じる / ホームに戻る</span>
+            <button id="sidebar-back-btn" class="sidebar-back-btn" title="プレイヤーに戻る">
+              <span class="desktop-only-inline">⬅ ホームに戻る</span>
+              <span class="mobile-only-inline">▲ プレイヤーに戻る</span>
             </button>
             <div id="source-info" class="source-info-container">
               <img id="source-cover" src="" alt="Cover" class="source-cover">
@@ -405,6 +406,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=2.0.2"></script>
+  <script type="module" src="player.js?v=2.0.3"></script>
 </body>
 </html>

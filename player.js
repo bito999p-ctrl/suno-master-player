@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.2';
+import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.3';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -184,7 +184,13 @@ function setupEventListeners() {
   // Workspace actions
   backToLandingBtn.addEventListener('click', showLandingView);
   if (sidebarBackBtn) {
-    sidebarBackBtn.addEventListener('click', showLandingView);
+    sidebarBackBtn.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        openPlayerModal();
+      } else {
+        showLandingView();
+      }
+    });
   }
   shareBtn.addEventListener('click', copyShareLink);
 
@@ -1071,8 +1077,10 @@ function drawVisualizer() {
     const centerY = height / 2;
     const minSize = Math.min(width, height);
     
-    // Calculate radius and spike lengths dynamically to avoid clipping and align with artwork
-    const baseRadius = minSize * 0.34;
+    // Calculate base radius matching the exact layout size of the artwork disc wrapper to avoid gaps
+    const baseRadius = artworkWrapper && artworkWrapper.getBoundingClientRect().width > 0 
+      ? (artworkWrapper.getBoundingClientRect().width / 2) 
+      : (minSize * 0.32);
     const maxSpikeLength = minSize * 0.10;
 
     let sum = 0;
@@ -1080,7 +1088,7 @@ function drawVisualizer() {
       sum += dataArray[i];
     }
     const average = sum / bufferLength;
-    const pulseFactor = 1.0 + (average / 255.0) * 0.15;
+    const pulseFactor = 1.0 + (average / 255.0) * 0.06; // Tighter pulse breathing effect
 
     // Glowing circle (Rose Gold)
     canvasCtx.beginPath();

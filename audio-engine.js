@@ -692,15 +692,10 @@ export class AetherEnhancer {
     this.envelopeSmoother.connect(this.hissEnvelopeGain);
     this.hissEnvelopeGain.connect(this.hissFilter.frequency);
 
-    // 4. Parallel Saturation with Crossover HPF (40Hz)
+    // 4. Parallel Saturation
     this.satDryGain = context.createGain();
     this.satWetGain = context.createGain();
     
-    this.satHpf = context.createBiquadFilter();
-    this.satHpf.type = 'highpass';
-    this.satHpf.frequency.setValueAtTime(40.0, context.currentTime);
-    this.satHpf.Q.setValueAtTime(0.707, context.currentTime);
-
     this.waveShaper = context.createWaveShaper();
     this.satSumNode = context.createGain();
 
@@ -713,8 +708,7 @@ export class AetherEnhancer {
     this.rumbleFilter.connect(this.hissFilter);
 
     this.hissFilter.connect(this.satDryGain);
-    this.hissFilter.connect(this.satHpf);
-    this.satHpf.connect(this.waveShaper);
+    this.hissFilter.connect(this.waveShaper);
     this.waveShaper.connect(this.satWetGain);
 
     this.satDryGain.connect(this.satSumNode);
@@ -870,7 +864,7 @@ export class AetherEnhancer {
 
     // 3. Hiss Reduction
     const hissAmount = params.hissReductionAmount || 0;
-    const baseFreq = 20000.0 - (11000.0 * (hissAmount / 100.0)); // min 9,000Hz
+    const baseFreq = 20000.0 - (16250.0 * (hissAmount / 100.0)); // Maps 80% to 7,000Hz and 100% to 3,750Hz
     this.hissFilter.frequency.setTargetAtTime(baseFreq, t, 0.05);
     const maxEnvGain = 35000.0 * (hissAmount / 100.0);
     this.hissEnvelopeGain.gain.setTargetAtTime(maxEnvGain, t, 0.05);
@@ -881,20 +875,19 @@ export class AetherEnhancer {
     this.satWetGain.gain.setTargetAtTime(blend, t, 0.05);
     this.waveShaper.curve = this._generateSaturatorCurve(params.satType, params.satDrive);
 
-    // 5. 3-band EQ + kick Peaking with Hiss Compensation offsets
+    // 5. 3-band EQ + kick Peaking
+    this.eqLow.frequency.setTargetAtTime(params.eqLowFreq || 120.0, t, 0.05);
     this.eqLow.gain.setTargetAtTime(params.eqLowGain, t, 0.05);
     this.kickPeaking.gain.setTargetAtTime(params.kickPeakingGain || 0.0, t, 0.05);
     
-    // Compensation for hiss reduction high end loss
-    const setupMidGain = params.eqMidGain + (hissAmount / 100.0) * 1.0;
-    const setupHighFreq = params.eqHighFreq - (params.eqHighFreq - 8000.0) * (hissAmount / 100.0);
-    const setupHighGain = params.eqHighGain + (hissAmount / 100.0) * 2.5;
+    this.eqMid.frequency.setTargetAtTime(params.eqMidFreq || 1000.0, t, 0.05);
+    this.eqMid.gain.setTargetAtTime(params.eqMidGain, t, 0.05);
+    this.eqMid.Q.setTargetAtTime(params.eqMidQ || 1.0, t, 0.05);
 
-    this.eqMid.gain.setTargetAtTime(setupMidGain, t, 0.05);
-    this.eqHigh.frequency.setTargetAtTime(setupHighFreq, t, 0.05);
-    this.eqHigh.gain.setTargetAtTime(setupHighGain, t, 0.05);
+    this.eqHigh.frequency.setTargetAtTime(params.eqHighFreq || 10000.0, t, 0.05);
+    this.eqHigh.gain.setTargetAtTime(params.eqHighGain, t, 0.05);
 
-    // 6. Corrective Notch Filters with Hiss Factor scaling
+    // 6. Corrective Notch Filters
     this.setCorrectiveNotches(notches, hissAmount);
 
     // 7. Glue Compressor
@@ -921,7 +914,7 @@ export class AetherEnhancer {
 
   setCorrectiveNotches(notches, hissAmount = 0) {
     const t = this.ctx.currentTime;
-    const setupHissFactor = Math.max(0.4, 1.0 - (hissAmount / 100.0) * 0.65);
+    const setupHissFactor = 1.0; // Keep surgical notches at full depth for uncompromised resonance removal
 
     for (let i = 0; i < 8; i++) {
       const filter = this[`eqCorrective${i+1}`];
