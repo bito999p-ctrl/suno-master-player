@@ -1,4 +1,4 @@
-/* Version: 2.2.5 (Re-deployed to ensure complete file sync) */
+/* Version: 2.2.6 (Re-deployed to ensure complete file sync) */
 /* ==========================================================================
    AetherPlayer CSS - Premium Dark Glassmorphic Design
    ========================================================================== */
@@ -2052,7 +2052,7 @@ input:checked + .switch-slider:before {
 
 .history-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.5fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   width: 100%;
 }
@@ -2091,6 +2091,9 @@ input:checked + .switch-slider:before {
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: left;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .history-item:hover, .favorite-item:hover {
@@ -2168,7 +2171,7 @@ input:checked + .switch-slider:before {
 
 .dropdown-history-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.5fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   min-height: 0;
   flex: 1;
@@ -2326,8 +2329,12 @@ input:checked + .switch-slider:before {
 
 .favorites-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.5fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+}
+
+.favorites-col {
+  min-width: 0;
 }
 
 .favorites-col h4 {

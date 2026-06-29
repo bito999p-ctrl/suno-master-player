@@ -1,5 +1,5 @@
-// Version: 2.2.5 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.5';
+// Version: 2.2.6 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.6';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -1598,12 +1598,96 @@ function switchDropdownTab(tab) {
   }
 }
 
+function canonicalizeSunoUrl(val) {
+  if (!val || typeof val !== 'string') return '';
+  let str = val.trim();
+  if (str.startsWith('@')) {
+    return `https://suno.com/${str}`;
+  }
+  if (/^[a-f0-9\-]{36}$/i.test(str)) {
+    return `https://suno.com/playlist/${str}`;
+  }
+  if (!str.startsWith('http://') && !str.startsWith('https://') && !str.includes('/') && !str.includes('.')) {
+    return `https://suno.com/@${str}`;
+  }
+  return str;
+}
+
+function getDisplaySubtitle(idOrUrl, type, item) {
+  if (type === 'track') {
+    return item.artist_name || 'Suno Artist';
+  }
+  if (type === 'user' || type === 'profile') {
+    const str = idOrUrl || '';
+    const match = str.match(/suno\.com\/@([a-zA-Z0-9_\-]+)/i);
+    if (match) return `@${match[1]}`;
+    if (str.startsWith('@')) return str;
+    return `@${str}`;
+  }
+  const str = idOrUrl || '';
+  if (str.startsWith('http')) {
+    const match = str.match(/playlist\/([a-f0-9\-]{36})/i);
+    if (match) return match[1];
+  }
+  return str;
+}
+
 // --- Favorites (お気に入り) LocalStorage Management ---
 function loadFavorites() {
   try {
     const saved = localStorage.getItem('suno_player_favorites_v2');
     if (saved) favorites = JSON.parse(saved);
     else favorites = { users: [], playlists: [], tracks: [] };
+
+    // Migrate, canonicalize, and deduplicate
+    let migrated = false;
+    if (favorites.users) {
+      favorites.users = favorites.users.map(u => {
+        const canonical = canonicalizeSunoUrl(u.url || u.id);
+        if (u.url !== canonical || u.id !== canonical) {
+          migrated = true;
+          u.url = canonical;
+          u.id = canonical;
+        }
+        return u;
+      });
+      const uniqueUsers = [];
+      const seen = new Set();
+      favorites.users.forEach(u => {
+        if (u && u.url && !seen.has(u.url.toLowerCase())) {
+          seen.add(u.url.toLowerCase());
+          uniqueUsers.push(u);
+        } else {
+          migrated = true;
+        }
+      });
+      favorites.users = uniqueUsers;
+    }
+    if (favorites.playlists) {
+      favorites.playlists = favorites.playlists.map(p => {
+        const canonical = canonicalizeSunoUrl(p.url || p.id);
+        if (p.url !== canonical || p.id !== canonical) {
+          migrated = true;
+          p.url = canonical;
+          p.id = canonical;
+        }
+        return p;
+      });
+      const uniquePlaylists = [];
+      const seen = new Set();
+      favorites.playlists.forEach(p => {
+        if (p && p.url && !seen.has(p.url.toLowerCase())) {
+          seen.add(p.url.toLowerCase());
+          uniquePlaylists.push(p);
+        } else {
+          migrated = true;
+        }
+      });
+      favorites.playlists = uniquePlaylists;
+    }
+    if (migrated) {
+      localStorage.setItem('suno_player_favorites_v2', JSON.stringify(favorites));
+    }
   } catch (e) {
     console.error('Failed to load favorites:', e);
   }
@@ -1741,7 +1825,7 @@ function renderFavoritesUI() {
     return items.map(item => `
       <div class="favorite-item" data-url="${escapeHtml(item.url || item.id)}">
         <span class="favorite-item-title">${escapeHtml(item.name || item.title)}</span>
-        <span class="favorite-item-sub">${escapeHtml(type === 'track' ? item.artist_name : (item.url && item.url.length > 36 ? item.url.slice(0, 36) + '...' : item.url || item.id))}</span>
+        <span class="favorite-item-sub">${escapeHtml(getDisplaySubtitle(item.url || item.id, type, item))}</span>
       </div>
     `).join('');
   };
@@ -1782,6 +1866,51 @@ function saveToHistory(type, id, name) {
     console.error('Failed to load history:', e);
   }
 
+  // Migrate, canonicalize, and deduplicate existing history
+  let migrated = false;
+  if (history.users) {
+    history.users = history.users.map(u => {
+      const canonical = canonicalizeSunoUrl(u.id);
+      if (u.id !== canonical) {
+        migrated = true;
+        u.id = canonical;
+      }
+      return u;
+    });
+    const uniqueUsers = [];
+    const seen = new Set();
+    history.users.forEach(u => {
+      if (u && u.id && !seen.has(u.id.toLowerCase())) {
+        seen.add(u.id.toLowerCase());
+        uniqueUsers.push(u);
+      } else {
+        migrated = true;
+      }
+    });
+    history.users = uniqueUsers;
+  }
+  if (history.playlists) {
+    history.playlists = history.playlists.map(p => {
+      const canonical = canonicalizeSunoUrl(p.id);
+      if (p.id !== canonical) {
+        migrated = true;
+        p.id = canonical;
+      }
+      return p;
+    });
+    const uniquePlaylists = [];
+    const seen = new Set();
+    history.playlists.forEach(p => {
+      if (p && p.id && !seen.has(p.id.toLowerCase())) {
+        seen.add(p.id.toLowerCase());
+        uniquePlaylists.push(p);
+      } else {
+        migrated = true;
+      }
+    });
+    history.playlists = uniquePlaylists;
+  }
+
   let list = [];
   if (type === 'profile' || type === 'user') {
     list = history.users;
@@ -1791,7 +1920,7 @@ function saveToHistory(type, id, name) {
     list = history.tracks;
   }
 
-  const cleanId = id.trim();
+  const cleanId = canonicalizeSunoUrl(id.trim());
   const cleanName = name || cleanId;
 
   // Remove existing duplicate
@@ -1826,6 +1955,58 @@ function renderHistoryUI() {
     console.error('Failed to load history:', e);
   }
 
+  // Migrate, canonicalize, and deduplicate on render
+  let migrated = false;
+  if (history.users) {
+    history.users = history.users.map(u => {
+      const canonical = canonicalizeSunoUrl(u.id);
+      if (u.id !== canonical) {
+        migrated = true;
+        u.id = canonical;
+      }
+      return u;
+    });
+    const uniqueUsers = [];
+    const seen = new Set();
+    history.users.forEach(u => {
+      if (u && u.id && !seen.has(u.id.toLowerCase())) {
+        seen.add(u.id.toLowerCase());
+        uniqueUsers.push(u);
+      } else {
+        migrated = true;
+      }
+    });
+    history.users = uniqueUsers;
+  }
+  if (history.playlists) {
+    history.playlists = history.playlists.map(p => {
+      const canonical = canonicalizeSunoUrl(p.id);
+      if (p.id !== canonical) {
+        migrated = true;
+        p.id = canonical;
+      }
+      return p;
+    });
+    const uniquePlaylists = [];
+    const seen = new Set();
+    history.playlists.forEach(p => {
+      if (p && p.id && !seen.has(p.id.toLowerCase())) {
+        seen.add(p.id.toLowerCase());
+        uniquePlaylists.push(p);
+      } else {
+        migrated = true;
+      }
+    });
+    history.playlists = uniquePlaylists;
+  }
+  if (migrated) {
+    try {
+      localStorage.setItem('suno_player_history_v2', JSON.stringify(history));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   const container = document.getElementById('history-container');
   const usersList = document.getElementById('history-users-list');
   const playlistsList = document.getElementById('history-playlists-list');
@@ -1848,7 +2029,7 @@ function renderHistoryUI() {
     return items.map(item => `
       <div class="history-item" data-url="${escapeHtml(item.id)}">
         <span class="history-item-title">${escapeHtml(item.name)}</span>
-        <span class="history-item-sub">${escapeHtml(type === 'user' ? item.id : (item.id.length > 36 ? item.id.slice(0, 36) + '...' : item.id))}</span>
+        <span class="history-item-sub">${escapeHtml(getDisplaySubtitle(item.id, type, item))}</span>
       </div>
     `).join('');
   };
