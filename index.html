@@ -66,6 +66,25 @@
             </div>
           </div>
         </div>
+
+        <!-- Favorites (お気に入り) Section -->
+        <div id="favorites-container" class="favorites-container hidden">
+          <h3 class="favorites-title">❤️ お気に入り一覧</h3>
+          <div class="favorites-grid">
+            <div class="favorites-col">
+              <h4>👤 ユーザー</h4>
+              <div id="favorites-users-list" class="favorites-list"></div>
+            </div>
+            <div class="favorites-col">
+              <h4>💿 プレイリスト</h4>
+              <div id="favorites-playlists-list" class="favorites-list"></div>
+            </div>
+            <div class="favorites-col">
+              <h4>🎵 お気に入り曲</h4>
+              <div id="favorites-tracks-list" class="favorites-list"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -82,22 +101,47 @@
           <!-- History Dropdown Trigger -->
           <div class="history-dropdown-wrapper">
             <button id="history-toggle-btn" class="btn btn-secondary">
-              <span>🕒 履歴</span>
+              <span>🕒 履歴 / お気に入り</span>
             </button>
             <div id="header-history-dropdown" class="header-history-dropdown card hidden">
-              <h3 class="dropdown-title">最近再生した履歴</h3>
-              <div class="dropdown-history-grid">
-                <div class="dropdown-history-col">
-                  <h4>👤 ユーザー</h4>
-                  <div id="dropdown-history-users-list" class="dropdown-history-list"></div>
+              <div class="dropdown-tab-headers">
+                <button id="drop-tab-history" class="dropdown-tab-btn active">🕒 最近の履歴</button>
+                <button id="drop-tab-favorites" class="dropdown-tab-btn">❤️ お気に入り</button>
+              </div>
+              
+              <!-- 1. History Tab Content -->
+              <div id="drop-content-history" class="dropdown-tab-content">
+                <div class="dropdown-history-grid">
+                  <div class="dropdown-history-col">
+                    <h4>👤 ユーザー</h4>
+                    <div id="dropdown-history-users-list" class="dropdown-history-list"></div>
+                  </div>
+                  <div class="dropdown-history-col">
+                    <h4>💿 プレイリスト</h4>
+                    <div id="dropdown-history-playlists-list" class="dropdown-history-list"></div>
+                  </div>
+                  <div class="dropdown-history-col">
+                    <h4>🎵 曲</h4>
+                    <div id="dropdown-history-tracks-list" class="dropdown-history-list"></div>
+                  </div>
                 </div>
-                <div class="dropdown-history-col">
-                  <h4>💿 プレイリスト</h4>
-                  <div id="dropdown-history-playlists-list" class="dropdown-history-list"></div>
-                </div>
-                <div class="dropdown-history-col">
-                  <h4>🎵 曲</h4>
-                  <div id="dropdown-history-tracks-list" class="dropdown-history-list"></div>
+              </div>
+
+              <!-- 2. Favorites Tab Content -->
+              <div id="drop-content-favorites" class="dropdown-tab-content hidden">
+                <div class="dropdown-history-grid">
+                  <div class="dropdown-history-col">
+                    <h4>👤 ユーザー</h4>
+                    <div id="dropdown-favorites-users-list" class="dropdown-history-list"></div>
+                  </div>
+                  <div class="dropdown-history-col">
+                    <h4>💿 プレイリスト</h4>
+                    <div id="dropdown-favorites-playlists-list" class="dropdown-history-list"></div>
+                  </div>
+                  <div class="dropdown-history-col">
+                    <h4>🎵 曲</h4>
+                    <div id="dropdown-favorites-tracks-list" class="dropdown-history-list"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -121,7 +165,10 @@
             <div id="source-info" class="source-info-container">
               <img id="source-cover" src="" alt="Cover" class="source-cover">
               <div class="source-text">
-                <h2 id="source-name">Suno Playlist</h2>
+                <div class="source-title-row">
+                  <h2 id="source-name">Suno Playlist</h2>
+                  <button id="source-like-btn" class="source-like-btn" title="お気に入りに追加">🤍</button>
+                </div>
                 <span id="source-type">Playlist</span>
               </div>
             </div>
@@ -163,6 +210,7 @@
             <div class="track-details">
               <div class="track-title-row">
                 <h2 id="track-title">曲を選択してください</h2>
+                <button id="like-btn" class="like-btn" title="お気に入りに追加">🤍</button>
                 <a id="suno-link" href="#" target="_blank" class="suno-external-link hidden" title="Sunoで開く">
                   <span class="suno-link-icon">↗</span> Suno
                 </a>

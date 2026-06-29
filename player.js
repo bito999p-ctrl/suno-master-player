@@ -82,14 +82,27 @@ const tabEnhancer = document.getElementById('tab-enhancer');
 const tabLyrics = document.getElementById('tab-lyrics');
 const lyricsText = document.getElementById('lyrics-text');
 
+// Like Buttons & Dropdown tabs
+const likeBtn = document.getElementById('like-btn');
+const sourceLikeBtn = document.getElementById('source-like-btn');
+const dropTabHistory = document.getElementById('drop-tab-history');
+const dropTabFavorites = document.getElementById('drop-tab-favorites');
+const dropContentHistory = document.getElementById('drop-content-history');
+const dropContentFavorites = document.getElementById('drop-content-favorites');
+
+// Global mock state required by favorites
+let favorites = { users: [], playlists: [], tracks: [] };
+let currentSource = { type: '', name: '', url: '' };
+
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   
-  // Render recent history on startup
+  // Render recent history and favorites on startup
   renderHistoryUI();
+  renderFavoritesUI();
   
   // Check URL query parameters for auto-import
   checkUrlParams();
@@ -165,6 +178,20 @@ function setupEventListeners() {
     });
   }
 
+  // Like Buttons Click Event Listeners
+  if (likeBtn) {
+    likeBtn.addEventListener('click', toggleTrackLike);
+  }
+  if (sourceLikeBtn) {
+    sourceLikeBtn.addEventListener('click', toggleSourceLike);
+  }
+
+  // Dropdown Tab Switchers
+  if (dropTabHistory && dropTabFavorites) {
+    dropTabHistory.addEventListener('click', () => switchDropdownTab('history'));
+    dropTabFavorites.addEventListener('click', () => switchDropdownTab('favorites'));
+  }
+
   // Player controls
   playPauseBtn.addEventListener('click', togglePlay);
   prevBtn.addEventListener('click', playPrev);
@@ -205,6 +232,11 @@ function setupEventListeners() {
 // --- Import Suno Data & Screen Navigation ---
 async function importSunoUrl(urlStr, isSubRequest = false) {
   if (!urlStr.trim()) return;
+
+  // If a completely new main import, clear parent profile data
+  if (!isSubRequest) {
+    userProfileData = null;
+  }
 
   // Show loading state on landing button
   landingBtnText.classList.add('hidden');
@@ -293,8 +325,16 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     // Save imported URL state
     loadedUrl = urlStr.trim();
 
-    // Add to recent history (skip sub requests)
-    if (!isSubRequest) {
+    // Save current active source for Favorites
+    currentSource = {
+      type: data.type,
+      name: data.name || (data.type === 'profile' ? loadedUrl : 'Suno Item'),
+      url: loadedUrl
+    };
+    updateSourceLikeButtonState();
+
+    // Add to recent history (skip sub requests EXCEPT when it is a playlist!)
+    if (!isSubRequest || data.type === 'playlist') {
       saveToHistory(data.type, loadedUrl, data.name || (data.type === 'profile' ? loadedUrl : 'Suno Item'));
     }
 
@@ -441,6 +481,14 @@ function restoreProfileView() {
     sourceCover.src = tracks[0].image_url;
   }
 
+  // Restore currentSource and update Like icons
+  currentSource = {
+    type: 'profile',
+    name: userProfileData.name,
+    url: userProfileData.url
+  };
+  updateSourceLikeButtonState();
+
   // Update track count and limit warnings
   tracksCountEl.textContent = tracks.length;
   const limitWarning = document.getElementById('sidebar-limit-warning');
@@ -485,6 +533,9 @@ async function selectTrack(idx) {
   trackTitle.textContent = track.title;
   trackArtist.textContent = track.artist_name;
   trackArtwork.src = track.image_url;
+
+  // Update Like button state for this track
+  updateLikeButtonState(track.id);
 
   // Set Suno external link
   const sunoLink = document.getElementById('suno-link');
@@ -760,6 +811,8 @@ function applyDefaultAutoParams() {
   hudCompRatioEl.textContent = '1.60:1';
   hudLimiterBoostEl.textContent = '+3.5 dB';
   notchesListEl.innerHTML = '<div class="empty-notches">分析待ち...</div>';
+
+  if (likeBtn) likeBtn.textContent = '🤍';
 }
 
 // --- Player Controls Trigger Helpers ---
@@ -1167,6 +1220,166 @@ function escapeHtml(str) {
 }
 
 // --- Recent History Storage & UI ---
+// --- Dropdown Tab Switching ---
+function switchDropdownTab(tab) {
+  if (tab === 'history') {
+    dropTabHistory.classList.add('active');
+    dropTabFavorites.classList.remove('active');
+    dropContentHistory.classList.remove('hidden');
+    dropContentFavorites.classList.add('hidden');
+  } else {
+    dropTabHistory.classList.remove('active');
+    dropTabFavorites.classList.add('active');
+    dropContentHistory.classList.add('hidden');
+    dropContentFavorites.classList.remove('hidden');
+  }
+}
+
+// --- Favorites (お気に入り) LocalStorage Management ---
+function loadFavorites() {
+  try {
+    const saved = localStorage.getItem('suno_player_favorites_v2');
+    if (saved) favorites = JSON.parse(saved);
+    else favorites = { users: [], playlists: [], tracks: [] };
+  } catch (e) {
+    console.error('Failed to load favorites:', e);
+  }
+}
+
+function saveFavorites() {
+  try {
+    localStorage.setItem('suno_player_favorites_v2', JSON.stringify(favorites));
+    renderFavoritesUI();
+  } catch (e) {
+    console.error('Failed to save favorites:', e);
+  }
+}
+
+function toggleTrackLike() {
+  if (currentTrackIndex === -1 || !tracks[currentTrackIndex]) return;
+  const track = tracks[currentTrackIndex];
+  loadFavorites();
+  
+  const idx = favorites.tracks.findIndex(t => t.id === track.id);
+  if (idx === -1) {
+    // Save full song URL as the import target
+    const songUrl = `https://suno.com/song/${track.id}`;
+    favorites.tracks.unshift({
+      id: track.id,
+      title: track.title,
+      artist_name: track.artist_name,
+      image_url: track.image_url,
+      play_count: track.play_count,
+      url: songUrl
+    });
+    if (likeBtn) likeBtn.textContent = '❤️';
+  } else {
+    favorites.tracks.splice(idx, 1);
+    if (likeBtn) likeBtn.textContent = '🤍';
+  }
+  saveFavorites();
+}
+
+function toggleSourceLike() {
+  if (!currentSource || !currentSource.type || !currentSource.url) return;
+  loadFavorites();
+  
+  const list = currentSource.type === 'profile' ? favorites.users : favorites.playlists;
+  const idx = list.findIndex(item => item.url.toLowerCase() === currentSource.url.toLowerCase());
+  
+  if (idx === -1) {
+    list.unshift({
+      id: currentSource.url, // URL acts as the ID to import it later
+      name: currentSource.name,
+      url: currentSource.url
+    });
+    if (sourceLikeBtn) sourceLikeBtn.textContent = '❤️';
+  } else {
+    list.splice(idx, 1);
+    if (sourceLikeBtn) sourceLikeBtn.textContent = '🤍';
+  }
+  saveFavorites();
+}
+
+function updateLikeButtonState(trackId) {
+  if (!likeBtn) return;
+  loadFavorites();
+  const isLiked = favorites.tracks.some(t => t.id === trackId);
+  likeBtn.textContent = isLiked ? '❤️' : '🤍';
+}
+
+function updateSourceLikeButtonState() {
+  if (!sourceLikeBtn) return;
+  if (!currentSource || !currentSource.type || !currentSource.url) {
+    sourceLikeBtn.classList.add('hidden');
+    return;
+  }
+  sourceLikeBtn.classList.remove('hidden');
+  loadFavorites();
+  
+  const list = currentSource.type === 'profile' ? favorites.users : favorites.playlists;
+  const isLiked = list.some(item => item.url.toLowerCase() === currentSource.url.toLowerCase());
+  sourceLikeBtn.textContent = isLiked ? '❤️' : '🤍';
+}
+
+function renderFavoritesUI() {
+  loadFavorites();
+
+  const container = document.getElementById('favorites-container');
+  const usersList = document.getElementById('favorites-users-list');
+  const playlistsList = document.getElementById('favorites-playlists-list');
+  const tracksList = document.getElementById('favorites-tracks-list');
+
+  const dropUsersList = document.getElementById('dropdown-favorites-users-list');
+  const dropPlaylistsList = document.getElementById('dropdown-favorites-playlists-list');
+  const dropTracksList = document.getElementById('dropdown-favorites-tracks-list');
+
+  const hasFavorites = favorites.users.length > 0 || favorites.playlists.length > 0 || favorites.tracks.length > 0;
+  if (!hasFavorites) {
+    if (container) container.classList.add('hidden');
+    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">お気に入りはありません</div>';
+    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">お気に入りはありません</div>';
+    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">お気に入りはありません</div>';
+    return;
+  }
+  if (container) container.classList.remove('hidden');
+
+  // Helper to render HTML list items
+  const getListHtml = (items, type) => {
+    if (items.length === 0) return '<div class="empty-history">お気に入りはありません</div>';
+    return items.map(item => `
+      <div class="favorite-item" data-url="${escapeHtml(item.url || item.id)}">
+        <span class="favorite-item-title">${escapeHtml(item.name || item.title)}</span>
+        <span class="favorite-item-sub">${escapeHtml(type === 'track' ? item.artist_name : (item.url && item.url.length > 36 ? item.url.slice(0, 36) + '...' : item.url || item.id))}</span>
+      </div>
+    `).join('');
+  };
+
+  // Render Landing Favorites
+  if (usersList) usersList.innerHTML = getListHtml(favorites.users, 'user');
+  if (playlistsList) playlistsList.innerHTML = getListHtml(favorites.playlists, 'playlist');
+  if (tracksList) tracksList.innerHTML = getListHtml(favorites.tracks, 'track');
+
+  // Render Dropdown Favorites
+  if (dropUsersList) dropUsersList.innerHTML = getListHtml(favorites.users, 'user');
+  if (dropPlaylistsList) dropPlaylistsList.innerHTML = getListHtml(favorites.playlists, 'playlist');
+  if (dropTracksList) dropTracksList.innerHTML = getListHtml(favorites.tracks, 'track');
+
+  // Bind click listeners to all favorite items
+  document.querySelectorAll('.favorite-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const url = el.getAttribute('data-url');
+      landingInput.value = url;
+
+      // Hide dropdown if clicked inside dropdown
+      const dropdown = document.getElementById('header-history-dropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+
+      importSunoUrl(url);
+    });
+  });
+}
+
 function saveToHistory(type, id, name) {
   let history = { users: [], playlists: [], tracks: [] };
   try {
