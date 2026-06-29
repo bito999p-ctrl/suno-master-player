@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.1';
+import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.2';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -30,6 +30,7 @@ const landingBtn = document.getElementById('landing-btn');
 const landingBtnText = document.getElementById('landing-btn-text');
 const landingBtnLoader = document.getElementById('landing-btn-loader');
 const backToLandingBtn = document.getElementById('back-to-landing-btn');
+const sidebarBackBtn = document.getElementById('sidebar-back-btn');
 const shareBtn = document.getElementById('share-btn');
 const audioPlayer = document.getElementById('audio-player');
 
@@ -182,6 +183,9 @@ function setupEventListeners() {
 
   // Workspace actions
   backToLandingBtn.addEventListener('click', showLandingView);
+  if (sidebarBackBtn) {
+    sidebarBackBtn.addEventListener('click', showLandingView);
+  }
   shareBtn.addEventListener('click', copyShareLink);
 
   // History Dropdown Toggle
@@ -1065,7 +1069,11 @@ function drawVisualizer() {
   if (mode === 'pulse-ring') {
     const centerX = width / 2;
     const centerY = height / 2;
-    const baseRadius = 90;
+    const minSize = Math.min(width, height);
+    
+    // Calculate radius and spike lengths dynamically to avoid clipping and align with artwork
+    const baseRadius = minSize * 0.34;
+    const maxSpikeLength = minSize * 0.10;
 
     let sum = 0;
     for (let i = 0; i < bufferLength; i++) {
@@ -1078,7 +1086,7 @@ function drawVisualizer() {
     canvasCtx.beginPath();
     canvasCtx.arc(centerX, centerY, baseRadius * pulseFactor, 0, 2 * Math.PI);
     canvasCtx.strokeStyle = 'rgba(232, 165, 148, 0.35)';
-    canvasCtx.lineWidth = 4;
+    canvasCtx.lineWidth = Math.max(1.5, minSize * 0.015);
     canvasCtx.shadowBlur = 15;
     canvasCtx.shadowColor = '#e8a598';
     canvasCtx.stroke();
@@ -1091,7 +1099,7 @@ function drawVisualizer() {
     for (let i = 0; i < spikeCount; i++) {
       const dataIdx = Math.floor((i / spikeCount) * (bufferLength / 2));
       const val = dataArray[dataIdx] || 0;
-      const spikeLength = (val / 255.0) * 45;
+      const spikeLength = (val / 255.0) * maxSpikeLength;
       
       const angle = i * step;
       const startX = centerX + Math.cos(angle) * (baseRadius * pulseFactor);
@@ -1107,7 +1115,7 @@ function drawVisualizer() {
       canvasCtx.moveTo(startX, startY);
       canvasCtx.lineTo(endX, endY);
       canvasCtx.strokeStyle = grad;
-      canvasCtx.lineWidth = 2.5;
+      canvasCtx.lineWidth = Math.max(1, minSize * 0.008);
       canvasCtx.stroke();
     }
 

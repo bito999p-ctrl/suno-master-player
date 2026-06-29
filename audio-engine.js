@@ -341,46 +341,46 @@ export function analyzeAudioResonances(buffer) {
   const sibilanceMinBin = Math.floor((5000 * fftSize) / sampleRate);
   const sibilanceMaxBin = Math.floor((12000 * fftSize) / sampleRate);
   
-  // この帯域全体の平均強度（ベースライン）を計算
-  let sumRegion = 0;
-  for (let j = sibilanceMinBin; j <= sibilanceMaxBin; j++) {
-    sumRegion += avgSpectrum[j];
-  }
-  const sibilanceBaseline = sumRegion / (sibilanceMaxBin - sibilanceMinBin + 1);
-  
-  // ローカルピーク（極大値かつベースラインの1.32倍以上。ただし9kHz〜10kHzのSuno頻出帯域は敏感に検知するため1.16倍以上）をすべて検出
+  // ローカルピーク（極大値かつ周辺のローカルノイズフロアより著しく高いピーク）をすべて検出
   const rawPeaks = [];
-  for (let j = sibilanceMinBin + 1; j < sibilanceMaxBin; j++) {
+  // 周辺5ビン（左右に約120Hz幅）の平均と比較するために安全なマージンを確保
+  for (let j = sibilanceMinBin + 5; j < sibilanceMaxBin - 5; j++) {
     const val = avgSpectrum[j];
     const peakFreq = Math.round((j * sampleRate) / fftSize);
     
-    // Suno AIの音源で特に耳に刺さりやすい 9kHz〜10kHz 帯域（マージンを取り8800Hz〜10200Hz）の判定
-    const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
-    const thresholdMultiplier = isSunoRange ? 1.16 : 1.32;
-    
-    if (val > sibilanceBaseline * thresholdMultiplier && val > avgSpectrum[j - 1] && val > avgSpectrum[j + 1]) {
-      const ratio = val / sibilanceBaseline;
-      // 超過度合いに基づき減衰幅を設定（高域の艶感を損なわないようマイルド化: Suno帯域は -1.5dB 〜 -3.5dB、通常は -1.0dB 〜 -2.5dB）
-      let cutDb;
-      if (isSunoRange) {
-        cutDb = -Math.min(3.5, Math.max(1.5, (ratio - 1.16) * 6.0 + 1.5));
-      } else {
-        cutDb = -Math.min(2.5, Math.max(1.0, (ratio - 1.32) * 4.0 + 1.0));
-      }
+    // 極大値（ピーク）判定
+    if (val > avgSpectrum[j - 1] && val > avgSpectrum[j + 1]) {
+      // 周辺のローカルノイズフロア（ピークの直近2ビンを除いた左右5ビンの平均）を計算
+      const localBins = [
+        avgSpectrum[j - 5], avgSpectrum[j - 4], avgSpectrum[j - 3], avgSpectrum[j - 2],
+        avgSpectrum[j + 2], avgSpectrum[j + 3], avgSpectrum[j + 4], avgSpectrum[j + 5]
+      ];
+      const localFloor = localBins.reduce((sum, v) => sum + v, 0) / localBins.length;
       
-      // 8500Hz未満のカットは、極度に痩せるのを防ぎつつもしっかり金属音を除去できる安全ライン（85%）に緩和
-      if (peakFreq < 8500) {
-        cutDb *= 0.85;
-      }
+      const ratio = val / (localFloor + 1e-9);
       
-      rawPeaks.push({
-        freq: peakFreq,
-        cut: cutDb,
-        val: val,
-        isSunoRange: isSunoRange,
-        // Suno帯域のピークを優先的にマスタリングEQ補正対象へ選ぶため、スコアに2.0倍の下駄を履かせる
-        score: ratio * (isSunoRange ? 2.0 : 1.0)
-      });
+      // Suno AIの音源で特に耳に刺さりやすい 9kHz〜10kHz 帯域（マージンを取り8800Hz〜10200Hz）の判定
+      const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
+      const thresholdMultiplier = isSunoRange ? 1.15 : 1.22; // 15% / 22% の突出度で検出
+      
+      if (ratio > thresholdMultiplier) {
+        // 超過度合い（比率）に基づき減衰幅をダイナミックに算出（最大 -5.0dB まで）
+        let cutDb = -Math.min(5.0, Math.max(1.0, (ratio - thresholdMultiplier) * 7.0 + 1.0));
+        
+        // 8500Hz未満のカットは、極度に痩せるのを防ぎつつもしっかり金属音を除去できる安全ライン（85%）に緩和
+        if (peakFreq < 8500) {
+          cutDb *= 0.85;
+        }
+        
+        rawPeaks.push({
+          freq: peakFreq,
+          cut: cutDb,
+          val: val,
+          isSunoRange: isSunoRange,
+          // 突出度（ratio）を優先度スコアにする（Suno帯域は1.5倍の優先度）
+          score: ratio * (isSunoRange ? 1.5 : 1.0)
+        });
+      }
     }
   }
 
