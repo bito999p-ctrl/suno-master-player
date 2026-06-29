@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8CLCFDVX2"></script>
+  <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+
+      gtag('config', 'G-C8CLCFDVX2');
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AetherPlayer - Suno & AetherMaster Enhancer</title>
@@ -12,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=2.2.0">
+  <link rel="stylesheet" href="styles.css?v=2.2.1">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -22,9 +32,19 @@
     <!-- 1. Landing Screen (Shown when no parameter is present) -->
     <div id="landing-screen" class="landing-container">
       <div class="landing-card card">
+        
+        <!-- Portal Nav Buttons at the very top -->
+        <div class="portal-links">
+          <a href="https://bito999p-ctrl.github.io/bitomusic" class="portal-link-btn"><i data-lucide="home"></i> Bito Music Portal</a>
+          <a href="https://bito999p-ctrl.github.io/aether_master/" class="portal-link-btn" target="_blank"><i data-lucide="sliders"></i> AetherMaster Engine</a>
+        </div>
+
         <div class="logo landing-logo">
           <span class="logo-icon"><i data-lucide="sparkles"></i></span>
-          <h1>AetherPlayer</h1>
+          <div class="logo-text-group" style="align-items: center;">
+            <h1>AetherPlayer</h1>
+            <span class="brand-credit">by Bito Music</span>
+          </div>
         </div>
         <p class="landing-subtitle">Sunoの公開曲やプレイリストを、AetherMasterの高音質AI AUTOマスタリング技術で再生する専用プレイヤー</p>
         
@@ -91,7 +111,7 @@
         </div>
 
         <div class="landing-copyright-note">
-          Unauthorized reproduction, reprinting, or redistribution of this web tool is strictly prohibited.
+          Unauthorized reproduction, reprinting, or redistribution of this web tool is strictly prohibited. © 2026 Bito Music.
         </div>
       </div>
     </div>
@@ -102,9 +122,19 @@
       <header class="app-header">
         <div class="logo">
           <span class="logo-icon"><i data-lucide="sparkles"></i></span>
-          <h1>AetherPlayer</h1>
+          <div class="logo-text-group">
+            <h1>AetherPlayer</h1>
+            <span class="logo-credit">by Bito Music</span>
+          </div>
           <span class="logo-subtitle">Active</span>
         </div>
+        
+        <!-- Header Portal Navigation Links -->
+        <div class="header-portal-links desktop-only-flex">
+          <a href="https://bito999p-ctrl.github.io/bitomusic" class="portal-link-item"><i data-lucide="home"></i> Bito Music Portal</a>
+          <a href="https://bito999p-ctrl.github.io/aether_master/" class="portal-link-item" target="_blank"><i data-lucide="sliders"></i> AetherMaster Engine</a>
+        </div>
+
         <div class="header-actions">
           <!-- History Dropdown Trigger -->
           <div class="history-dropdown-wrapper">
@@ -208,7 +238,7 @@
             </div>
 
             <div class="sidebar-copyright-note">
-              Unauthorized reproduction or redistribution of this web tool is strictly prohibited.
+              Unauthorized reproduction or redistribution of this web tool is strictly prohibited. © 2026 Bito Music.
             </div>
           </div>
         </section>
@@ -505,6 +535,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=2.2.0"></script>
+  <script type="module" src="player.js?v=2.2.1"></script>
 </body>
 </html>

@@ -2586,3 +2586,96 @@ input:checked + .switch-slider:before {
   opacity: 0.45;
   line-height: 1.35;
 }
+
+/* Portal Links & Credits Styles */
+.portal-links {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.portal-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.portal-link-btn:hover {
+  background: rgba(0, 242, 254, 0.08);
+  border-color: rgba(0, 242, 254, 0.25);
+  color: var(--color-accent-primary);
+  transform: translateY(-1px);
+}
+
+.header-portal-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: 24px;
+  margin-right: auto;
+}
+
+.portal-link-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.portal-link-item:hover {
+  color: var(--color-accent-primary);
+}
+
+/* Brand Credit Styles */
+.brand-credit {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent-primary);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.logo-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-credit {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--color-accent-primary);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-top: -2px;
+  opacity: 0.8;
+}
+
+.desktop-only-flex {
+  display: flex !important;
+}
+
+@media (max-width: 768px) {
+  .desktop-only-flex {
+    display: none !important;
+  }
+}
