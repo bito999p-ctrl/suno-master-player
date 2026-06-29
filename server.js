@@ -354,6 +354,31 @@ app.get('/api/suno', async (req, res) => {
   }
 });
 
+/**
+ * Route: GET /api/proxy-audio
+ * Proxies audio file requests from Suno CDNs to bypass browser CORS limitations and client-side adblockers.
+ */
+app.get('/api/proxy-audio', (req, res) => {
+  const audioUrl = req.query.url;
+  if (!audioUrl) {
+    return res.status(400).send('Missing url parameter');
+  }
+
+  const https = require('https');
+  https.get(audioUrl, (proxyRes) => {
+    // Forward status code and content-type headers
+    res.status(proxyRes.statusCode || 200);
+    res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'audio/mpeg');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+
+    proxyRes.pipe(res);
+  }).on('error', (err) => {
+    console.error('[Proxy Audio Error] Failed to stream audio:', err.message);
+    res.status(500).send(`Internal server error: ${err.message}`);
+  });
+});
+
 // Start the server (only locally or on non-serverless hosts)
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {

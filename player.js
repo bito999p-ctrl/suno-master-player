@@ -854,8 +854,9 @@ async function selectTrack(idx) {
       }
       activeAbortController = new AbortController();
 
-      console.log(`[AI Auto] Fetching audio for analysis: ${track.audio_url}`);
-      const response = await fetch(track.audio_url, { signal: activeAbortController.signal });
+      console.log(`[AI Auto] Fetching audio for analysis (via proxy): ${track.audio_url}`);
+      const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(track.audio_url)}`;
+      const response = await fetch(proxyUrl, { signal: activeAbortController.signal });
       if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
       
       const arrayBuffer = await response.arrayBuffer();
@@ -897,9 +898,9 @@ async function selectTrack(idx) {
       playPauseBtn.style.opacity = '1';
       trackTitle.textContent = track.title;
       
-      const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
-      if (analyzingIndicator) {
-        analyzingIndicator.classList.add('hidden');
+      const analyzingIndicatorEl = document.getElementById('ai-analyzing-indicator');
+      if (analyzingIndicatorEl) {
+        analyzingIndicatorEl.classList.add('hidden');
       }
       
       startPlayback(track.audio_url);
@@ -910,6 +911,7 @@ async function selectTrack(idx) {
         return;
       }
       console.error('[AI Auto] AI Analysis failed:', err);
+      alert(`【AI解析エラー】\nエラー名: ${err.name}\n内容: ${err.message}\n\n※このエラーによりマスタリング処理が適用されませんでした。`);
       updateAiStatus('failed');
 
       // Enable controls & Start default playback
@@ -930,7 +932,10 @@ async function selectTrack(idx) {
 
 // --- Start Track Playback ---
 function startPlayback(url) {
-  audioPlayer.src = url;
+  const playUrl = url.startsWith('http') && !url.includes('/api/proxy-audio')
+    ? `/api/proxy-audio?url=${encodeURIComponent(url)}`
+    : url;
+  audioPlayer.src = playUrl;
   audioPlayer.volume = volumeSlider.value / 100;
   audioPlayer.play()
     .catch(err => {
@@ -943,7 +948,8 @@ async function runPreAnalysis(track) {
   const url = track.audio_url;
   try {
     initAudio();
-    const response = await fetch(url);
+    const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
     if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
