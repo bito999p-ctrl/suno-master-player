@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.3';
+import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.4';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -1083,16 +1083,9 @@ function drawVisualizer() {
       : (minSize * 0.32);
     const maxSpikeLength = minSize * 0.10;
 
-    let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      sum += dataArray[i];
-    }
-    const average = sum / bufferLength;
-    const pulseFactor = 1.0 + (average / 255.0) * 0.06; // Tighter pulse breathing effect
-
-    // Glowing circle (Rose Gold)
+    // Glowing circle (Rose Gold) - Fixed at the artwork boundary to prevent gaps/overlapping pulsing
     canvasCtx.beginPath();
-    canvasCtx.arc(centerX, centerY, baseRadius * pulseFactor, 0, 2 * Math.PI);
+    canvasCtx.arc(centerX, centerY, baseRadius, 0, 2 * Math.PI);
     canvasCtx.strokeStyle = 'rgba(232, 165, 148, 0.35)';
     canvasCtx.lineWidth = Math.max(1.5, minSize * 0.015);
     canvasCtx.shadowBlur = 15;
@@ -1110,10 +1103,10 @@ function drawVisualizer() {
       const spikeLength = (val / 255.0) * maxSpikeLength;
       
       const angle = i * step;
-      const startX = centerX + Math.cos(angle) * (baseRadius * pulseFactor);
-      const startY = centerY + Math.sin(angle) * (baseRadius * pulseFactor);
-      const endX = centerX + Math.cos(angle) * (baseRadius * pulseFactor + spikeLength);
-      const endY = centerY + Math.sin(angle) * (baseRadius * pulseFactor + spikeLength);
+      const startX = centerX + Math.cos(angle) * baseRadius;
+      const startY = centerY + Math.sin(angle) * baseRadius;
+      const endX = centerX + Math.cos(angle) * (baseRadius + spikeLength);
+      const endY = centerY + Math.sin(angle) * (baseRadius + spikeLength);
       
       const grad = canvasCtx.createLinearGradient(startX, startY, endX, endY);
       grad.addColorStop(0, '#e8a598');
