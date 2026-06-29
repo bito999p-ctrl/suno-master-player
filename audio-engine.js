@@ -3,6 +3,133 @@
  * Automatically synced from audio-mastering-tool/app.js.
  */
 
+// Global mock state required by analyzeAudioResonances
+const baseLoudnessTarget = 'genre';
+const params = { limiterBoost: 3.5 };
+
+const GENRE_PRESETS = {
+  auto: {
+    satEnabled: true, satType: 'tape', satDrive: 10, satMix: 10,
+    eqLowGain: 0.0, eqLowFreq: 120,
+    eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 0.0, eqHighFreq: 10000,
+    compEnabled: true, compThreshold: -15.0, compRatio: 1.5, compAttack: 0.04, compRelease: 0.20,
+    stereoWidth: 1.15, limiterBoost: 3.5, sideHighPassFreq: 110
+  },
+  pops: {
+    satEnabled: true, satType: 'tube', satDrive: 10, satMix: 10,
+    eqLowGain: 1.0, eqLowFreq: 120,
+    eqMidGain: -0.5, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 1.5, eqHighFreq: 10000,
+    compEnabled: true, compThreshold: -16.0, compRatio: 1.5, compAttack: 0.04, compRelease: 0.20,
+    stereoWidth: 1.20, limiterBoost: 3.8, sideHighPassFreq: 110
+  },
+  rnb: {
+    satEnabled: true, satType: 'tape', satDrive: 12, satMix: 10,
+    eqLowGain: 1.5, eqLowFreq: 80,
+    eqMidGain: -0.5, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 1.5, eqHighFreq: 10000,
+    compEnabled: true, compThreshold: -15.0, compRatio: 1.5, compAttack: 0.04, compRelease: 0.20,
+    stereoWidth: 1.20, limiterBoost: 3.8, sideHighPassFreq: 110
+  },
+  rock: {
+    satEnabled: true, satType: 'tape', satDrive: 15, satMix: 10,
+    eqLowGain: 1.2, eqLowFreq: 100,
+    eqMidGain: 0.6, eqMidFreq: 2500, eqMidQ: 1.2,
+    eqHighGain: 1.0, eqHighFreq: 8000,
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.6, compAttack: 0.06, compRelease: 0.18,
+    stereoWidth: 1.10, limiterBoost: 3.8, sideHighPassFreq: 110
+  },
+  metal: {
+    satEnabled: true, satType: 'tape', satDrive: 18, satMix: 12,
+    eqLowGain: 1.0, eqLowFreq: 90,
+    eqMidGain: -0.8, eqMidFreq: 400, eqMidQ: 0.8,
+    eqHighGain: 1.5, eqHighFreq: 8000,
+    compEnabled: true, compThreshold: -12.0, compRatio: 1.5, compAttack: 0.025, compRelease: 0.12,
+    stereoWidth: 1.15, limiterBoost: 4.0, sideHighPassFreq: 120
+  },
+  edm: {
+    satEnabled: true, satType: 'tape', satDrive: 15, satMix: 15,
+    eqLowGain: 1.8, eqLowFreq: 90,
+    eqMidGain: -0.5, eqMidFreq: 800, eqMidQ: 1.0,
+    eqHighGain: 2.0, eqHighFreq: 11000,
+    compEnabled: true, compThreshold: -12.0, compRatio: 1.5, compAttack: 0.035, compRelease: 0.18,
+    stereoWidth: 1.30, limiterBoost: 4.0, sideHighPassFreq: 150
+  },
+  hiphop: {
+    satEnabled: true, satType: 'tape', satDrive: 15, satMix: 14,
+    eqLowGain: 1.8, eqLowFreq: 65,
+    eqMidGain: -0.8, eqMidFreq: 350, eqMidQ: 1.0,
+    eqHighGain: 1.2, eqHighFreq: 10000,
+    compEnabled: true, compThreshold: -12.0, compRatio: 1.4, compAttack: 0.06, compRelease: 0.20,
+    stereoWidth: 1.20, limiterBoost: 3.8, sideHighPassFreq: 150
+  },
+  lofi: {
+    satEnabled: true, satType: 'tape', satDrive: 35, satMix: 30,
+    eqLowGain: 2.0, eqLowFreq: 150,
+    eqMidGain: 0.5, eqMidFreq: 1200, eqMidQ: 1.0,
+    eqHighGain: -1.5, eqHighFreq: 9000,
+    compEnabled: true, compThreshold: -13.0, compRatio: 1.4, compAttack: 0.06, compRelease: 0.30,
+    stereoWidth: 1.10, limiterBoost: 3.0, sideHighPassFreq: 110
+  },
+  hardcore: {
+    satEnabled: true, satType: 'hardcore', satDrive: 20, satMix: 18,
+    eqLowGain: 2.2, eqLowFreq: 80,
+    eqMidGain: -1.0, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 2.5, eqHighFreq: 12000,
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.8, compAttack: 0.02, compRelease: 0.12,
+    stereoWidth: 1.40, limiterBoost: 4.2, sideHighPassFreq: 150
+  },
+  ambient: {
+    satEnabled: true, satType: 'tube', satDrive: 5, satMix: 8,
+    eqLowGain: 1.5, eqLowFreq: 90,
+    eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 0.7,
+    eqHighGain: 2.0, eqHighFreq: 12000,
+    compEnabled: true, compThreshold: -12.0, compRatio: 1.2, compAttack: 0.15, compRelease: 0.40,
+    stereoWidth: 1.60, limiterBoost: 2.0, sideHighPassFreq: 90
+  },
+  podcast: {
+    satEnabled: true, satType: 'tube', satDrive: 5, satMix: 8,
+    eqLowGain: -2.0, eqLowFreq: 80,
+    eqMidGain: 0.8, eqMidFreq: 1500, eqMidQ: 1.0,
+    eqHighGain: 0.5, eqHighFreq: 8000,
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.6, compAttack: 0.03, compRelease: 0.20,
+    stereoWidth: 1.00, limiterBoost: 3.5, sideHighPassFreq: 110
+  },
+  classic: {
+    satEnabled: false, satType: 'tube', satDrive: 10, satMix: 0,
+    eqLowGain: 0.0, eqLowFreq: 100,
+    eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 0.0, eqHighFreq: 10000,
+    compEnabled: false, compThreshold: -5.0, compRatio: 1.1, compAttack: 0.20, compRelease: 0.50,
+    stereoWidth: 1.00, limiterBoost: 0.0, sideHighPassFreq: 90
+  },
+  jazz: {
+    satEnabled: true, satType: 'tube', satDrive: 20, satMix: 15,
+    eqLowGain: 1.5, eqLowFreq: 200,
+    eqMidGain: 0.5, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 0.5, eqHighFreq: 8000,
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.5, compAttack: 0.08, compRelease: 0.25,
+    stereoWidth: 1.05, limiterBoost: 2.5, sideHighPassFreq: 90
+  },
+  acoustic: {
+    satEnabled: true, satType: 'tube', satDrive: 8, satMix: 8,
+    eqLowGain: 0.5, eqLowFreq: 100,
+    eqMidGain: 0.5, eqMidFreq: 1000, eqMidQ: 1.0,
+    eqHighGain: 1.0, eqHighFreq: 12000,
+    compEnabled: true, compThreshold: -10.0, compRatio: 1.3, compAttack: 0.08, compRelease: 0.25,
+    stereoWidth: 1.25, limiterBoost: 1.5, sideHighPassFreq: 90
+  }
+}
+
+const LOUDNESS_TARGETS = {
+  genre: { boost: null },     // Genre Default (follows selected preset)
+  streaming: { boost: 4.0 },  // Standard Streaming -14 LUFS target
+  club: { boost: 7.0 },       // Standard Club -9 LUFS target
+  loud: { boost: 10.0 },      // Standard Heavy -7 LUFS target
+  pure: { boost: 0.0 }        // High Dynamic Range -18 LUFS target
+}
+
 function fft(re, im) {
   const n = re.length;
   if (n <= 1) return;
