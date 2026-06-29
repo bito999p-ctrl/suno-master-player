@@ -91,11 +91,21 @@ const dropContentHistory = document.getElementById('drop-content-history');
 const dropContentFavorites = document.getElementById('drop-content-favorites');
 
 // Bottom Nav Tab Bar DOM references
-const navBtnPlayer = document.getElementById('nav-btn-player');
+const navBtnLibrary = document.getElementById('nav-btn-library');
 const navBtnUtility = document.getElementById('nav-btn-utility');
 const workspaceSidebar = document.querySelector('.workspace-sidebar');
 const workspacePlayer = document.querySelector('.workspace-player');
 const workspaceUtility = document.querySelector('.workspace-utility');
+
+// Mini Player & Close button DOM references
+const miniPlayer = document.getElementById('mini-player');
+const miniArtwork = document.getElementById('mini-artwork');
+const miniTitle = document.getElementById('mini-title');
+const miniArtist = document.getElementById('mini-artist');
+const miniPlayBtn = document.getElementById('mini-play-btn');
+const miniNextBtn = document.getElementById('mini-next-btn');
+const miniLikeBtn = document.getElementById('mini-like-btn');
+const closePlayerBtn = document.getElementById('close-player-btn');
 
 // Global mock state required by favorites
 let favorites = { users: [], playlists: [], tracks: [] };
@@ -206,9 +216,43 @@ function setupEventListeners() {
   }
 
   // Mobile Bottom Navigation Tabs
-  if (navBtnPlayer && navBtnUtility) {
-    navBtnPlayer.addEventListener('click', () => switchMobileTab('player'));
+  if (navBtnLibrary && navBtnUtility) {
+    navBtnLibrary.addEventListener('click', () => switchMobileTab('library'));
     navBtnUtility.addEventListener('click', () => switchMobileTab('utility'));
+  }
+
+  // Mini Player event listeners on mobile
+  if (miniPlayer) {
+    miniPlayer.addEventListener('click', (e) => {
+      // Do not trigger modal slide-up if user clicked play/next/like actions
+      if (e.target.closest('button')) return;
+      openPlayerModal();
+    });
+  }
+
+  if (miniPlayBtn) {
+    miniPlayBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePlay();
+    });
+  }
+
+  if (miniNextBtn) {
+    miniNextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playNext();
+    });
+  }
+
+  if (miniLikeBtn) {
+    miniLikeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTrackLike();
+    });
+  }
+
+  if (closePlayerBtn) {
+    closePlayerBtn.addEventListener('click', closePlayerModal);
   }
 
   // Player controls
@@ -365,9 +409,11 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     playerWorkspace.classList.remove('hidden');
     resizeCanvas(); // Ensure canvas matches new dimensions
 
-    // Set default active tab to player on mobile
+    // Set default active tab to library on mobile, and reveal mini-player
     if (window.innerWidth <= 768) {
-      switchMobileTab('player');
+      switchMobileTab('library');
+      if (miniPlayer) miniPlayer.classList.remove('hidden');
+      closePlayerModal();
     }
 
     // Auto play first track
@@ -393,7 +439,12 @@ function showLandingView() {
   audioPlayer.pause();
   isPlaying = false;
   playPauseBtn.innerHTML = '<span class="icon-play">▶</span>';
+  if (miniPlayBtn) miniPlayBtn.textContent = '▶';
   artworkWrapper.classList.remove('playing');
+
+  // Hide mini player and close modal on landing screen
+  if (miniPlayer) miniPlayer.classList.add('hidden');
+  closePlayerModal();
 
   // Cancel any active analyses
   currentAnalysisId++;
@@ -545,9 +596,9 @@ async function selectTrack(idx) {
 
   currentTrackIndex = idx;
 
-  // On mobile, auto transition to Player tab so user gets visualizer and controls
+  // On mobile, auto open full-screen player modal
   if (window.innerWidth <= 768) {
-    switchMobileTab('player');
+    openPlayerModal();
   }
   const track = tracks[idx];
 
@@ -562,6 +613,11 @@ async function selectTrack(idx) {
   trackTitle.textContent = track.title;
   trackArtist.textContent = track.artist_name;
   trackArtwork.src = track.image_url;
+
+  // Sync to Mini-Player UI
+  if (miniTitle) miniTitle.textContent = track.title;
+  if (miniArtist) miniArtist.textContent = track.artist_name;
+  if (miniArtwork) miniArtwork.src = track.image_url;
 
   // Update Like button state for this track
   updateLikeButtonState(track.id);
@@ -690,12 +746,14 @@ function startPlayback(url) {
   audioPlayer.play()
     .then(() => {
       playPauseBtn.innerHTML = '<span class="icon-play">⏸</span>';
+      if (miniPlayBtn) miniPlayBtn.textContent = '⏸';
       artworkWrapper.classList.add('playing');
     })
     .catch(err => {
       console.warn('Playback block:', err.message);
       isPlaying = false;
       playPauseBtn.innerHTML = '<span class="icon-play">▶</span>';
+      if (miniPlayBtn) miniPlayBtn.textContent = '▶';
       artworkWrapper.classList.remove('playing');
     });
 }
@@ -857,6 +915,7 @@ function togglePlay() {
     audioPlayer.pause();
     isPlaying = false;
     playPauseBtn.innerHTML = '<span class="icon-play">▶</span>';
+    if (miniPlayBtn) miniPlayBtn.textContent = '▶';
     artworkWrapper.classList.remove('playing');
   } else {
     if (currentTrackIndex === -1) {
@@ -866,6 +925,7 @@ function togglePlay() {
     audioPlayer.play();
     isPlaying = true;
     playPauseBtn.innerHTML = '<span class="icon-play">⏸</span>';
+    if (miniPlayBtn) miniPlayBtn.textContent = '⏸';
     artworkWrapper.classList.add('playing');
   }
 }
@@ -1254,19 +1314,30 @@ function switchMobileTab(tabName) {
 
   // Reset active classes
   workspaceSidebar.classList.add('mobile-hidden');
-  workspacePlayer.classList.add('mobile-hidden');
   workspaceUtility.classList.add('mobile-hidden');
 
-  navBtnPlayer.classList.remove('active');
+  navBtnLibrary.classList.remove('active');
   navBtnUtility.classList.remove('active');
 
-  if (tabName === 'player') {
+  if (tabName === 'library') {
     workspaceSidebar.classList.remove('mobile-hidden');
-    workspacePlayer.classList.remove('mobile-hidden');
-    navBtnPlayer.classList.add('active');
+    navBtnLibrary.classList.add('active');
   } else if (tabName === 'utility') {
     workspaceUtility.classList.remove('mobile-hidden');
     navBtnUtility.classList.add('active');
+  }
+}
+
+// --- Mobile Full-Screen Player Modal controls ---
+function openPlayerModal() {
+  if (workspacePlayer) {
+    workspacePlayer.classList.add('active-modal');
+  }
+}
+
+function closePlayerModal() {
+  if (workspacePlayer) {
+    workspacePlayer.classList.remove('active-modal');
   }
 }
 
@@ -1275,10 +1346,11 @@ function handleResponsiveLayout() {
     if (workspaceSidebar) workspaceSidebar.classList.remove('mobile-hidden');
     if (workspacePlayer) workspacePlayer.classList.remove('mobile-hidden');
     if (workspaceUtility) workspaceUtility.classList.remove('mobile-hidden');
+    closePlayerModal(); // Ensure modal styles don't affect desktop columns
   } else {
-    // If on mobile, make sure the active nav tab is shown, default to player
+    // If on mobile, make sure the active nav tab is shown, default to library
     const activeBtn = document.querySelector('.mobile-nav-bar .nav-btn.active');
-    const activeTab = activeBtn ? activeBtn.id.replace('nav-btn-', '') : 'player';
+    const activeTab = activeBtn ? activeBtn.id.replace('nav-btn-', '') : 'library';
     switchMobileTab(activeTab);
   }
 }
@@ -1337,9 +1409,11 @@ function toggleTrackLike() {
       url: songUrl
     });
     if (likeBtn) likeBtn.textContent = '❤️';
+    if (miniLikeBtn) miniLikeBtn.textContent = '❤️';
   } else {
     favorites.tracks.splice(idx, 1);
     if (likeBtn) likeBtn.textContent = '🤍';
+    if (miniLikeBtn) miniLikeBtn.textContent = '🤍';
   }
   saveFavorites();
 }
@@ -1366,10 +1440,10 @@ function toggleSourceLike() {
 }
 
 function updateLikeButtonState(trackId) {
-  if (!likeBtn) return;
   loadFavorites();
   const isLiked = favorites.tracks.some(t => t.id === trackId);
-  likeBtn.textContent = isLiked ? '❤️' : '🤍';
+  if (likeBtn) likeBtn.textContent = isLiked ? '❤️' : '🤍';
+  if (miniLikeBtn) miniLikeBtn.textContent = isLiked ? '❤️' : '🤍';
 }
 
 function updateSourceLikeButtonState() {

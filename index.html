@@ -197,6 +197,7 @@
 
         <!-- Center Panel: Vinyl Player Hub & Visualizer -->
         <section class="workspace-player card">
+          <button id="close-player-btn" class="close-player-btn" title="プレイヤーを閉じる">▼</button>
           <div class="player-hud">
             <!-- Audio Visualizer Canvas Container -->
             <div class="visualizer-container">
@@ -372,11 +373,27 @@
   <!-- Audio Element (hidden) -->
   <audio id="audio-player" crossorigin="anonymous"></audio>
 
+  <!-- Mini Player (Mobile Only) -->
+  <div id="mini-player" class="mini-player hidden">
+    <div class="mini-player-content">
+      <img id="mini-artwork" src="https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png" alt="Artwork" class="mini-artwork">
+      <div class="mini-track-info">
+        <div id="mini-title" class="mini-title">曲を選択してください</div>
+        <div id="mini-artist" class="mini-artist">Suno Artist</div>
+      </div>
+      <div class="mini-player-actions">
+        <button id="mini-like-btn" class="mini-like-btn" title="お気に入りに追加">🤍</button>
+        <button id="mini-play-btn" class="mini-play-btn" title="再生">▶</button>
+        <button id="mini-next-btn" class="mini-next-btn" title="次の曲">⏭</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile Bottom Navigation Bar -->
   <div class="mobile-nav-bar">
-    <button id="nav-btn-player" class="nav-btn active">
-      <span class="nav-btn-icon">🎵</span>
-      <span class="nav-btn-text">プレイヤー & 曲</span>
+    <button id="nav-btn-library" class="nav-btn active">
+      <span class="nav-btn-icon">💿</span>
+      <span class="nav-btn-text">ライブラリ</span>
     </button>
     <button id="nav-btn-utility" class="nav-btn">
       <span class="nav-btn-icon">✦</span>
