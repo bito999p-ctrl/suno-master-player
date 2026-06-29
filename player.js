@@ -1,5 +1,5 @@
-// Version: 2.3.5 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.5';
+// Version: 2.3.6 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.6';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -220,10 +220,12 @@ function initAudio() {
 // --- Event Listeners Setup ---
 function setupEventListeners() {
   // Landing screen actions
-  landingBtn.addEventListener('click', () => importSunoUrl(landingInput.value));
-  landingInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') importSunoUrl(landingInput.value);
-  });
+  if (landingBtn && landingInput) {
+    landingBtn.addEventListener('click', () => importSunoUrl(landingInput.value));
+    landingInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') importSunoUrl(landingInput.value);
+    });
+  }
 
   // Quick link buttons
   document.querySelectorAll('.quick-link-btn').forEach(btn => {
@@ -245,7 +247,9 @@ function setupEventListeners() {
       }
     });
   }
-  shareBtn.addEventListener('click', copyShareLink);
+  if (shareBtn) {
+    shareBtn.addEventListener('click', copyShareLink);
+  }
 
   // History Dropdown Toggle
   const historyToggleBtn = document.getElementById('history-toggle-btn');
@@ -319,76 +323,86 @@ function setupEventListeners() {
   }
 
   // Player controls
-  playPauseBtn.addEventListener('click', togglePlay);
-  prevBtn.addEventListener('click', playPrev);
-  nextBtn.addEventListener('click', playNext);
-  shuffleBtn.addEventListener('click', toggleShuffle);
-  repeatBtn.addEventListener('click', toggleRepeat);
+  if (playPauseBtn) playPauseBtn.addEventListener('click', togglePlay);
+  if (prevBtn) prevBtn.addEventListener('click', playPrev);
+  if (nextBtn) nextBtn.addEventListener('click', playNext);
+  if (shuffleBtn) shuffleBtn.addEventListener('click', toggleShuffle);
+  if (repeatBtn) repeatBtn.addEventListener('click', toggleRepeat);
 
   // Progress / Seek
-  audioPlayer.addEventListener('timeupdate', updateProgressBar);
-  audioPlayer.addEventListener('loadedmetadata', onTrackLoaded);
-  audioPlayer.addEventListener('ended', onTrackEnded);
+  if (audioPlayer) {
+    audioPlayer.addEventListener('timeupdate', updateProgressBar);
+    audioPlayer.addEventListener('loadedmetadata', onTrackLoaded);
+    audioPlayer.addEventListener('ended', onTrackEnded);
 
-  audioPlayer.addEventListener('pause', () => {
-    isPlaying = false;
-    playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
-    if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="play"></i>';
-    artworkWrapper.classList.remove('playing');
-    releaseWakeLock();
-    if (audioCtx && audioCtx.state === 'running') {
-      audioCtx.suspend();
-    }
-    if (window.lucide) lucide.createIcons();
-  });
+    audioPlayer.addEventListener('pause', () => {
+      isPlaying = false;
+      if (playPauseBtn) playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
+      if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="play"></i>';
+      if (artworkWrapper) artworkWrapper.classList.remove('playing');
+      releaseWakeLock();
+      if (audioCtx && audioCtx.state === 'running') {
+        audioCtx.suspend();
+      }
+      if (window.lucide) lucide.createIcons();
+    });
 
-  audioPlayer.addEventListener('play', () => {
-    isPlaying = true;
-    playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
-    if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="pause"></i>';
-    artworkWrapper.classList.add('playing');
-    requestWakeLock();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    startVisualizerLoop();
-    if (window.lucide) lucide.createIcons();
-  });
+    audioPlayer.addEventListener('play', () => {
+      isPlaying = true;
+      if (playPauseBtn) playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+      if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="pause"></i>';
+      if (artworkWrapper) artworkWrapper.classList.add('playing');
+      requestWakeLock();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      startVisualizerLoop();
+      if (window.lucide) lucide.createIcons();
+    });
+  }
   
-  progressBar.addEventListener('input', () => {
-    const duration = getDuration();
-    if (duration > 0) {
-      const seekTime = (progressBar.value / 100) * duration;
-      audioPlayer.currentTime = seekTime;
-    }
-  });
+  if (progressBar) {
+    progressBar.addEventListener('input', () => {
+      const duration = getDuration();
+      if (duration > 0) {
+        const seekTime = (progressBar.value / 100) * duration;
+        if (audioPlayer) audioPlayer.currentTime = seekTime;
+      }
+    });
+  }
 
   // Volume
-  volumeSlider.addEventListener('input', () => {
-    audioPlayer.volume = volumeSlider.value / 100;
-  });
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', () => {
+      if (audioPlayer) audioPlayer.volume = volumeSlider.value / 100;
+    });
+  }
 
   // Visualizer Mode
-  visModeSelect.addEventListener('change', () => {
-    if (visModeSelect.value !== 'off') {
-      startVisualizerLoop();
-    }
-  });
+  if (visModeSelect) {
+    visModeSelect.addEventListener('change', () => {
+      if (visModeSelect.value !== 'off') {
+        startVisualizerLoop();
+      }
+    });
+  }
 
   // Tab switching
-  tabEnhancerBtn.addEventListener('click', () => switchTab('enhancer'));
-  tabLyricsBtn.addEventListener('click', () => switchTab('lyrics'));
+  if (tabEnhancerBtn) tabEnhancerBtn.addEventListener('click', () => switchTab('enhancer'));
+  if (tabLyricsBtn) tabLyricsBtn.addEventListener('click', () => switchTab('lyrics'));
 
   // Enhancer Toggle (Bypass)
-  enhancerToggle.addEventListener('change', () => {
-    initAudio();
-    if (enhancer) {
-      enhancer.setBypass(!enhancerToggle.checked);
-    }
-    if (mobileEnhancerToggle) {
-      mobileEnhancerToggle.checked = enhancerToggle.checked;
-    }
-  });
+  if (enhancerToggle) {
+    enhancerToggle.addEventListener('change', () => {
+      initAudio();
+      if (enhancer) {
+        enhancer.setBypass(!enhancerToggle.checked);
+      }
+      if (mobileEnhancerToggle) {
+        mobileEnhancerToggle.checked = enhancerToggle.checked;
+      }
+    });
+  }
 
   if (mobileEnhancerToggle) {
     mobileEnhancerToggle.addEventListener('change', () => {
@@ -1288,8 +1302,10 @@ function updateCompressionMeter() {
 
 // --- Visualizer Canvas Rendering ---
 function resizeCanvas() {
-  canvas.width = canvas.parentElement.clientWidth;
-  canvas.height = canvas.parentElement.clientHeight;
+  if (canvas && canvas.parentElement) {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+  }
 }
 
 function drawRoundedRect(ctx, x, y, width, height, radius) {
@@ -1315,7 +1331,7 @@ function startVisualizerLoop() {
 }
 
 function drawVisualizer() {
-  if (!analyser) {
+  if (!analyser || !canvas || !canvasCtx || !visModeSelect) {
     isVisualizerRunning = false;
     return;
   }
