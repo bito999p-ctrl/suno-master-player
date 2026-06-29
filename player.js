@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.1';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.2';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -810,6 +810,9 @@ async function selectTrack(idx) {
     if (mobileLyricsText) mobileLyricsText.innerHTML = emptyHtml;
   }
 
+  // Initialize Web Audio context and enhancer nodes if not done yet
+  initAudio();
+
   // Stop current player first, ensuring no overlap
   audioPlayer.pause();
   audioPlayer.src = '';
@@ -939,13 +942,14 @@ function startPlayback(url) {
 async function runPreAnalysis(track) {
   const url = track.audio_url;
   try {
+    initAudio();
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
     const arrayBuffer = await response.arrayBuffer();
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     const result = analyzeAudioResonances(decodedBuffer);
     
-    analysisCache.set(url, result);
+    analysisCache.set(url, { result, buffer: decodedBuffer });
     console.log(`[Pre-Fetch] Pre-analysis complete and cached for: ${track.title}`);
   } catch (err) {
     console.warn(`[Pre-Fetch] Failed to pre-analyze ${track.title}:`, err.message);
