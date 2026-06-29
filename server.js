@@ -1,4 +1,4 @@
-// Version: 2.2.8 (Re-deployed to ensure complete file sync)
+// Version: 2.2.9 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -223,10 +223,19 @@ app.get('/api/suno', async (req, res) => {
 
         if (endIdx !== -1) {
           const objStr = combined.slice(startIdx, endIdx + 1);
+          
+          // Isolate current track block to prevent matching metadata from subsequent tracks
+          let trackBlock = objStr;
+          const idKeyIndex = objStr.indexOf(idMatch[0]);
+          const nextIdIdx = objStr.indexOf('"id"', idKeyIndex !== -1 ? idKeyIndex + idMatch[0].length : 10);
+          if (nextIdIdx !== -1) {
+            trackBlock = objStr.substring(0, nextIdIdx);
+          }
+
           // Use robust regex-based property extraction to bypass malformed JSON / unquoted references in Next.js RSC payload
-          const titleMatch = objStr.match(/"title"\s*:\s*"([^"]+)"/i);
+          const titleMatch = trackBlock.match(/"title"\s*:\s*"([^"]+)"/i);
           if (titleMatch) {
-            const audioMatch = objStr.match(/"audio_url"\s*:\s*"([^"]+)"/i);
+            const audioMatch = trackBlock.match(/"audio_url"\s*:\s*"([^"]+)"/i);
             const audio_url = audioMatch ? audioMatch[1] : `https://cdn1.suno.ai/${uuid}.mp3`;
             
             // Skip duplicate audio URLs (e.g. hook schemas, video uploads, or multiple references)
@@ -237,13 +246,13 @@ app.get('/api/suno', async (req, res) => {
             
             const title = titleMatch[1];
             
-            const imageMatch = objStr.match(/"image_url"\s*:\s*"([^"]+)"/i);
+            const imageMatch = trackBlock.match(/"image_url"\s*:\s*"([^"]+)"/i);
             const image_url = imageMatch ? imageMatch[1] : `https://cdn1.suno.ai/image_${uuid}.png`;
             
             let artist_name = 'Suno Artist';
-            const userDisplayMatch = objStr.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
-            const handleMatch = objStr.match(/"handle"\s*:\s*"([^"]+)"/i);
-            const displayNameMatch = objStr.match(/"display_name"\s*:\s*"([^"]+)"/i);
+            const userDisplayMatch = trackBlock.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
+            const handleMatch = trackBlock.match(/"handle"\s*:\s*"([^"]+)"/i);
+            const displayNameMatch = trackBlock.match(/"display_name"\s*:\s*"([^"]+)"/i);
             
             if (userDisplayMatch) {
               artist_name = userDisplayMatch[1];
@@ -253,16 +262,16 @@ app.get('/api/suno', async (req, res) => {
               artist_name = handleMatch[1];
             }
             
-            const durationMatch = objStr.match(/"duration"\s*:\s*([0-9\.]+)/i);
+            const durationMatch = trackBlock.match(/"duration"\s*:\s*([0-9\.]+)/i);
             const duration = durationMatch ? parseFloat(durationMatch[1]) : 0;
             
-            const playMatch = objStr.match(/"play_count"\s*:\s*([0-9]+)/i);
+            const playMatch = trackBlock.match(/"play_count"\s*:\s*([0-9]+)/i);
             const play_count = playMatch ? parseInt(playMatch[1], 10) : 0;
             
-            const upvoteMatch = objStr.match(/"upvote_count"\s*:\s*([0-9]+)/i);
+            const upvoteMatch = trackBlock.match(/"upvote_count"\s*:\s*([0-9]+)/i);
             const upvote_count = upvoteMatch ? parseInt(upvoteMatch[1], 10) : 0;
             
-            const promptMatch = objStr.match(/"prompt"\s*:\s*"([^"]+)"/i);
+            const promptMatch = trackBlock.match(/"prompt"\s*:\s*"([^"]+)"/i);
             let description = '';
             if (promptMatch) {
               let rawPrompt = promptMatch[1];
@@ -276,7 +285,7 @@ app.get('/api/suno', async (req, res) => {
                 .replace(/\\\\/g, '\\');
             }
 
-            const createdMatch = objStr.match(/"created_at"\s*:\s*"([^"]+)"/i);
+            const createdMatch = trackBlock.match(/"created_at"\s*:\s*"([^"]+)"/i);
             const created_at = createdMatch ? createdMatch[1] : '';
 
             tracks.push({

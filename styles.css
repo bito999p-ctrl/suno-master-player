@@ -1,4 +1,4 @@
-/* Version: 2.2.8 (Re-deployed to ensure complete file sync) */
+/* Version: 2.2.9 (Re-deployed to ensure complete file sync) */
 /* ==========================================================================
    AetherPlayer CSS - Premium Dark Glassmorphic Design
    ========================================================================== */
@@ -498,7 +498,7 @@ body {
 .artwork-wrapper {
   position: relative;
   width: 64%;
-  height: 64%;
+  height: auto; /* Let aspect-ratio dictate height to maintain a perfect circle */
   aspect-ratio: 1 / 1;
   border-radius: 50%;
   overflow: hidden;
@@ -1186,15 +1186,26 @@ input:checked + .switch-slider:before {
 .landing-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start; /* Align to top on mobile for proper scroll starting position */
+  min-height: 100vh;
+  height: auto;
   width: 100vw;
   position: fixed;
   top: 0;
   left: 0;
+  bottom: 0;
   z-index: 100;
   background: var(--bg-app);
   padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+@media (min-width: 769px) {
+  .landing-container {
+    align-items: center; /* Vertically center on desktop viewports */
+  }
 }
 
 .landing-card {

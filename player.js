@@ -1,5 +1,5 @@
-// Version: 2.2.8 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.8';
+// Version: 2.2.9 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.9';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -1513,7 +1513,7 @@ function switchTab(tab) {
 }
 
 function formatTime(seconds) {
-  if (isNaN(seconds) || seconds === null) return '0:00';
+  if (isNaN(seconds) || !isFinite(seconds) || seconds === null) return '0:00';
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
