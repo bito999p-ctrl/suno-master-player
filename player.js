@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.1.9';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.0';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -487,15 +487,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     tracksCountEl.textContent = tracks.length;
     renderTracksList();
 
-    // Show/hide limit warning dynamically in sidebar
-    const limitWarning = document.getElementById('sidebar-limit-warning');
-    if (limitWarning) {
-      if ((data.type === 'profile' && tracks.length === 20) || (data.type === 'playlist' && tracks.length === 50)) {
-        limitWarning.classList.remove('hidden');
-      } else {
-        limitWarning.classList.add('hidden');
-      }
-    }
+
 
     // Set source details in workspace sidebar
     sourceName.textContent = data.name || 'Suno Catalog';
@@ -519,7 +511,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     }
 
     // Save imported URL state
-    loadedUrl = urlStr.trim();
+    loadedUrl = data.url || urlStr.trim();
 
     // Save current active source for Favorites
     currentSource = {

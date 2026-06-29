@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AetherPlayer - Suno & AetherMaster Enhancer</title>
   <meta name="description" content="Sunoの楽曲をAetherMasterの高音質化・ノイズ除去エンジンで再生するプレミアム音楽プレイヤー。">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://bito999p-ctrl.github.io/bitomusic/favicon.png">
   <!-- Google Fonts Outfit & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=2.1.9">
+  <link rel="stylesheet" href="styles.css?v=2.2.0">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -46,8 +48,8 @@
 
         <div class="quick-links">
           <span class="quick-label">クイック試聴:</span>
-          <button class="quick-link-btn" data-url="@bito999">@bito999 (アーティスト)</button>
-          <button class="quick-link-btn" data-url="20aa266e-cde7-4115-9795-30e75c164d01">歪み歪み (プレイリスト)</button>
+          <button class="quick-link-btn" data-url="@bito999">サンプル・アーティスト</button>
+          <button class="quick-link-btn" data-url="20aa266e-cde7-4115-9795-30e75c164d01">サンプル・プレイリスト</button>
         </div>
 
         <!-- Recent History Section -->
@@ -199,7 +201,6 @@
                   <h3>トラック一覧 (<span id="tracks-count">0</span>)</h3>
                   <span class="limit-spec-note">※アーティスト: 最大20曲 / プレイリスト: 最大50曲</span>
                 </div>
-                <div id="sidebar-limit-warning" class="limit-warning hidden">⚠️ 表示上限数に達しました (アーティスト: 最大20曲 / プレイリスト: 最大50曲)</div>
               </div>
               <div id="tracks-list" class="tracks-list">
                 <div class="empty-list">曲が読み込まれていません</div>
@@ -504,6 +505,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=2.1.9"></script>
+  <script type="module" src="player.js?v=2.2.0"></script>
 </body>
 </html>

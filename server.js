@@ -246,10 +246,10 @@ app.get('/api/suno', async (req, res) => {
             
             if (userDisplayMatch) {
               artist_name = userDisplayMatch[1];
-            } else if (handleMatch) {
-              artist_name = handleMatch[1];
             } else if (displayNameMatch && !/^v[0-9]/i.test(displayNameMatch[1])) {
               artist_name = displayNameMatch[1];
+            } else if (handleMatch) {
+              artist_name = handleMatch[1];
             }
             
             const durationMatch = objStr.match(/"duration"\s*:\s*([0-9\.]+)/i);
@@ -343,6 +343,7 @@ app.get('/api/suno', async (req, res) => {
     return res.json({
       type: isProfile ? 'profile' : isPlaylist ? 'playlist' : 'unknown',
       name,
+      url: targetUrl,
       tracks,
       playlists
     });
