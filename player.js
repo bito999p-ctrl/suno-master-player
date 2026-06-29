@@ -90,6 +90,14 @@ const dropTabFavorites = document.getElementById('drop-tab-favorites');
 const dropContentHistory = document.getElementById('drop-content-history');
 const dropContentFavorites = document.getElementById('drop-content-favorites');
 
+// Bottom Nav Tab Bar DOM references
+const navBtnLibrary = document.getElementById('nav-btn-library');
+const navBtnPlayer = document.getElementById('nav-btn-player');
+const navBtnUtility = document.getElementById('nav-btn-utility');
+const workspaceSidebar = document.querySelector('.workspace-sidebar');
+const workspacePlayer = document.querySelector('.workspace-player');
+const workspaceUtility = document.querySelector('.workspace-utility');
+
 // Global mock state required by favorites
 let favorites = { users: [], playlists: [], tracks: [] };
 let currentSource = { type: '', name: '', url: '' };
@@ -98,11 +106,17 @@ let currentSource = { type: '', name: '', url: '' };
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    handleResponsiveLayout();
+  });
   
   // Render recent history and favorites on startup
   renderHistoryUI();
   renderFavoritesUI();
+  
+  // Align layout response on load
+  handleResponsiveLayout();
   
   // Check URL query parameters for auto-import
   checkUrlParams();
@@ -190,6 +204,13 @@ function setupEventListeners() {
   if (dropTabHistory && dropTabFavorites) {
     dropTabHistory.addEventListener('click', () => switchDropdownTab('history'));
     dropTabFavorites.addEventListener('click', () => switchDropdownTab('favorites'));
+  }
+
+  // Mobile Bottom Navigation Tabs
+  if (navBtnLibrary && navBtnPlayer && navBtnUtility) {
+    navBtnLibrary.addEventListener('click', () => switchMobileTab('library'));
+    navBtnPlayer.addEventListener('click', () => switchMobileTab('player'));
+    navBtnUtility.addEventListener('click', () => switchMobileTab('utility'));
   }
 
   // Player controls
@@ -345,6 +366,11 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     landingScreen.classList.add('hidden');
     playerWorkspace.classList.remove('hidden');
     resizeCanvas(); // Ensure canvas matches new dimensions
+
+    // Set default active tab to player on mobile
+    if (window.innerWidth <= 768) {
+      switchMobileTab('player');
+    }
 
     // Auto play first track
     if (tracks.length > 0) {
@@ -520,6 +546,11 @@ async function selectTrack(idx) {
   }
 
   currentTrackIndex = idx;
+
+  // On mobile, auto transition to Player tab so user gets visualizer and controls
+  if (window.innerWidth <= 768) {
+    switchMobileTab('player');
+  }
   const track = tracks[idx];
 
   // Update track active class in list
@@ -1217,6 +1248,44 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// --- Mobile Tab Navigation (SPA) ---
+function switchMobileTab(tabName) {
+  if (!workspaceSidebar || !workspacePlayer || !workspaceUtility) return;
+
+  // Reset active classes
+  workspaceSidebar.classList.add('mobile-hidden');
+  workspacePlayer.classList.add('mobile-hidden');
+  workspaceUtility.classList.add('mobile-hidden');
+
+  navBtnLibrary.classList.remove('active');
+  navBtnPlayer.classList.remove('active');
+  navBtnUtility.classList.remove('active');
+
+  if (tabName === 'library') {
+    workspaceSidebar.classList.remove('mobile-hidden');
+    navBtnLibrary.classList.add('active');
+  } else if (tabName === 'player') {
+    workspacePlayer.classList.remove('mobile-hidden');
+    navBtnPlayer.classList.add('active');
+  } else if (tabName === 'utility') {
+    workspaceUtility.classList.remove('mobile-hidden');
+    navBtnUtility.classList.add('active');
+  }
+}
+
+function handleResponsiveLayout() {
+  if (window.innerWidth > 768) {
+    if (workspaceSidebar) workspaceSidebar.classList.remove('mobile-hidden');
+    if (workspacePlayer) workspacePlayer.classList.remove('mobile-hidden');
+    if (workspaceUtility) workspaceUtility.classList.remove('mobile-hidden');
+  } else {
+    // If on mobile, make sure the active nav tab is shown, default to player
+    const activeBtn = document.querySelector('.mobile-nav-bar .nav-btn.active');
+    const activeTab = activeBtn ? activeBtn.id.replace('nav-btn-', '') : 'player';
+    switchMobileTab(activeTab);
+  }
 }
 
 // --- Recent History Storage & UI ---
