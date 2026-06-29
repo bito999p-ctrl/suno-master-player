@@ -139,7 +139,7 @@
             <div class="tracks-section">
               <div class="tracks-section-header">
                 <h3>トラック一覧 (<span id="tracks-count">0</span>)</h3>
-                <div id="sidebar-limit-warning" class="limit-warning hidden">⚠️ 読込上限に達しました (分割読込を推奨)</div>
+                <div id="sidebar-limit-warning" class="limit-warning hidden">⚠️ 表示上限数に達しました (アーティスト: 最大20曲 / プレイリスト: 最大50曲)</div>
               </div>
               <div id="tracks-list" class="tracks-list">
                 <div class="empty-list">曲が読み込まれていません</div>
@@ -168,6 +168,9 @@
                 </a>
               </div>
               <p id="track-artist">Suno Artist</p>
+              <div id="ai-analyzing-indicator" class="ai-analyzing-indicator hidden">
+                <span class="pulse-dot"></span> AIマスタリング分析中...
+              </div>
             </div>
 
             <!-- Progress / Seek Bar -->

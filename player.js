@@ -244,6 +244,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     if (!isSubRequest) {
       if (data.type === 'profile') {
         userProfileData = data;
+        userProfileData.url = urlStr; // Keep profile URL to allow going back and sharing correctly
       } else {
         userProfileData = null;
       }
@@ -440,6 +441,17 @@ function restoreProfileView() {
     sourceCover.src = tracks[0].image_url;
   }
 
+  // Update track count and limit warnings
+  tracksCountEl.textContent = tracks.length;
+  const limitWarning = document.getElementById('sidebar-limit-warning');
+  if (limitWarning) {
+    if (tracks.length === 20) {
+      limitWarning.classList.remove('hidden');
+    } else {
+      limitWarning.classList.add('hidden');
+    }
+  }
+
   // Show playlists section again
   playlistsSection.classList.remove('hidden');
 
@@ -515,7 +527,11 @@ async function selectTrack(idx) {
     updateAiStatus('analyzing');
     playPauseBtn.disabled = true;
     playPauseBtn.style.opacity = '0.5';
-    trackTitle.textContent = `${track.title} (AI分析中...)`;
+    trackTitle.textContent = track.title; // Keep title clean
+    const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
+    if (analyzingIndicator) {
+      analyzingIndicator.classList.remove('hidden');
+    }
 
     try {
       if (activeAbortController) {
@@ -554,6 +570,12 @@ async function selectTrack(idx) {
       playPauseBtn.disabled = false;
       playPauseBtn.style.opacity = '1';
       trackTitle.textContent = track.title;
+      
+      const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
+      if (analyzingIndicator) {
+        analyzingIndicator.classList.add('hidden');
+      }
+      
       startPlayback(track.audio_url);
 
     } catch (err) {
@@ -568,6 +590,12 @@ async function selectTrack(idx) {
       playPauseBtn.disabled = false;
       playPauseBtn.style.opacity = '1';
       trackTitle.textContent = track.title;
+      
+      const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
+      if (analyzingIndicator) {
+        analyzingIndicator.classList.add('hidden');
+      }
+      
       applyDefaultAutoParams();
       startPlayback(track.audio_url);
     }
@@ -716,6 +744,11 @@ function applyDefaultAutoParams() {
   
   if (enhancer) {
     enhancer.setMasteringParams(defaultParams, []);
+  }
+
+  const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
+  if (analyzingIndicator) {
+    analyzingIndicator.classList.add('hidden');
   }
 
   // Set default HUD display values
@@ -1049,6 +1082,7 @@ async function checkUrlParams() {
 
 // Update address bar query parameters to reflect the active URL state
 function updateAddressBar(urlInput) {
+  if (!urlInput || typeof urlInput !== 'string') return;
   let shareParams = '';
 
   const plMatch = urlInput.match(/\/playlist\/([a-f0-9\-]{36})/i);
