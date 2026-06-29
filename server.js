@@ -13,6 +13,11 @@ app.use((req, res, next) => {
 // Serve static client files from the root directory
 app.use(express.static(__dirname));
 
+// Explicit route for the homepage to send index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 function resolveRscReference(combined, ref) {
   if (!ref || typeof ref !== 'string' || !ref.startsWith('$')) return ref;
   
@@ -338,7 +343,21 @@ app.get('/api/suno', async (req, res) => {
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`[Server] Suno Player backend running on http://localhost:${PORT}`);
-});
+// Start the server (only locally or on non-serverless hosts)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[Server] Suno Player backend running on http://localhost:${PORT}`);
+    
+    // Log files in directory for debugging
+    try {
+      const fs = require('fs');
+      console.log('[Server] Current working directory:', __dirname);
+      console.log('[Server] Files in current directory:', fs.readdirSync(__dirname));
+    } catch (e) {
+      console.error('[Server] Failed to read directory:', e.message);
+    }
+  });
+}
+
+// Export for Vercel Serverless Functions
+module.exports = app;
