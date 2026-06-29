@@ -1,6 +1,6 @@
 /**
  * AetherEnhancer - Web Audio API Mastering Engine
- * Adapted from AetherMaster AI AUTO engine.
+ * Adapted from the updated AetherMaster AI AUTO engine (v3.30+).
  */
 
 // Cooley-Tukey Radix-2 FFT (Fast Fourier Transform)
@@ -38,7 +38,7 @@ function fft(re, im) {
   }
 }
 
-// AI Spectral Analysis & Auto-EQ algorithm from AetherMaster
+// AI Spectral Analysis & Auto-EQ algorithm from AetherMaster (v3.30+)
 export function analyzeAudioResonances(buffer) {
   const fftSize = 2048;
   const numSlices = 32; // Analyze 32 slices across the buffer
@@ -253,7 +253,6 @@ export function analyzeAudioResonances(buffer) {
     stereoWidth: 1.15, limiterBoost: 3.5, sideHighPassFreq: 110
   };
 
-  // AI AUTO target ratio: standard studio reference values
   const target = { low: 2.8, high: 0.15 };
 
   // energy difference in dB
@@ -277,14 +276,13 @@ export function analyzeAudioResonances(buffer) {
   const eqHighGain = Math.max(-5.0, Math.min(4.0, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2));
 
   const eqMidGain = basePreset.eqMidGain;
-  const baseBoost = 3.5; // Limiter default boost for auto preset
+  const baseBoost = 4.0; // Standard Streaming +4.0 dB target
 
-  // Crest factor analysis
   let compThreshold = basePreset.compThreshold;
   let compRatio = basePreset.compRatio;
   let limiterBoost = baseBoost;
 
-  const targetCrest = 11.0; // AI AUTO target crest factor
+  const targetCrest = 11.0; 
   const crestDiff = crestFactorDb - targetCrest;
   if (crestDiff > 1.5) {
     compThreshold = -14.0;
@@ -332,6 +330,7 @@ export function analyzeAudioResonances(buffer) {
     trebleDiff: highDiffDb,
     suggestedParams: {
       inputGainDb: Math.round(suggestedInputGainDb * 10) / 10,
+      ceiling: -1.0, // Default ceiling from app.js
       satEnabled: basePreset.satEnabled,
       satType: basePreset.satType,
       satDrive: satDrive,
@@ -352,7 +351,8 @@ export function analyzeAudioResonances(buffer) {
       sideHighPassFreq: basePreset.sideHighPassFreq || 110,
       limiterBoost: limiterBoost,
       rumbleCutEnabled: sugRumbleCut,
-      hissReductionAmount: sugHissAmount
+      hissReductionAmount: sugHissAmount,
+      kickPeakingGain: 0.0 // Default peaking gain (can be boosted by spices)
     }
   };
 }
@@ -386,6 +386,7 @@ export class AetherEnhancer {
     // Set default parameters (neutral start)
     this.setMasteringParams({
       inputGainDb: 0.0,
+      ceiling: -1.0,
       satEnabled: true,
       satType: 'tape',
       satDrive: 10,
@@ -406,7 +407,8 @@ export class AetherEnhancer {
       sideHighPassFreq: 110,
       limiterBoost: 3.5,
       rumbleCutEnabled: false,
-      hissReductionAmount: 0
+      hissReductionAmount: 0,
+      kickPeakingGain: 0.0
     }, []);
   }
 
@@ -420,7 +422,7 @@ export class AetherEnhancer {
     // 2. Rumble high-pass filter
     this.rumbleFilter = context.createBiquadFilter();
     this.rumbleFilter.type = 'highpass';
-    this.rumbleFilter.frequency.setValueAtTime(10.0, context.currentTime);
+    this.rumbleFilter.frequency.setValueAtTime(18.0, context.currentTime); // 18Hz subsonic filter when disabled
     this.rumbleFilter.Q.setValueAtTime(0.707, context.currentTime);
 
     // 3. Dynamic Hiss Filter (VCF Lowpass)
@@ -429,10 +431,10 @@ export class AetherEnhancer {
     this.hissFilter.frequency.setValueAtTime(20000.0, context.currentTime);
     this.hissFilter.Q.setValueAtTime(0.5, context.currentTime);
 
-    // 3b. Sidechain Envelope Follower
+    // 3b. Sidechain Envelope Follower (Lowered crossover to 2kHz for vocal body)
     this.sidechainHpf = context.createBiquadFilter();
     this.sidechainHpf.type = 'highpass';
-    this.sidechainHpf.frequency.setValueAtTime(4000.0, context.currentTime);
+    this.sidechainHpf.frequency.setValueAtTime(2000.0, context.currentTime);
     this.sidechainHpf.Q.setValueAtTime(0.707, context.currentTime);
 
     this.rectifier = context.createWaveShaper();
@@ -453,9 +455,15 @@ export class AetherEnhancer {
     this.envelopeSmoother.connect(this.hissEnvelopeGain);
     this.hissEnvelopeGain.connect(this.hissFilter.frequency);
 
-    // 4. Parallel Saturation
+    // 4. Parallel Saturation with Crossover HPF (40Hz)
     this.satDryGain = context.createGain();
     this.satWetGain = context.createGain();
+    
+    this.satHpf = context.createBiquadFilter();
+    this.satHpf.type = 'highpass';
+    this.satHpf.frequency.setValueAtTime(40.0, context.currentTime);
+    this.satHpf.Q.setValueAtTime(0.707, context.currentTime);
+
     this.waveShaper = context.createWaveShaper();
     this.satSumNode = context.createGain();
 
@@ -468,7 +476,8 @@ export class AetherEnhancer {
     this.rumbleFilter.connect(this.hissFilter);
 
     this.hissFilter.connect(this.satDryGain);
-    this.hissFilter.connect(this.waveShaper);
+    this.hissFilter.connect(this.satHpf);
+    this.satHpf.connect(this.waveShaper);
     this.waveShaper.connect(this.satWetGain);
 
     this.satDryGain.connect(this.satSumNode);
@@ -479,10 +488,11 @@ export class AetherEnhancer {
     this.eqLow.type = 'lowshelf';
     this.eqLow.frequency.setValueAtTime(120.0, context.currentTime);
 
+    // Dedicated Kick Peaking Filter (55Hz, narrow Q=2.0)
     this.kickPeaking = context.createBiquadFilter();
     this.kickPeaking.type = 'peaking';
-    this.kickPeaking.frequency.setValueAtTime(70.0, context.currentTime);
-    this.kickPeaking.Q.setValueAtTime(1.2, context.currentTime);
+    this.kickPeaking.frequency.setValueAtTime(55.0, context.currentTime);
+    this.kickPeaking.Q.setValueAtTime(2.0, context.currentTime);
 
     this.eqMid = context.createBiquadFilter();
     this.eqMid.type = 'peaking';
@@ -579,7 +589,7 @@ export class AetherEnhancer {
     this.leftSum.connect(this.merger, 0, 0);
     this.rightDiff.connect(this.merger, 0, 1);
 
-    // 9. Maximizer & Limiter
+    // 9. Maximizer & Limiter (Near-instant 0.1ms attack, 80ms release)
     this.limiterGain = context.createGain();
     this.limiter = context.createDynamicsCompressor();
     this.limiter.threshold.setValueAtTime(0.0, context.currentTime);
@@ -598,7 +608,7 @@ export class AetherEnhancer {
 
     // 10. Output ceiling gain
     this.ceilingGain = context.createGain();
-    this.ceilingGain.gain.setValueAtTime(Math.pow(10, -0.2 / 20), context.currentTime);
+    this.ceilingGain.gain.setValueAtTime(Math.pow(10, -1.0 / 20), context.currentTime);
 
     this.safetyClipper.connect(this.ceilingGain);
   }
@@ -610,16 +620,20 @@ export class AetherEnhancer {
     const inputGain = Math.pow(10, (params.inputGainDb || 0.0) / 20.0);
     this.inputGainNode.gain.setTargetAtTime(inputGain, t, 0.05);
 
-    // 2. Rumble Filter
+    // 1b. Output Ceiling
+    const ceilingGain = Math.pow(10, (params.ceiling || -1.0) / 20.0);
+    this.ceilingGain.gain.setTargetAtTime(ceilingGain, t, 0.05);
+
+    // 2. Rumble Filter (80Hz when active, 18Hz subsonic cut when bypassed)
     if (params.rumbleCutEnabled) {
-      this.rumbleFilter.frequency.setTargetAtTime(30.0, t, 0.05);
+      this.rumbleFilter.frequency.setTargetAtTime(80.0, t, 0.05);
     } else {
-      this.rumbleFilter.frequency.setTargetAtTime(10.0, t, 0.05);
+      this.rumbleFilter.frequency.setTargetAtTime(18.0, t, 0.05);
     }
 
     // 3. Hiss Reduction
     const hissAmount = params.hissReductionAmount || 0;
-    const baseFreq = 20000.0 - (16000.0 * (hissAmount / 100.0));
+    const baseFreq = 20000.0 - (11000.0 * (hissAmount / 100.0)); // min 9,000Hz
     this.hissFilter.frequency.setTargetAtTime(baseFreq, t, 0.05);
     const maxEnvGain = 35000.0 * (hissAmount / 100.0);
     this.hissEnvelopeGain.gain.setTargetAtTime(maxEnvGain, t, 0.05);
@@ -630,19 +644,28 @@ export class AetherEnhancer {
     this.satWetGain.gain.setTargetAtTime(blend, t, 0.05);
     this.waveShaper.curve = this._generateSaturatorCurve(params.satType, params.satDrive);
 
-    // 5. 3-band EQ + kick Peaking
+    // 5. 3-band EQ + kick Peaking with Hiss Compensation offsets
     this.eqLow.gain.setTargetAtTime(params.eqLowGain, t, 0.05);
-    this.kickPeaking.gain.setTargetAtTime(1.5, t, 0.05); // Standard +1.5 dB kick punch
-    this.eqMid.gain.setTargetAtTime(params.eqMidGain, t, 0.05);
-    this.eqHigh.gain.setTargetAtTime(params.eqHighGain, t, 0.05);
+    this.kickPeaking.gain.setTargetAtTime(params.kickPeakingGain || 0.0, t, 0.05);
+    
+    // Compensation for hiss reduction high end loss
+    const setupMidGain = params.eqMidGain + (hissAmount / 100.0) * 1.0;
+    const setupHighFreq = params.eqHighFreq - (params.eqHighFreq - 8000.0) * (hissAmount / 100.0);
+    const setupHighGain = params.eqHighGain + (hissAmount / 100.0) * 2.5;
 
-    // 6. Corrective Notch Filters
-    this.setCorrectiveNotches(notches);
+    this.eqMid.gain.setTargetAtTime(setupMidGain, t, 0.05);
+    this.eqHigh.frequency.setTargetAtTime(setupHighFreq, t, 0.05);
+    this.eqHigh.gain.setTargetAtTime(setupHighGain, t, 0.05);
+
+    // 6. Corrective Notch Filters with Hiss Factor scaling
+    this.setCorrectiveNotches(notches, hissAmount);
 
     // 7. Glue Compressor
     if (params.compEnabled) {
       this.compressor.threshold.setTargetAtTime(params.compThreshold, t, 0.05);
       this.compressor.ratio.setTargetAtTime(params.compRatio, t, 0.05);
+      if (params.compAttack) this.compressor.attack.setTargetAtTime(params.compAttack, t, 0.05);
+      if (params.compRelease) this.compressor.release.setTargetAtTime(params.compRelease, t, 0.05);
     } else {
       this.compressor.threshold.setTargetAtTime(0.0, t, 0.05);
       this.compressor.ratio.setTargetAtTime(1.0, t, 0.05);
@@ -650,22 +673,27 @@ export class AetherEnhancer {
 
     // 8. Stereo Width
     this.sideGain.gain.setTargetAtTime(params.stereoWidth, t, 0.05);
+    if (params.sideHighPassFreq) {
+      this.sideHighPass.frequency.setTargetAtTime(params.sideHighPassFreq, t, 0.05);
+    }
 
     // 9. Maximizer Gain
     const linearBoost = Math.pow(10, (params.limiterBoost || 0.0) / 20.0);
     this.limiterGain.gain.setTargetAtTime(linearBoost, t, 0.05);
   }
 
-  setCorrectiveNotches(notches) {
+  setCorrectiveNotches(notches, hissAmount = 0) {
     const t = this.ctx.currentTime;
+    const setupHissFactor = Math.max(0.4, 1.0 - (hissAmount / 100.0) * 0.65);
+
     for (let i = 0; i < 8; i++) {
       const filter = this[`eqCorrective${i+1}`];
       if (notches && notches[i]) {
         filter.frequency.setTargetAtTime(notches[i].freq, t, 0.05);
-        filter.gain.setTargetAtTime(notches[i].cut, t, 0.05);
+        filter.gain.setTargetAtTime(notches[i].cut * setupHissFactor, t, 0.05);
         filter.Q.setTargetAtTime(12.0, t, 0.05);
       } else {
-        filter.gain.setTargetAtTime(0.0, t, 0.05); // Neutral / Disabled
+        filter.gain.setTargetAtTime(0.0, t, 0.05);
       }
     }
   }
@@ -741,6 +769,13 @@ export class AetherEnhancer {
       for (let i = 0; i < n_samples; ++i) {
         const x = (i * 2) / n_samples - 1;
         curve[i] = Math.tanh(k * x) / Math.tanh(k);
+      }
+    } else if (type === 'hardcore') {
+      const k = 1.0 + (drive / 100) * 14.0;
+      for (let i = 0; i < n_samples; ++i) {
+        const x = (i * 2) / n_samples - 1;
+        const val = x * k;
+        curve[i] = Math.max(-0.82, Math.min(0.82, val));
       }
     } else {
       for (let i = 0; i < n_samples; ++i) {
