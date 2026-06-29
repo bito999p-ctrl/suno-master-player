@@ -1,5 +1,5 @@
 /**
- * Version: 2.3.7 (Re-deployed to ensure complete file sync)
+ * Version: 2.3.8 (Re-deployed to ensure complete file sync)
  * AetherEnhancer - Web Audio API Mastering Engine
  * Automatically synced from audio-mastering-tool/app.js.
  */

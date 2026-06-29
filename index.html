@@ -1,4 +1,4 @@
-<!-- Version: 2.3.7 (Re-deployed to ensure complete file sync) -->
+<!-- Version: 2.3.8 (Re-deployed to ensure complete file sync) -->
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
 <head>
@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=2.3.7">
+  <link rel="stylesheet" href="styles.css?v=2.3.8">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -259,21 +259,23 @@
               <canvas id="player-visualizer"></canvas>
               <div class="artwork-wrapper">
                 <img id="track-artwork" src="https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png" alt="Artwork" class="artwork-img">
-              </div>
-            </div>
-
-            <!-- Track Metadata -->
-            <div class="track-details">
-              <div class="track-title-row">
-                <h2 id="track-title">曲を選択してください</h2>
-                <button id="like-btn" class="like-btn" title="お気に入りに追加"><i data-lucide="heart"></i></button>
-                <a id="suno-link" href="#" target="_blank" class="suno-external-link hidden" title="Sunoで開く">
-                  <span class="suno-link-icon"><i data-lucide="external-link" class="icon-inline"></i></span> Suno
-                </a>
-              </div>
-              <p id="track-artist">Suno Artist</p>
-              <div id="ai-analyzing-indicator" class="ai-analyzing-indicator hidden">
-                <span class="pulse-dot"></span> AIマスタリング分析中...
+                
+                <!-- Overlay metadata (Glassmorphic Card) -->
+                <div class="track-details-overlay">
+                  <div class="track-details">
+                    <div class="track-title-row">
+                      <h2 id="track-title">曲を選択してください</h2>
+                      <button id="like-btn" class="like-btn" title="お気に入りに追加"><i data-lucide="heart"></i></button>
+                      <a id="suno-link" href="#" target="_blank" class="suno-external-link hidden" title="Sunoで開く">
+                        <span class="suno-link-icon"><i data-lucide="external-link" class="icon-inline"></i></span> Suno
+                      </a>
+                    </div>
+                    <p id="track-artist">Suno Artist</p>
+                    <div id="ai-analyzing-indicator" class="ai-analyzing-indicator hidden">
+                      <span class="pulse-dot"></span> AIマスタリング分析中...
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -537,6 +539,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=2.3.7"></script>
+  <script type="module" src="player.js?v=2.3.8"></script>
 </body>
 </html>
