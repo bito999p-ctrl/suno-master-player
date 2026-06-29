@@ -1,5 +1,5 @@
-// Version: 2.2.7 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.7';
+// Version: 2.2.8 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.8';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -1652,10 +1652,15 @@ function loadFavorites() {
         return u;
       });
       const uniqueUsers = [];
-      const seen = new Set();
+      const seenUrls = new Set();
+      const seenNames = new Set();
       favorites.users.forEach(u => {
-        if (u && u.url && !seen.has(u.url.toLowerCase())) {
-          seen.add(u.url.toLowerCase());
+        if (!u) return;
+        const urlKey = (u.url || u.id || '').toLowerCase();
+        const nameKey = (u.name || '').trim().toLowerCase();
+        if (!seenUrls.has(urlKey) && (!nameKey || !seenNames.has(nameKey))) {
+          seenUrls.add(urlKey);
+          if (nameKey) seenNames.add(nameKey);
           uniqueUsers.push(u);
         } else {
           migrated = true;
@@ -1674,10 +1679,15 @@ function loadFavorites() {
         return p;
       });
       const uniquePlaylists = [];
-      const seen = new Set();
+      const seenUrls = new Set();
+      const seenNames = new Set();
       favorites.playlists.forEach(p => {
-        if (p && p.url && !seen.has(p.url.toLowerCase())) {
-          seen.add(p.url.toLowerCase());
+        if (!p) return;
+        const urlKey = (p.url || p.id || '').toLowerCase();
+        const nameKey = (p.name || '').trim().toLowerCase();
+        if (!seenUrls.has(urlKey) && (!nameKey || !seenNames.has(nameKey))) {
+          seenUrls.add(urlKey);
+          if (nameKey) seenNames.add(nameKey);
           uniquePlaylists.push(p);
         } else {
           migrated = true;
@@ -1734,7 +1744,12 @@ function toggleSourceLike() {
   loadFavorites();
   
   const list = currentSource.type === 'profile' ? favorites.users : favorites.playlists;
-  const idx = list.findIndex(item => item && item.url && item.url.toLowerCase() === currentSource.url.toLowerCase());
+  const idx = list.findIndex(item => 
+    item && (
+      (item.url && item.url.toLowerCase() === currentSource.url.toLowerCase()) ||
+      (item.name && item.name.trim().toLowerCase() === currentSource.name.trim().toLowerCase())
+    )
+  );
   
   let isLikedNow = false;
   if (idx === -1) {
@@ -1785,7 +1800,12 @@ function updateSourceLikeButtonState() {
   loadFavorites();
   
   const list = currentSource.type === 'profile' ? favorites.users : favorites.playlists;
-  const isLiked = list.some(item => item && item.url && item.url.toLowerCase() === currentSource.url.toLowerCase());
+  const isLiked = list.some(item => 
+    item && (
+      (item.url && item.url.toLowerCase() === currentSource.url.toLowerCase()) ||
+      (item.name && item.name.trim().toLowerCase() === currentSource.name.trim().toLowerCase())
+    )
+  );
   
   if (sourceLikeBtn) {
     if (isLiked) sourceLikeBtn.classList.add('liked');
@@ -1878,10 +1898,15 @@ function saveToHistory(type, id, name) {
       return u;
     });
     const uniqueUsers = [];
-    const seen = new Set();
+    const seenIds = new Set();
+    const seenNames = new Set();
     history.users.forEach(u => {
-      if (u && u.id && !seen.has(u.id.toLowerCase())) {
-        seen.add(u.id.toLowerCase());
+      if (!u) return;
+      const idKey = (u.id || '').toLowerCase();
+      const nameKey = (u.name || '').trim().toLowerCase();
+      if (!seenIds.has(idKey) && (!nameKey || !seenNames.has(nameKey))) {
+        seenIds.add(idKey);
+        if (nameKey) seenNames.add(nameKey);
         uniqueUsers.push(u);
       } else {
         migrated = true;
@@ -1899,10 +1924,15 @@ function saveToHistory(type, id, name) {
       return p;
     });
     const uniquePlaylists = [];
-    const seen = new Set();
+    const seenIds = new Set();
+    const seenNames = new Set();
     history.playlists.forEach(p => {
-      if (p && p.id && !seen.has(p.id.toLowerCase())) {
-        seen.add(p.id.toLowerCase());
+      if (!p) return;
+      const idKey = (p.id || '').toLowerCase();
+      const nameKey = (p.name || '').trim().toLowerCase();
+      if (!seenIds.has(idKey) && (!nameKey || !seenNames.has(nameKey))) {
+        seenIds.add(idKey);
+        if (nameKey) seenNames.add(nameKey);
         uniquePlaylists.push(p);
       } else {
         migrated = true;
@@ -1924,7 +1954,12 @@ function saveToHistory(type, id, name) {
   const cleanName = name || cleanId;
 
   // Remove existing duplicate
-  const index = list.findIndex(item => item.id.toLowerCase() === cleanId.toLowerCase());
+  const index = list.findIndex(item => 
+    item && (
+      (item.id && item.id.toLowerCase() === cleanId.toLowerCase()) ||
+      (item.name && item.name.trim().toLowerCase() === cleanName.trim().toLowerCase())
+    )
+  );
   if (index !== -1) {
     list.splice(index, 1);
   }
@@ -1967,10 +2002,15 @@ function renderHistoryUI() {
       return u;
     });
     const uniqueUsers = [];
-    const seen = new Set();
+    const seenIds = new Set();
+    const seenNames = new Set();
     history.users.forEach(u => {
-      if (u && u.id && !seen.has(u.id.toLowerCase())) {
-        seen.add(u.id.toLowerCase());
+      if (!u) return;
+      const idKey = (u.id || '').toLowerCase();
+      const nameKey = (u.name || '').trim().toLowerCase();
+      if (!seenIds.has(idKey) && (!nameKey || !seenNames.has(nameKey))) {
+        seenIds.add(idKey);
+        if (nameKey) seenNames.add(nameKey);
         uniqueUsers.push(u);
       } else {
         migrated = true;
@@ -1988,10 +2028,15 @@ function renderHistoryUI() {
       return p;
     });
     const uniquePlaylists = [];
-    const seen = new Set();
+    const seenIds = new Set();
+    const seenNames = new Set();
     history.playlists.forEach(p => {
-      if (p && p.id && !seen.has(p.id.toLowerCase())) {
-        seen.add(p.id.toLowerCase());
+      if (!p) return;
+      const idKey = (p.id || '').toLowerCase();
+      const nameKey = (p.name || '').trim().toLowerCase();
+      if (!seenIds.has(idKey) && (!nameKey || !seenNames.has(nameKey))) {
+        seenIds.add(idKey);
+        if (nameKey) seenNames.add(nameKey);
         uniquePlaylists.push(p);
       } else {
         migrated = true;

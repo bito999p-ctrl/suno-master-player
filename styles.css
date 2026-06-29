@@ -1,4 +1,4 @@
-/* Version: 2.2.7 (Re-deployed to ensure complete file sync) */
+/* Version: 2.2.8 (Re-deployed to ensure complete file sync) */
 /* ==========================================================================
    AetherPlayer CSS - Premium Dark Glassmorphic Design
    ========================================================================== */
@@ -687,6 +687,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   margin-top: 10px;
   border-top: 1px solid rgba(59, 130, 246, 0.08); /* Soft blue border line */
   padding-top: 18px;
+  gap: 24px; /* Ensure volume slider and dropdowns never touch */
 }
 
 .volume-control {
