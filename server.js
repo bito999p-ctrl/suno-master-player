@@ -10,8 +10,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static client files from the aether_player directory
-app.use(express.static(path.join(__dirname, 'aether_player')));
+// Serve static client files from the root directory
+app.use(express.static(__dirname));
 
 function resolveRscReference(combined, ref) {
   if (!ref || typeof ref !== 'string' || !ref.startsWith('$')) return ref;
