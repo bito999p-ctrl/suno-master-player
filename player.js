@@ -1,11 +1,12 @@
-// Version: 2.3.6 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.6';
+// Version: 2.3.7 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.7';
 
 // --- State Variables ---
 let audioCtx = null;
 let enhancer = null;
 let analyser = null;
 let sourceNode = null;
+let masterGainNode = null;
 
 let tracks = [];
 let currentTrackIndex = -1;
@@ -201,10 +202,16 @@ function initAudio() {
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 512;
 
-  // Connect graph: Source -> Enhancer -> Analyser -> Destination
+  // Setup Master Gain (for iOS volume control support)
+  masterGainNode = audioCtx.createGain();
+  masterGainNode.gain.setValueAtTime(volumeSlider ? volumeSlider.value / 100 : 0.8, audioCtx.currentTime);
+  audioPlayer.volume = 1.0; // Keep media element at unity gain
+
+  // Connect graph: Source -> Enhancer -> Analyser -> MasterGain -> Destination
   sourceNode.connect(enhancer.inputNode);
   enhancer.outputNode.connect(analyser);
-  analyser.connect(audioCtx.destination);
+  analyser.connect(masterGainNode);
+  masterGainNode.connect(audioCtx.destination);
 
   console.log('[AudioEngine] Web Audio graph initialized.');
 
@@ -373,9 +380,7 @@ function setupEventListeners() {
 
   // Volume
   if (volumeSlider) {
-    volumeSlider.addEventListener('input', () => {
-      if (audioPlayer) audioPlayer.volume = volumeSlider.value / 100;
-    });
+    volumeSlider.addEventListener('input', updateVolume);
   }
 
   // Visualizer Mode
@@ -971,9 +976,20 @@ async function selectTrack(idx) {
   }
 }
 
+// --- Update Volume Helper ---
+function updateVolume() {
+  const vol = volumeSlider ? volumeSlider.value / 100 : 0.8;
+  if (masterGainNode && audioCtx) {
+    masterGainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+    if (audioPlayer) audioPlayer.volume = 1.0;
+  } else {
+    if (audioPlayer) audioPlayer.volume = vol;
+  }
+}
+
 // --- Start Track Playback ---
 function startPlayback(url) {
-  audioPlayer.volume = volumeSlider.value / 100;
+  updateVolume();
   if (url.startsWith('http') && !url.includes('/api/proxy-audio')) {
     const directUrl = url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
     audioPlayer.src = directUrl;
