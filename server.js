@@ -1,4 +1,4 @@
-// Version: 2.2.9 (Re-deployed to ensure complete file sync)
+// Version: 2.3.0 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -375,7 +375,20 @@ app.get('/api/proxy-audio', (req, res) => {
   }
 
   const https = require('https');
-  https.get(audioUrl, (proxyRes) => {
+  const url = require('url');
+
+  const parsedUrl = url.parse(audioUrl);
+  const options = {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.path,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': 'https://suno.com/',
+      'Origin': 'https://suno.com'
+    }
+  };
+
+  https.get(options, (proxyRes) => {
     // Forward status code and content-type headers
     res.status(proxyRes.statusCode || 200);
     res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'audio/mpeg');

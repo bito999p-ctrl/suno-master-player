@@ -1,4 +1,4 @@
-/* Version: 2.2.9 (Re-deployed to ensure complete file sync) */
+/* Version: 2.3.0 (Re-deployed to ensure complete file sync) */
 /* ==========================================================================
    AetherPlayer CSS - Premium Dark Glassmorphic Design
    ========================================================================== */
@@ -2142,8 +2142,8 @@ input:checked + .switch-slider:before {
 
 @media (max-width: 600px) {
   .history-grid, .favorites-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 }
 

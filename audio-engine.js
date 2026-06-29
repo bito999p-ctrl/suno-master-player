@@ -1,5 +1,5 @@
 /**
- * Version: 2.2.9 (Re-deployed to ensure complete file sync)
+ * Version: 2.3.0 (Re-deployed to ensure complete file sync)
  * AetherEnhancer - Web Audio API Mastering Engine
  * Automatically synced from audio-mastering-tool/app.js.
  */
@@ -165,7 +165,7 @@ function fft(re, im) {
   }
 }
 
-export function analyzeAudioResonances(buffer) {
+export function analyzeAudioResonances(buffer, userPresetKey) {
   const fftSize = 2048;
   const numSlices = 32; // サンプリング精度を高めるため、32箇所を走査
   const sampleRate = buffer.sampleRate;
@@ -445,7 +445,7 @@ export function analyzeAudioResonances(buffer) {
   // 設計変更: AI AUTO（auto）またはカスタム（custom）の場合は中立なフラット特性（auto）をベースにする。
   // それ以外の個別プリセット（edm, rock等）が選ばれている場合は、そのプリセットをベースにAIが動的に最適化する。
   const genreSelect = document.getElementById('preset-select');
-  const userGenreKey = genreSelect ? genreSelect.value : 'auto';
+  const userGenreKey = userPresetKey || (genreSelect ? genreSelect.value : 'auto');
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
   const genreTargets = {

@@ -1,5 +1,5 @@
-// Version: 2.2.9 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.2.9';
+// Version: 2.3.0 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.0';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -349,8 +349,9 @@ function setupEventListeners() {
   });
   
   progressBar.addEventListener('input', () => {
-    if (audioPlayer.duration) {
-      const seekTime = (progressBar.value / 100) * audioPlayer.duration;
+    const duration = getDuration();
+    if (duration > 0) {
+      const seekTime = (progressBar.value / 100) * duration;
       audioPlayer.currentTime = seekTime;
     }
   });
@@ -969,11 +970,12 @@ async function runPreAnalysis(track) {
 
 function checkAndPreFetchNextTrack() {
   if (tracks.length <= 1) return;
-  if (!audioPlayer.duration || audioPlayer.paused) return;
+  const duration = getDuration();
+  if (duration === 0 || audioPlayer.paused) return;
 
-  const timeLeft = audioPlayer.duration - audioPlayer.currentTime;
+  const timeLeft = duration - audioPlayer.currentTime;
   // Trigger pre-fetch when less than 20 seconds remain or progress is > 85%
-  if (timeLeft < 20 || (audioPlayer.currentTime / audioPlayer.duration) > 0.85) {
+  if (timeLeft < 20 || (audioPlayer.currentTime / duration) > 0.85) {
     let nextIdx = -1;
     if (isShuffle) {
       nextIdx = Math.floor(Math.random() * tracks.length);
@@ -1190,16 +1192,27 @@ function onTrackEnded() {
   }
 }
 
+function getDuration() {
+  if (currentAudioBuffer && isFinite(currentAudioBuffer.duration) && currentAudioBuffer.duration > 0) {
+    return currentAudioBuffer.duration;
+  }
+  if (audioPlayer && isFinite(audioPlayer.duration) && audioPlayer.duration > 0) {
+    return audioPlayer.duration;
+  }
+  return 0;
+}
+
 // --- Seek & Loader Meta ---
 function onTrackLoaded() {
   progressBar.value = 0;
   currentTimeEl.textContent = '0:00';
-  durationTimeEl.textContent = formatTime(audioPlayer.duration);
+  durationTimeEl.textContent = formatTime(getDuration());
 }
 
 function updateProgressBar() {
-  if (audioPlayer.duration) {
-    const percentage = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+  const duration = getDuration();
+  if (duration > 0) {
+    const percentage = (audioPlayer.currentTime / duration) * 100;
     progressBar.value = percentage;
     currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
 
