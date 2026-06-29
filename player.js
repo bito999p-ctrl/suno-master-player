@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js';
+import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.0';
 
 // --- State Variables ---
 let audioCtx = null;
