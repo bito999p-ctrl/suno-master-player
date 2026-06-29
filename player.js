@@ -6,8 +6,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 2.4.0 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.4.0';
+// Version: 2.4.1 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.4.1';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -534,7 +534,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
 
     // Set source details in workspace sidebar
     sourceName.textContent = data.name || 'Suno Catalog';
-    sourceType.textContent = data.type === 'profile' ? 'Artist Profile' : 'Playlist';
+    sourceType.textContent = data.type === 'profile' ? 'Artist Profile' : (data.type === 'song' ? 'Song' : 'Playlist');
     
     if (tracks.length > 0 && tracks[0].image_url) {
       sourceCover.src = tracks[0].image_url;

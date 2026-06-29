@@ -1,4 +1,4 @@
-// Version: 2.4.0 (Re-deployed to ensure complete file sync)
+// Version: 2.4.1 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -365,6 +365,8 @@ app.get('/api/suno', async (req, res) => {
       if (match) {
         name = match[1].replace('Playlist', '').trim();
       }
+    } else if (tracks.length === 1) {
+      name = tracks[0].title;
     }
 
     // Truncate profile tracks to first 20 items to match Suno page 1 and avoid playlist tracks mix-in
@@ -373,7 +375,7 @@ app.get('/api/suno', async (req, res) => {
     }
 
     return res.json({
-      type: isProfile ? 'profile' : isPlaylist ? 'playlist' : 'unknown',
+      type: isProfile ? 'profile' : isPlaylist ? 'playlist' : (tracks.length === 1 ? 'song' : 'unknown'),
       name,
       url: targetUrl,
       tracks,
