@@ -24,7 +24,7 @@
   ],
   "routes": [
     {
-      "src": "/api/suno",
+      "src": "/api/(.*)",
       "dest": "server.js"
     },
     {
