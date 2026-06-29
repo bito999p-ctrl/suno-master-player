@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.4';
+import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.5';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -82,6 +82,8 @@ const tabLyricsBtn = document.getElementById('tab-lyrics-btn');
 const tabEnhancer = document.getElementById('tab-enhancer');
 const tabLyrics = document.getElementById('tab-lyrics');
 const lyricsText = document.getElementById('lyrics-text');
+const mobileEnhancerToggle = document.getElementById('mobile-enhancer-toggle');
+const mobileLyricsText = document.getElementById('mobile-lyrics-text');
 
 // Like Buttons & Dropdown tabs
 const likeBtn = document.getElementById('like-btn');
@@ -299,7 +301,20 @@ function setupEventListeners() {
     if (enhancer) {
       enhancer.setBypass(!enhancerToggle.checked);
     }
+    if (mobileEnhancerToggle) {
+      mobileEnhancerToggle.checked = enhancerToggle.checked;
+    }
   });
+
+  if (mobileEnhancerToggle) {
+    mobileEnhancerToggle.addEventListener('change', () => {
+      initAudio();
+      if (enhancer) {
+        enhancer.setBypass(!mobileEnhancerToggle.checked);
+      }
+      enhancerToggle.checked = mobileEnhancerToggle.checked;
+    });
+  }
 }
 
 // --- Import Suno Data & Screen Navigation ---
@@ -477,6 +492,10 @@ function showLandingView() {
   // Clear query parameters from browser URL
   window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
 
+  // Clear lyrics
+  if (lyricsText) lyricsText.textContent = '';
+  if (mobileLyricsText) mobileLyricsText.textContent = '';
+
   // Transition Screens: Hide player, Show landing
   playerWorkspace.classList.add('hidden');
   landingScreen.classList.remove('hidden');
@@ -642,8 +661,11 @@ async function selectTrack(idx) {
   // Set Lyrics
   if (track.description) {
     lyricsText.textContent = track.description;
+    if (mobileLyricsText) mobileLyricsText.textContent = track.description;
   } else {
-    lyricsText.innerHTML = '<div class="empty-list">インスト曲または歌詞が見つかりません。</div>';
+    const emptyHtml = '<div class="empty-list">インスト曲または歌詞が見つかりません。</div>';
+    lyricsText.innerHTML = emptyHtml;
+    if (mobileLyricsText) mobileLyricsText.innerHTML = emptyHtml;
   }
 
   // Stop current player first, ensuring no overlap

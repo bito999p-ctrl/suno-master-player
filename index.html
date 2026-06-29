@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=2.0.4">
+  <link rel="stylesheet" href="styles.css?v=2.0.5">
 </head>
 <body>
   <div class="app-container">
@@ -256,6 +256,23 @@
                 </select>
               </div>
             </div>
+
+            <!-- Mobile-only Lyrics & Quick Enhancer Section -->
+            <div class="mobile-player-addons">
+              <div class="addon-card mastering-quick-toggle">
+                <span>✦ AetherMaster 高音質化</span>
+                <label class="switch-container">
+                  <input type="checkbox" id="mobile-enhancer-toggle" checked>
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+              <div class="addon-card mobile-lyrics-card">
+                <h3>🎵 歌詞 / トラック紹介</h3>
+                <div id="mobile-lyrics-text" class="mobile-lyrics-text">
+                  曲を選択すると歌詞が表示されます。
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -406,6 +423,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=2.0.4"></script>
+  <script type="module" src="player.js?v=2.0.5"></script>
 </body>
 </html>

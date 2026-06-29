@@ -1458,12 +1458,14 @@ input:checked + .switch-slider:before {
     transition: bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     padding: calc(16px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)) 24px !important;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     margin: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .workspace-player.active-modal {
@@ -1804,6 +1806,53 @@ input:checked + .switch-slider:before {
   /* Mobile screen visibility modifiers */
   .mobile-hidden {
     display: none !important;
+  }
+
+  .mobile-player-addons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+    margin-top: 24px !important;
+    padding-bottom: 24px !important;
+  }
+
+  .addon-card {
+    background: rgba(255, 255, 255, 0.45) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.02) !important;
+    text-align: left !important;
+  }
+
+  .mastering-quick-toggle {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+  }
+
+  .mobile-lyrics-card h3 {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--text-muted) !important;
+    margin: 0 0 12px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .mobile-lyrics-text {
+    font-size: 13px !important;
+    color: var(--text-main) !important;
+    line-height: 1.8 !important;
+    white-space: pre-wrap !important;
+    max-height: 250px !important;
+    overflow-y: auto !important;
+    padding-right: 4px !important;
   }
 }
 
@@ -2173,4 +2222,8 @@ input:checked + .switch-slider:before {
 
 .like-btn:active, .source-like-btn:active {
   transform: scale(0.95);
+}
+
+.mobile-player-addons {
+  display: none;
 }

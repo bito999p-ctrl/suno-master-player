@@ -21,8 +21,8 @@ const GENRE_PRESETS = {
     eqLowGain: 1.0, eqLowFreq: 120,
     eqMidGain: -0.5, eqMidFreq: 1000, eqMidQ: 1.0,
     eqHighGain: 1.5, eqHighFreq: 10000,
-    compEnabled: true, compThreshold: -16.0, compRatio: 1.5, compAttack: 0.04, compRelease: 0.20,
-    stereoWidth: 1.20, limiterBoost: 3.8, sideHighPassFreq: 110
+    compEnabled: true, compThreshold: -15.0, compRatio: 1.5, compAttack: 0.035, compRelease: 0.16,
+    stereoWidth: 1.20, limiterBoost: 4.2, sideHighPassFreq: 110
   },
   rnb: {
     satEnabled: true, satType: 'tape', satDrive: 12, satMix: 10,
@@ -37,32 +37,32 @@ const GENRE_PRESETS = {
     eqLowGain: 1.2, eqLowFreq: 100,
     eqMidGain: 0.6, eqMidFreq: 2500, eqMidQ: 1.2,
     eqHighGain: 1.0, eqHighFreq: 8000,
-    compEnabled: true, compThreshold: -14.0, compRatio: 1.6, compAttack: 0.06, compRelease: 0.18,
-    stereoWidth: 1.10, limiterBoost: 3.8, sideHighPassFreq: 110
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.6, compAttack: 0.040, compRelease: 0.150,
+    stereoWidth: 1.10, limiterBoost: 4.5, sideHighPassFreq: 110
   },
   metal: {
     satEnabled: true, satType: 'tape', satDrive: 18, satMix: 12,
     eqLowGain: 1.0, eqLowFreq: 90,
     eqMidGain: -0.8, eqMidFreq: 400, eqMidQ: 0.8,
     eqHighGain: 1.5, eqHighFreq: 8000,
-    compEnabled: true, compThreshold: -12.0, compRatio: 1.5, compAttack: 0.025, compRelease: 0.12,
-    stereoWidth: 1.15, limiterBoost: 4.0, sideHighPassFreq: 120
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.6, compAttack: 0.020, compRelease: 0.100,
+    stereoWidth: 1.15, limiterBoost: 4.8, sideHighPassFreq: 120
   },
   edm: {
-    satEnabled: true, satType: 'tape', satDrive: 15, satMix: 15,
+    satEnabled: true, satType: 'tape', satDrive: 18, satMix: 20,
     eqLowGain: 1.8, eqLowFreq: 90,
     eqMidGain: -0.5, eqMidFreq: 800, eqMidQ: 1.0,
     eqHighGain: 2.0, eqHighFreq: 11000,
-    compEnabled: true, compThreshold: -12.0, compRatio: 1.5, compAttack: 0.035, compRelease: 0.18,
-    stereoWidth: 1.30, limiterBoost: 4.0, sideHighPassFreq: 150
+    compEnabled: true, compThreshold: -15.0, compRatio: 1.8, compAttack: 0.020, compRelease: 0.120,
+    stereoWidth: 1.30, limiterBoost: 5.5, sideHighPassFreq: 150
   },
   hiphop: {
     satEnabled: true, satType: 'tape', satDrive: 15, satMix: 14,
     eqLowGain: 1.8, eqLowFreq: 65,
     eqMidGain: -0.8, eqMidFreq: 350, eqMidQ: 1.0,
     eqHighGain: 1.2, eqHighFreq: 10000,
-    compEnabled: true, compThreshold: -12.0, compRatio: 1.4, compAttack: 0.06, compRelease: 0.20,
-    stereoWidth: 1.20, limiterBoost: 3.8, sideHighPassFreq: 150
+    compEnabled: true, compThreshold: -14.0, compRatio: 1.6, compAttack: 0.035, compRelease: 0.150,
+    stereoWidth: 1.20, limiterBoost: 4.8, sideHighPassFreq: 150
   },
   lofi: {
     satEnabled: true, satType: 'tape', satDrive: 35, satMix: 30,
@@ -77,8 +77,8 @@ const GENRE_PRESETS = {
     eqLowGain: 2.2, eqLowFreq: 80,
     eqMidGain: -1.0, eqMidFreq: 1000, eqMidQ: 1.0,
     eqHighGain: 2.5, eqHighFreq: 12000,
-    compEnabled: true, compThreshold: -14.0, compRatio: 1.8, compAttack: 0.02, compRelease: 0.12,
-    stereoWidth: 1.40, limiterBoost: 4.2, sideHighPassFreq: 150
+    compEnabled: true, compThreshold: -15.0, compRatio: 1.8, compAttack: 0.015, compRelease: 0.100,
+    stereoWidth: 1.40, limiterBoost: 5.8, sideHighPassFreq: 150
   },
   ambient: {
     satEnabled: true, satType: 'tube', satDrive: 5, satMix: 8,
@@ -397,10 +397,35 @@ export function analyzeAudioResonances(buffer) {
     }
   }
 
+  // 3.5. AIジャンル自動判定 (Heuristic Genre Classifier)
+  let detectedGenre = 'pops';
+  if (actualLowMidRatio > 3.2 && actualHighMidRatio > 0.16 && crestFactorDb < 12.8) {
+    detectedGenre = 'edm';
+  } else if (actualLowMidRatio > 3.1 && actualHighMidRatio <= 0.16 && crestFactorDb < 12.8) {
+    detectedGenre = 'hiphop';
+  } else if (actualLowMidRatio >= 2.6 && actualLowMidRatio <= 3.2 && crestFactorDb < 11.8) {
+    detectedGenre = (actualHighMidRatio > 0.145) ? 'metal' : 'rock';
+  } else if (crestFactorDb > 13.0) {
+    if (actualLowMidRatio < 2.3 && actualHighMidRatio < 0.12) {
+      detectedGenre = 'classic';
+    } else if (actualHighMidRatio > 0.18) {
+      detectedGenre = 'ambient';
+    } else {
+      detectedGenre = 'acoustic';
+    }
+  } else if (actualLowMidRatio < 2.0 && actualHighMidRatio < 0.10) {
+    detectedGenre = 'podcast';
+  } else if (actualLowMidRatio >= 2.4 && actualLowMidRatio <= 3.1 && crestFactorDb > 12.0) {
+    detectedGenre = 'jazz';
+  } else {
+    detectedGenre = 'pops';
+  }
+
   // 4. 最適マスタリングパラメーターの動的算出（ターゲット比率への収束）
-  // 選択されているジャンルプリセットの取得
+  // 選択されているジャンルプリセットの取得（AUTOの場合は自動検出したジャンルをベースにする）
   const genreSelect = document.getElementById('preset-select');
-  const genreKey = genreSelect ? genreSelect.value : 'pops';
+  const userGenreKey = genreSelect ? genreSelect.value : 'auto';
+  const genreKey = userGenreKey === 'auto' ? detectedGenre : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.pops;
 
   // ジャンル別理想ターゲット比率
@@ -567,6 +592,7 @@ export function analyzeAudioResonances(buffer) {
     bassDiff: lowDiffDb,
     trebleDiff: highDiffDb,
     baseLoudnessDesc: baseLoudnessDesc,
+    detectedGenre: detectedGenre,
     suggestedParams: {
       inputGainDb: Math.round(suggestedInputGainDb * 10) / 10,
       satEnabled: basePreset.satEnabled,
