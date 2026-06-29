@@ -1,5 +1,5 @@
-// Version: 2.3.3 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.3';
+// Version: 2.3.4 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.4';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -159,6 +159,12 @@ document.addEventListener('visibilitychange', async () => {
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  
+  // Default to OFF (low power) visualizer mode on mobile to prevent heating!
+  if (window.innerWidth <= 768 && visModeSelect) {
+    visModeSelect.value = 'off';
+  }
+
   resizeCanvas();
   window.addEventListener('resize', () => {
     resizeCanvas();
@@ -360,6 +366,13 @@ function setupEventListeners() {
   // Volume
   volumeSlider.addEventListener('input', () => {
     audioPlayer.volume = volumeSlider.value / 100;
+  });
+
+  // Visualizer Mode
+  visModeSelect.addEventListener('change', () => {
+    if (visModeSelect.value !== 'off') {
+      startVisualizerLoop();
+    }
   });
 
   // Tab switching
@@ -1307,9 +1320,10 @@ function drawVisualizer() {
     return;
   }
 
-  if (audioPlayer.paused || audioPlayer.ended) {
+  const mode = visModeSelect.value;
+  if (mode === 'off' || audioPlayer.paused || audioPlayer.ended) {
     isVisualizerRunning = false;
-    // Clear canvas once on pause to save energy
+    // Clear canvas once to save energy
     const width = canvas.width;
     const height = canvas.height;
     canvasCtx.clearRect(0, 0, width, height);
