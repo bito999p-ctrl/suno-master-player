@@ -368,9 +368,9 @@ export function analyzeAudioResonances(buffer) {
         cutDb = -Math.min(2.5, Math.max(1.0, (ratio - 1.32) * 4.0 + 1.0));
       }
       
-      // 8500Hz未満のカットはかなり緩やか（50%）にする
+      // 8500Hz未満のカットは、極度に痩せるのを防ぎつつもしっかり金属音を除去できる安全ライン（85%）に緩和
       if (peakFreq < 8500) {
-        cutDb *= 0.5;
+        cutDb *= 0.85;
       }
       
       rawPeaks.push({
@@ -387,10 +387,10 @@ export function analyzeAudioResonances(buffer) {
   // 優先度スコアの高い順にソート
   rawPeaks.sort((a, b) => b.score - a.score);
 
-  // 互いに400Hz以上離れた上位最大4個のピークを抽出（高音の艶感・空気感を維持するため4個に制限）
+  // 互いに400Hz以上離れた上位最大8個のピークを抽出（8連 corrective notches をフル活用）
   const filteredPeaks = [];
   for (const peak of rawPeaks) {
-    if (filteredPeaks.length >= 4) break;
+    if (filteredPeaks.length >= 8) break;
     const tooClose = filteredPeaks.some(p => Math.abs(p.freq - peak.freq) < 400);
     if (!tooClose) {
       filteredPeaks.push({ freq: peak.freq, cut: peak.cut });

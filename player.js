@@ -1,4 +1,4 @@
-import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.0';
+import { AetherEnhancer, analyzeAudioResonances } from './audio-engine.js?v=2.0.1';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -91,7 +91,6 @@ const dropContentHistory = document.getElementById('drop-content-history');
 const dropContentFavorites = document.getElementById('drop-content-favorites');
 
 // Bottom Nav Tab Bar DOM references
-const navBtnLibrary = document.getElementById('nav-btn-library');
 const navBtnPlayer = document.getElementById('nav-btn-player');
 const navBtnUtility = document.getElementById('nav-btn-utility');
 const workspaceSidebar = document.querySelector('.workspace-sidebar');
@@ -207,8 +206,7 @@ function setupEventListeners() {
   }
 
   // Mobile Bottom Navigation Tabs
-  if (navBtnLibrary && navBtnPlayer && navBtnUtility) {
-    navBtnLibrary.addEventListener('click', () => switchMobileTab('library'));
+  if (navBtnPlayer && navBtnUtility) {
     navBtnPlayer.addEventListener('click', () => switchMobileTab('player'));
     navBtnUtility.addEventListener('click', () => switchMobileTab('utility'));
   }
@@ -1259,14 +1257,11 @@ function switchMobileTab(tabName) {
   workspacePlayer.classList.add('mobile-hidden');
   workspaceUtility.classList.add('mobile-hidden');
 
-  navBtnLibrary.classList.remove('active');
   navBtnPlayer.classList.remove('active');
   navBtnUtility.classList.remove('active');
 
-  if (tabName === 'library') {
+  if (tabName === 'player') {
     workspaceSidebar.classList.remove('mobile-hidden');
-    navBtnLibrary.classList.add('active');
-  } else if (tabName === 'player') {
     workspacePlayer.classList.remove('mobile-hidden');
     navBtnPlayer.classList.add('active');
   } else if (tabName === 'utility') {
