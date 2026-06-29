@@ -1,5 +1,5 @@
-// Version: 2.3.1 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.1';
+// Version: 2.3.2 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.2';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -861,7 +861,9 @@ async function selectTrack(idx) {
       let response;
       try {
         // Try direct CDN fetch first (bypasses Vercel AWS IP block, uses client IP)
-        response = await fetch(track.audio_url, { signal: activeAbortController.signal });
+        // Append a cache-buster query parameter to force CloudFront to return native CORS headers (access-control-allow-origin: *)
+        const directUrl = track.audio_url + (track.audio_url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+        response = await fetch(directUrl, { signal: activeAbortController.signal });
         if (!response.ok) throw new Error(`Direct fetch status ${response.status}`);
       } catch (directErr) {
         console.warn('[AI Auto] Direct fetch failed, trying proxy:', directErr.message);
@@ -946,7 +948,8 @@ async function selectTrack(idx) {
 function startPlayback(url) {
   audioPlayer.volume = volumeSlider.value / 100;
   if (url.startsWith('http') && !url.includes('/api/proxy-audio')) {
-    audioPlayer.src = url;
+    const directUrl = url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+    audioPlayer.src = directUrl;
     audioPlayer.play()
       .catch(err => {
         console.warn('[Playback] Direct play failed, trying proxy:', err.message);
@@ -971,7 +974,8 @@ async function runPreAnalysis(track) {
     initAudio();
     let response;
     try {
-      response = await fetch(url);
+      const directUrl = url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+      response = await fetch(directUrl);
       if (!response.ok) throw new Error(`Direct status ${response.status}`);
     } catch (directErr) {
       console.warn('[Pre-Fetch] Direct fetch failed, trying proxy:', directErr.message);
