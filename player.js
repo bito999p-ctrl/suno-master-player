@@ -1,5 +1,13 @@
-// Version: 2.3.8 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.8';
+function getNormalizedArtist(name) {
+  if (!name) return 'Suno Artist';
+  if (name.toLowerCase().includes('bito999') || name.toLowerCase() === 'bito') {
+    return 'Bito';
+  }
+  return name;
+}
+
+// Version: 2.3.9 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.9';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -697,7 +705,7 @@ function renderTracksList() {
       <img src="${track.image_url}" alt="Cover" class="track-item-cover" onerror="this.src='https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png'">
       <div class="track-item-meta">
         <div class="track-item-title">${escapeHtml(track.title)}</div>
-        <div class="track-item-artist">${escapeHtml(track.artist_name)}</div>
+        <div class="track-item-artist">${escapeHtml(getNormalizedArtist(track.artist_name))}</div>
       </div>
       <div class="track-item-playcount">
         <i data-lucide="flame" class="icon-inline" style="width:12px;height:12px;color:#ef4444;fill:#ef4444;margin-right:2px;"></i> ${formattedPlays}
@@ -817,12 +825,12 @@ async function selectTrack(idx) {
 
   // Set Player UI metadata
   trackTitle.textContent = track.title;
-  trackArtist.textContent = track.artist_name;
+  trackArtist.textContent = getNormalizedArtist(track.artist_name);
   trackArtwork.src = track.image_url;
 
   // Sync to Mini-Player UI
   if (miniTitle) miniTitle.textContent = track.title;
-  if (miniArtist) miniArtist.textContent = track.artist_name;
+  if (miniArtist) miniArtist.textContent = getNormalizedArtist(track.artist_name);
   if (miniArtwork) miniArtwork.src = track.image_url;
 
   // Update Like button state for this track
@@ -1733,7 +1741,7 @@ function canonicalizeSunoUrl(val) {
 
 function getDisplaySubtitle(idOrUrl, type, item) {
   if (type === 'track') {
-    return item.artist_name || 'Suno Artist';
+    return getNormalizedArtist(item.artist_name);
   }
   if (type === 'user' || type === 'profile') {
     const str = idOrUrl || '';
@@ -1842,7 +1850,7 @@ function toggleTrackLike() {
     favorites.tracks.unshift({
       id: track.id,
       title: track.title,
-      artist_name: track.artist_name,
+      artist_name: getNormalizedArtist(track.artist_name),
       image_url: track.image_url,
       play_count: track.play_count,
       url: songUrl

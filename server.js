@@ -1,4 +1,4 @@
-// Version: 2.3.8 (Re-deployed to ensure complete file sync)
+// Version: 2.3.9 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -251,8 +251,8 @@ app.get('/api/suno', async (req, res) => {
             
             let artist_name = 'Suno Artist';
             const userDisplayMatch = trackBlock.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
-            const handleMatch = trackBlock.match(/"handle"\s*:\s*"([^"]+)"/i);
             const displayNameMatch = trackBlock.match(/"display_name"\s*:\s*"([^"]+)"/i);
+            const handleMatch = trackBlock.match(/"handle"\s*:\s*"([^"]+)"/i);
             
             if (userDisplayMatch) {
               artist_name = userDisplayMatch[1];
@@ -260,6 +260,11 @@ app.get('/api/suno', async (req, res) => {
               artist_name = displayNameMatch[1];
             } else if (handleMatch) {
               artist_name = handleMatch[1];
+            }
+            
+            // Normalize bito999 handles to 'Bito'
+            if (artist_name.toLowerCase().includes('bito999') || artist_name.toLowerCase() === 'bito') {
+              artist_name = 'Bito';
             }
             
             const durationMatch = trackBlock.match(/"duration"\s*:\s*([0-9\.]+)/i);

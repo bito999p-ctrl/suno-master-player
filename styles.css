@@ -1,4 +1,4 @@
-/* Version: 2.3.8 (Re-deployed to ensure complete file sync) */
+/* Version: 2.3.9 (Re-deployed to ensure complete file sync) */
 /* ==========================================================================
    AetherPlayer CSS - Premium Dark Glassmorphic Design
    ========================================================================== */
@@ -524,11 +524,11 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: linear-gradient(to top, rgba(10, 15, 30, 0.95) 0%, rgba(10, 15, 30, 0.75) 60%, rgba(10, 15, 30, 0) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 30px 20px 20px 20px;
+  background: linear-gradient(to top, rgba(5, 7, 15, 0.98) 0%, rgba(5, 7, 15, 0.85) 55%, rgba(5, 7, 15, 0) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 36px 20px 20px 20px;
   z-index: 3;
 }
 
@@ -547,12 +547,14 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
 }
 
 #track-artist {
   font-size: 14px;
   color: var(--color-accent-primary);
   font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
 /* Seek Bar */
