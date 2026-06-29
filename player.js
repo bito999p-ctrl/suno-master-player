@@ -1,5 +1,5 @@
-// Version: 2.3.2 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.2';
+// Version: 2.3.3 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.3';
 
 // --- State Variables ---
 let audioCtx = null;

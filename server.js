@@ -1,4 +1,4 @@
-// Version: 2.3.2 (Re-deployed to ensure complete file sync)
+// Version: 2.3.3 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -234,9 +234,9 @@ app.get('/api/suno', async (req, res) => {
 
           // Use robust regex-based property extraction to bypass malformed JSON / unquoted references in Next.js RSC payload
           const titleMatch = trackBlock.match(/"title"\s*:\s*"([^"]+)"/i);
-          if (titleMatch) {
-            const audioMatch = trackBlock.match(/"audio_url"\s*:\s*"([^"]+)"/i);
-            const audio_url = audioMatch ? audioMatch[1] : `https://cdn1.suno.ai/${uuid}.mp3`;
+          const audioMatch = trackBlock.match(/"audio_url"\s*:\s*"([^"]+)"/i);
+          if (titleMatch && audioMatch) {
+            const audio_url = audioMatch[1];
             
             // Skip duplicate audio URLs (e.g. hook schemas, video uploads, or multiple references)
             if (seenAudioUrls.has(audio_url)) continue;
