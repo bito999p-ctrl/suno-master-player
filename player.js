@@ -1,5 +1,5 @@
-// Version: 2.3.0 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.0';
+// Version: 2.3.1 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.1';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -206,7 +206,7 @@ function initAudio() {
   enhancer.setBypass(!enhancerToggle.checked);
 
   // Start visualizer animation loop
-  requestAnimationFrame(drawVisualizer);
+  startVisualizerLoop();
   // Start compressor GR meter loop
   setInterval(updateCompressionMeter, 100);
 }
@@ -345,6 +345,7 @@ function setupEventListeners() {
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
+    startVisualizerLoop();
     if (window.lucide) lucide.createIcons();
   });
   
@@ -856,10 +857,19 @@ async function selectTrack(idx) {
       }
       activeAbortController = new AbortController();
 
-      console.log(`[AI Auto] Fetching audio for analysis (via proxy): ${track.audio_url}`);
-      const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(track.audio_url)}`;
-      const response = await fetch(proxyUrl, { signal: activeAbortController.signal });
-      if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
+      console.log(`[AI Auto] Fetching audio for analysis: ${track.audio_url}`);
+      let response;
+      try {
+        // Try direct CDN fetch first (bypasses Vercel AWS IP block, uses client IP)
+        response = await fetch(track.audio_url, { signal: activeAbortController.signal });
+        if (!response.ok) throw new Error(`Direct fetch status ${response.status}`);
+      } catch (directErr) {
+        console.warn('[AI Auto] Direct fetch failed, trying proxy:', directErr.message);
+        // Fall back to server proxy
+        const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(track.audio_url)}`;
+        response = await fetch(proxyUrl, { signal: activeAbortController.signal });
+        if (!response.ok) throw new Error(`Proxy fetch status ${response.status}`);
+      }
       
       const arrayBuffer = await response.arrayBuffer();
       if (analysisId !== currentAnalysisId) return;
@@ -934,15 +944,24 @@ async function selectTrack(idx) {
 
 // --- Start Track Playback ---
 function startPlayback(url) {
-  const playUrl = url.startsWith('http') && !url.includes('/api/proxy-audio')
-    ? `/api/proxy-audio?url=${encodeURIComponent(url)}`
-    : url;
-  audioPlayer.src = playUrl;
   audioPlayer.volume = volumeSlider.value / 100;
-  audioPlayer.play()
-    .catch(err => {
-      console.warn('Playback block:', err.message);
+  if (url.startsWith('http') && !url.includes('/api/proxy-audio')) {
+    audioPlayer.src = url;
+    audioPlayer.play()
+      .catch(err => {
+        console.warn('[Playback] Direct play failed, trying proxy:', err.message);
+        const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(url)}`;
+        audioPlayer.src = proxyUrl;
+        audioPlayer.play().catch(pErr => {
+          console.error('[Playback] Proxy playback failed completely:', pErr.message);
+        });
+      });
+  } else {
+    audioPlayer.src = url;
+    audioPlayer.play().catch(err => {
+      console.error('[Playback] Playback failed:', err.message);
     });
+  }
 }
 
 // --- Pre-fetch & Pre-analyze Background workers ---
@@ -950,9 +969,16 @@ async function runPreAnalysis(track) {
   const url = track.audio_url;
   try {
     initAudio();
-    const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+    let response;
+    try {
+      response = await fetch(url);
+      if (!response.ok) throw new Error(`Direct status ${response.status}`);
+    } catch (directErr) {
+      console.warn('[Pre-Fetch] Direct fetch failed, trying proxy:', directErr.message);
+      const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(url)}`;
+      response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`Proxy status ${response.status}`);
+    }
     const arrayBuffer = await response.arrayBuffer();
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     const result = analyzeAudioResonances(decodedBuffer);
@@ -1263,9 +1289,30 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
   ctx.fill();
 }
 
-function drawVisualizer() {
-  if (!analyser) return;
+let isVisualizerRunning = false;
+function startVisualizerLoop() {
+  if (!isVisualizerRunning && analyser) {
+    isVisualizerRunning = true;
+    requestAnimationFrame(drawVisualizer);
+  }
+}
 
+function drawVisualizer() {
+  if (!analyser) {
+    isVisualizerRunning = false;
+    return;
+  }
+
+  if (audioPlayer.paused || audioPlayer.ended) {
+    isVisualizerRunning = false;
+    // Clear canvas once on pause to save energy
+    const width = canvas.width;
+    const height = canvas.height;
+    canvasCtx.clearRect(0, 0, width, height);
+    return;
+  }
+
+  isVisualizerRunning = true;
   requestAnimationFrame(drawVisualizer);
 
   const width = canvas.width;
@@ -1274,6 +1321,7 @@ function drawVisualizer() {
   const dataArray = new Uint8Array(bufferLength);
   
   const mode = visModeSelect.value;
+  const isMobile = window.innerWidth <= 768;
 
   if (mode === 'oscilloscope') {
     analyser.getByteTimeDomainData(dataArray);
@@ -1297,8 +1345,10 @@ function drawVisualizer() {
     canvasCtx.arc(centerX, centerY, baseRadius, 0, 2 * Math.PI);
     canvasCtx.strokeStyle = 'rgba(0, 242, 254, 0.45)';
     canvasCtx.lineWidth = Math.max(2.5, minSize * 0.015);
-    canvasCtx.shadowBlur = 18;
-    canvasCtx.shadowColor = '#00f2fe';
+    if (!isMobile) {
+      canvasCtx.shadowBlur = 18;
+      canvasCtx.shadowColor = '#00f2fe';
+    }
     canvasCtx.stroke();
     canvasCtx.shadowBlur = 0;
 
@@ -1326,8 +1376,10 @@ function drawVisualizer() {
       canvasCtx.lineTo(endX, endY);
       canvasCtx.strokeStyle = grad;
       canvasCtx.lineWidth = Math.max(2, minSize * 0.008);
-      canvasCtx.shadowBlur = 6;
-      canvasCtx.shadowColor = '#00f2fe';
+      if (!isMobile) {
+        canvasCtx.shadowBlur = 6;
+        canvasCtx.shadowColor = '#00f2fe';
+      }
       canvasCtx.stroke();
       canvasCtx.shadowBlur = 0;
     }
@@ -1357,8 +1409,10 @@ function drawVisualizer() {
       grad.addColorStop(1, '#4facfe');
 
       canvasCtx.fillStyle = grad;
-      canvasCtx.shadowBlur = 4;
-      canvasCtx.shadowColor = '#00f2fe';
+      if (!isMobile) {
+        canvasCtx.shadowBlur = 4;
+        canvasCtx.shadowColor = '#00f2fe';
+      }
       drawRoundedRect(canvasCtx, x, y, activeBarWidth, barHeight, 4);
       canvasCtx.shadowBlur = 0;
     }
@@ -1366,8 +1420,10 @@ function drawVisualizer() {
   } else if (mode === 'oscilloscope') {
     canvasCtx.lineWidth = 3;
     canvasCtx.strokeStyle = '#00f2fe';
-    canvasCtx.shadowBlur = 12;
-    canvasCtx.shadowColor = '#00f2fe';
+    if (!isMobile) {
+      canvasCtx.shadowBlur = 12;
+      canvasCtx.shadowColor = '#00f2fe';
+    }
     canvasCtx.beginPath();
 
     const sliceWidth = width / bufferLength;
