@@ -1,5 +1,5 @@
-// Version: 2.3.4 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.4';
+// Version: 2.3.5 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.3.5';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -1338,7 +1338,6 @@ function drawVisualizer() {
   const bufferLength = analyser.frequencyBinCount;
   const dataArray = new Uint8Array(bufferLength);
   
-  const mode = visModeSelect.value;
   const isMobile = window.innerWidth <= 768;
 
   if (mode === 'oscilloscope') {
