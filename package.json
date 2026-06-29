@@ -4,7 +4,8 @@
   "description": "Suno Music Player with AetherMaster Audio Enhancer",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "watch-and-deploy": "node watch-and-deploy.js"
   },
   "dependencies": {
     "express": "^4.19.2"

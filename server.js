@@ -239,8 +239,18 @@ app.get('/api/suno', async (req, res) => {
             const imageMatch = objStr.match(/"image_url"\s*:\s*"([^"]+)"/i);
             const image_url = imageMatch ? imageMatch[1] : `https://cdn1.suno.ai/image_${uuid}.png`;
             
-            const artistMatch = objStr.match(/"(?:user_display_name|display_name)"\s*:\s*"([^"]+)"/i);
-            const artist_name = artistMatch ? artistMatch[1] : 'Suno Artist';
+            let artist_name = 'Suno Artist';
+            const userDisplayMatch = objStr.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
+            const handleMatch = objStr.match(/"handle"\s*:\s*"([^"]+)"/i);
+            const displayNameMatch = objStr.match(/"display_name"\s*:\s*"([^"]+)"/i);
+            
+            if (userDisplayMatch) {
+              artist_name = userDisplayMatch[1];
+            } else if (handleMatch) {
+              artist_name = handleMatch[1];
+            } else if (displayNameMatch && !/^v[0-9]/i.test(displayNameMatch[1])) {
+              artist_name = displayNameMatch[1];
+            }
             
             const durationMatch = objStr.match(/"duration"\s*:\s*([0-9\.]+)/i);
             const duration = durationMatch ? parseFloat(durationMatch[1]) : 0;
