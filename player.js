@@ -81,6 +81,7 @@ const landingBtnText = document.getElementById('landing-btn-text');
 const landingBtnLoader = document.getElementById('landing-btn-loader');
 const backToLandingBtn = document.getElementById('back-to-landing-btn');
 const sidebarBackBtn = document.getElementById('sidebar-back-btn');
+const sidebarToPlayerBtn = document.getElementById('sidebar-to-player-btn');
 const shareBtn = document.getElementById('share-btn');
 const audioPlayer = document.getElementById('audio-player');
 
@@ -311,13 +312,10 @@ function setupEventListeners() {
   // Workspace actions
   backToLandingBtn.addEventListener('click', showLandingView);
   if (sidebarBackBtn) {
-    sidebarBackBtn.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        openPlayerModal();
-      } else {
-        showLandingView();
-      }
-    });
+    sidebarBackBtn.addEventListener('click', showLandingView);
+  }
+  if (sidebarToPlayerBtn) {
+    sidebarToPlayerBtn.addEventListener('click', openPlayerModal);
   }
   if (shareBtn) {
     shareBtn.addEventListener('click', copyShareLink);
@@ -736,7 +734,7 @@ function renderTracksList() {
   }
 
   // If a sub-playlist is loaded but we have the parent profile in memory, render a return button!
-  if (userProfileData && loadedUrl && !loadedUrl.includes('/@') && !loadedUrl.includes('%40')) {
+  if (userProfileData && loadedUrl && !loadedUrl.includes('@') && !loadedUrl.includes('%40')) {
     const backBtn = document.createElement('div');
     backBtn.className = 'back-to-profile-item';
     backBtn.innerHTML = `

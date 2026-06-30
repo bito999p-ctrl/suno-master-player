@@ -249,7 +249,14 @@ body.player-active .app-container {
   border-bottom: 1px solid var(--border-glass);
 }
 
-.sidebar-back-btn {
+.sidebar-nav-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.sidebar-back-btn, .sidebar-to-player-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -261,13 +268,14 @@ body.player-active .app-container {
   padding: 6px 12px;
   border-radius: 12px;
   cursor: pointer;
-  margin-bottom: 12px;
-  width: 100%;
   justify-content: center;
   transition: all var(--transition-fast);
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-.sidebar-back-btn:hover {
+.sidebar-back-btn:hover, .sidebar-to-player-btn:hover {
   background: rgba(59, 130, 246, 0.12);
   transform: translateY(-1px);
 }
