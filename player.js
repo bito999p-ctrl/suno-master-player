@@ -208,6 +208,7 @@ document.addEventListener('visibilitychange', async () => {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
+  if (document.body) document.body.classList.remove('player-active'); // Ensure scroll is unlocked initially
   setupEventListeners();
   setupMediaSessionActions();
   
@@ -643,6 +644,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     // Transition Screens: Hide landing, Show player
     landingScreen.classList.add('hidden');
     playerWorkspace.classList.remove('hidden');
+    document.body.classList.add('player-active');
     resizeCanvas(); // Ensure canvas matches new dimensions
 
     // Set default active tab to library on mobile, and reveal mini-player
@@ -708,6 +710,7 @@ function showLandingView() {
   // Transition Screens: Hide player, Show landing
   playerWorkspace.classList.add('hidden');
   landingScreen.classList.remove('hidden');
+  document.body.classList.remove('player-active');
 
   // Refresh history UI
   renderHistoryUI();
