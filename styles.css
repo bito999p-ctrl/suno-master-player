@@ -1414,6 +1414,7 @@ input:checked + .switch-slider:before {
 @media (max-width: 768px) {
   /* Lock Viewport for SPA Layout on Mobile */
   body, .app-container {
+    height: 100svh;
     height: 100dvh;
     height: 100vh;
     overflow: hidden;
@@ -1485,8 +1486,8 @@ input:checked + .switch-slider:before {
     bottom: -100dvh; /* Locked offscreen initially */
     left: 0 !important;
     right: 0 !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: 100svh !important;
+    max-height: 100svh !important;
     width: 100vw !important;
     z-index: 10000 !important; /* Above everything */
     background: rgba(244, 248, 255, 0.98) !important;
