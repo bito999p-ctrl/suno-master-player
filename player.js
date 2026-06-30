@@ -161,6 +161,7 @@ const overlayTracksCount = document.getElementById('overlay-tracks-count');
 
 // Mini Player & Close button DOM references
 const miniPlayer = document.getElementById('mini-player');
+const mobileNavBar = document.getElementById('mobile-nav-bar');
 const miniArtwork = document.getElementById('mini-artwork');
 const miniTitle = document.getElementById('mini-title');
 const miniArtist = document.getElementById('mini-artist');
@@ -647,9 +648,9 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     // Set default active tab to library on mobile, and reveal mini-player
     if (window.innerWidth <= 768) {
       switchMobileTab('library');
-      if (miniPlayer) miniPlayer.classList.remove('hidden');
       closePlayerModal();
     }
+    updateMobileNavigationVisibility();
 
     // Auto play first track
     if (tracks.length > 0) {
@@ -713,6 +714,9 @@ function showLandingView() {
 
   // Clear landing input
   landingInput.value = '';
+
+  // Update navigation bar visibility
+  updateMobileNavigationVisibility();
 }
 
 // --- Render Sidebar Items ---
@@ -1760,6 +1764,27 @@ function handleResponsiveLayout() {
     const activeBtn = document.querySelector('.mobile-nav-bar .nav-btn.active');
     const activeTab = activeBtn ? activeBtn.id.replace('nav-btn-', '') : 'library';
     switchMobileTab(activeTab);
+  }
+  updateMobileNavigationVisibility();
+}
+
+function updateMobileNavigationVisibility() {
+  const isMobile = window.innerWidth <= 768;
+  const isLandingActive = !landingScreen.classList.contains('hidden');
+
+  if (isMobile) {
+    if (isLandingActive) {
+      if (mobileNavBar) mobileNavBar.classList.add('hidden');
+      if (miniPlayer) miniPlayer.classList.add('hidden');
+    } else {
+      if (mobileNavBar) mobileNavBar.classList.remove('hidden');
+      // Only show mini player if tracks are loaded
+      if (miniPlayer && tracks.length > 0) miniPlayer.classList.remove('hidden');
+    }
+  } else {
+    // Desktop: make sure hidden states are removed if window resized
+    if (mobileNavBar) mobileNavBar.classList.remove('hidden');
+    if (miniPlayer) miniPlayer.classList.add('hidden');
   }
 }
 
