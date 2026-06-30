@@ -397,11 +397,17 @@ app.get('/api/proxy-audio', (req, res) => {
   if (!audioUrl) {
     return res.status(400).send('Missing url parameter');
   }
-
   const https = require('https');
   const url = require('url');
 
   const parsedUrl = url.parse(audioUrl);
+  const hostname = parsedUrl.hostname || '';
+  const isSunoDomain = hostname.endsWith('.suno.ai') || hostname.endsWith('.suno.com') || hostname === 'suno.ai' || hostname === 'suno.com';
+  
+  if (!isSunoDomain) {
+    return res.status(403).send('Forbidden: Only Suno domains are permitted to be proxied.');
+  }
+
   const options = {
     hostname: parsedUrl.hostname,
     path: parsedUrl.path,
