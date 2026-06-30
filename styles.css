@@ -1204,7 +1204,11 @@ input:checked + .switch-slider:before {
 
 @media (min-width: 769px) {
   .landing-container {
-    align-items: center; /* Vertically center on desktop viewports */
+    align-items: flex-start;
+  }
+  .landing-card {
+    margin-top: 40px;
+    margin-bottom: 40px;
   }
 }
 
