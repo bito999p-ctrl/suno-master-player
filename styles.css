@@ -1542,7 +1542,7 @@ input:checked + .switch-slider:before {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 32px;
+    padding-bottom: 150px; /* Safe space to prevent overlapping with floating bottom mini-player & nav-bar */
   }
   
   .app-header {

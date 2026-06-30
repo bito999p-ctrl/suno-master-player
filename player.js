@@ -595,9 +595,6 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     
     // Update active UI details
     tracksCountEl.textContent = tracks.length;
-    renderTracksList();
-
-
 
     // Set source details in workspace sidebar
     sourceName.textContent = data.name || 'Suno Catalog';
@@ -622,6 +619,9 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
 
     // Save imported URL state
     loadedUrl = data.url || urlStr.trim();
+
+    // Render tracks list now that loadedUrl is set
+    renderTracksList();
 
     // Save current active source for Favorites
     currentSource = {
