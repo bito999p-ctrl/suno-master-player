@@ -10,96 +10,6 @@ function updateMediaSession(track) {
     });
   }
 }
-
-function bindAudioPlayerListeners(connectToWebAudio) {
-  if (!audioPlayer) return;
-  
-  audioPlayer.addEventListener('timeupdate', updateProgressBar);
-  audioPlayer.addEventListener('loadedmetadata', onTrackLoaded);
-  audioPlayer.addEventListener('ended', onTrackEnded);
-
-  audioPlayer.addEventListener('pause', () => {
-    isPlaying = false;
-    if (playPauseBtn) playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
-    if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="play"></i>';
-    if (artworkWrapper) artworkWrapper.classList.remove('playing');
-    releaseWakeLock();
-    if (audioCtx && audioCtx.state === 'running') {
-      audioCtx.suspend();
-    }
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'paused';
-    }
-    if (window.lucide) lucide.createIcons();
-  });
-
-  audioPlayer.addEventListener('play', () => {
-    isPlaying = true;
-    if (playPauseBtn) playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
-    if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="pause"></i>';
-    if (artworkWrapper) artworkWrapper.classList.add('playing');
-    requestWakeLock();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    startVisualizerLoop();
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'playing';
-    }
-    if (window.lucide) lucide.createIcons();
-  });
-
-  // Connect to Web Audio context if requested and active
-  if (connectToWebAudio && audioCtx) {
-    try {
-      sourceNode = audioCtx.createMediaElementSource(audioPlayer);
-      sourceNode.connect(enhancer.inputNode);
-      console.log('[AudioEngine] Re-routed audioPlayer to Web Audio.');
-    } catch (e) {
-      console.warn('Web Audio source connection failed (expected if already connected):', e.message);
-    }
-  }
-}
-
-function recreateAudioPlayer(connectToWebAudio) {
-  const oldPlayer = document.getElementById('audio-player');
-  if (!oldPlayer) return;
-
-  const currentTime = oldPlayer.currentTime;
-  const src = oldPlayer.src;
-  const paused = oldPlayer.paused;
-  const volume = oldPlayer.volume;
-
-  // Create a brand new clean audio element
-  const newPlayer = document.createElement('audio');
-  newPlayer.id = 'audio-player';
-  newPlayer.preload = 'auto';
-  newPlayer.crossOrigin = 'anonymous';
-
-  // Replace in DOM
-  if (oldPlayer.parentNode) {
-    oldPlayer.parentNode.replaceChild(newPlayer, oldPlayer);
-  }
-
-  // Update global reference
-  audioPlayer = newPlayer;
-
-  // Re-bind listeners and optional Web Audio routing
-  bindAudioPlayerListeners(connectToWebAudio);
-
-  // Restore playback state
-  if (src) {
-    newPlayer.src = src;
-    newPlayer.currentTime = currentTime;
-    newPlayer.volume = volume;
-    if (!paused) {
-      newPlayer.play().catch(e => {
-        console.warn('Restore playback failed:', e.message);
-      });
-    }
-  }
-}
-
 function setupMediaSessionActions() {
   if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('play', () => {
@@ -172,7 +82,7 @@ const landingBtnLoader = document.getElementById('landing-btn-loader');
 const backToLandingBtn = document.getElementById('back-to-landing-btn');
 const sidebarBackBtn = document.getElementById('sidebar-back-btn');
 const shareBtn = document.getElementById('share-btn');
-let audioPlayer = document.getElementById('audio-player');
+const audioPlayer = document.getElementById('audio-player');
 
 // Sidebar Info
 const sourceCover = document.getElementById('source-cover');
@@ -265,6 +175,8 @@ let favorites = { users: [], playlists: [], tracks: [] };
 let currentSource = { type: '', name: '', url: '' };
 // Screen Wake Lock API helpers to prevent screen sleep during playback
 let wakeLock = null;
+let speakerPlayer = null;
+let mediaStreamDest = null;
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator && !wakeLock) {
@@ -290,18 +202,6 @@ function releaseWakeLock() {
 document.addEventListener('visibilitychange', async () => {
   if (wakeLock !== null && document.visibilityState === 'visible') {
     await requestWakeLock();
-  }
-  
-  // Mobil background play hotswap to bypass Web Audio background suspension
-  const isMobileDevice = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  if (isMobileDevice) {
-    if (document.visibilityState === 'hidden') {
-      console.log('[Background] Switching to native playback mode to bypass iOS Web Audio suspension...');
-      recreateAudioPlayer(false);
-    } else {
-      console.log('[Background] Returning to foreground: Reconnecting Web Audio Mastering...');
-      recreateAudioPlayer(true);
-    }
   }
 });
 
@@ -356,11 +256,25 @@ function initAudio() {
   masterGainNode.gain.setValueAtTime(volumeSlider ? volumeSlider.value / 100 : 0.8, audioCtx.currentTime);
   audioPlayer.volume = 1.0; // Keep media element at unity gain
 
-  // Connect graph: Source -> Enhancer -> Analyser -> MasterGain -> Destination
+  // Connect graph: Source -> Enhancer -> Analyser -> MasterGain -> MediaStreamDestination (for background audio support)
   sourceNode.connect(enhancer.inputNode);
   enhancer.outputNode.connect(analyser);
   analyser.connect(masterGainNode);
-  masterGainNode.connect(audioCtx.destination);
+
+  if ('createMediaStreamDestination' in audioCtx) {
+    mediaStreamDest = audioCtx.createMediaStreamDestination();
+    masterGainNode.connect(mediaStreamDest);
+    
+    // Create a speaker element to audibly play the mastered stream
+    speakerPlayer = document.createElement('audio');
+    speakerPlayer.id = 'speaker-player';
+    speakerPlayer.preload = 'auto';
+    speakerPlayer.srcObject = mediaStreamDest.stream;
+    document.body.appendChild(speakerPlayer);
+    console.log('[AudioEngine] MediaStreamDestination routing initialized for iOS background support.');
+  } else {
+    masterGainNode.connect(audioCtx.destination);
+  }
 
   console.log('[AudioEngine] Web Audio graph initialized.');
 
@@ -485,8 +399,49 @@ function setupEventListeners() {
   if (shuffleBtn) shuffleBtn.addEventListener('click', toggleShuffle);
   if (repeatBtn) repeatBtn.addEventListener('click', toggleRepeat);
 
-  // Bind initial audio player listeners (with Web Audio routing enabled)
-  bindAudioPlayerListeners(true);
+  // Progress / Seek
+  if (audioPlayer) {
+    audioPlayer.addEventListener('timeupdate', updateProgressBar);
+    audioPlayer.addEventListener('loadedmetadata', onTrackLoaded);
+    audioPlayer.addEventListener('ended', onTrackEnded);
+
+    audioPlayer.addEventListener('pause', () => {
+      isPlaying = false;
+      if (playPauseBtn) playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
+      if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="play"></i>';
+      if (artworkWrapper) artworkWrapper.classList.remove('playing');
+      releaseWakeLock();
+      if (audioCtx && audioCtx.state === 'running') {
+        audioCtx.suspend();
+      }
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
+      if (speakerPlayer) {
+        speakerPlayer.pause();
+      }
+      if (window.lucide) lucide.createIcons();
+    });
+
+    audioPlayer.addEventListener('play', () => {
+      isPlaying = true;
+      if (playPauseBtn) playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+      if (miniPlayBtn) miniPlayBtn.innerHTML = '<i data-lucide="pause"></i>';
+      if (artworkWrapper) artworkWrapper.classList.add('playing');
+      requestWakeLock();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      startVisualizerLoop();
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
+      if (speakerPlayer && speakerPlayer.paused) {
+        speakerPlayer.play().catch(e => console.warn('[Audio] speakerPlayer play failed:', e.message));
+      }
+      if (window.lucide) lucide.createIcons();
+    });
+  }
   
   if (progressBar) {
     progressBar.addEventListener('input', () => {
