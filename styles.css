@@ -1429,6 +1429,10 @@ input:checked + .switch-slider:before {
     gap: 12px;
   }
 
+  .landing-container {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
   .app-workspace {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
