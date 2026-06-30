@@ -1430,7 +1430,7 @@ input:checked + .switch-slider:before {
   }
 
   .landing-container {
-    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .app-workspace {
@@ -1705,6 +1705,7 @@ input:checked + .switch-slider:before {
 
   .landing-card {
     padding: 24px 16px;
+    margin-bottom: 120px !important; /* Force margin to allow card and copyright to scroll above browser navigation bars */
   }
 
   /* Mobile bottom navigation bar styles */
