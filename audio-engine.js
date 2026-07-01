@@ -371,7 +371,12 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       const ratio = val / (localFloor + 1e-9);
       
       const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
-      const thresholdMultiplier = isSunoRange ? 1.20 : 1.25;
+      // ライブ音源やリバーブのシュワシュワ音を防ぐため、ステレオ相関（avgCorrelation）が低い（広がった歓声やリバーブが多い）場合はしきい値を上げ、余計なノッチを抑制
+      let baseThreshold = isSunoRange ? 1.20 : 1.25;
+      if (avgCorrelation < 0.72) {
+        baseThreshold += 0.08;
+      }
+      const thresholdMultiplier = baseThreshold;
       
       let isBroad = false;
       let peakQ = 15.0;
