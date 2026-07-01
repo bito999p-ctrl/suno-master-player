@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 2.6.0 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.6.0';
+// Version: 2.6.1 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.6.1';
 
 // --- State Variables ---
 let audioCtx = null;

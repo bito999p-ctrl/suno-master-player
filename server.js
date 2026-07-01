@@ -1,4 +1,4 @@
-// Version: 2.6.0 (Re-deployed to ensure complete file sync)
+// Version: 2.6.1 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -408,18 +408,35 @@ app.get('/api/proxy-audio', (req, res) => {
     return res.status(403).send('Forbidden: Only Suno domains are permitted to be proxied.');
   }
 
+  const reqHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://suno.com/',
+    'Origin': 'https://suno.com'
+  };
+
+  // Forward client Range request header if present
+  if (req.headers.range) {
+    reqHeaders['Range'] = req.headers.range;
+  }
+
   const options = {
     hostname: parsedUrl.hostname,
     path: parsedUrl.path,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Referer': 'https://suno.com/',
-      'Origin': 'https://suno.com'
-    }
+    headers: reqHeaders
   };
 
   https.get(options, (proxyRes) => {
-    // Forward status code and content-type headers
+    // Forward Range response headers if present to support range seeking
+    if (proxyRes.headers['content-range']) {
+      res.setHeader('Content-Range', proxyRes.headers['content-range']);
+    }
+    if (proxyRes.headers['accept-ranges']) {
+      res.setHeader('Accept-Ranges', proxyRes.headers['accept-ranges']);
+    }
+    if (proxyRes.headers['content-length']) {
+      res.setHeader('Content-Length', proxyRes.headers['content-length']);
+    }
+
     res.status(proxyRes.statusCode || 200);
     res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'audio/mpeg');
     res.setHeader('Access-Control-Allow-Origin', '*');
