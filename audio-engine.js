@@ -53,7 +53,7 @@ export const GENRE_PRESETS = {
     eqLowGain: 1.8, eqLowFreq: 90,
     eqMidGain: -0.5, eqMidFreq: 800, eqMidQ: 1.0,
     eqHighGain: 2.0, eqHighFreq: 11000,
-    compEnabled: true, compThreshold: -7.0, compRatio: 1.35, compAttack: 0.05, compRelease: 0.20, // Tamed attack (50ms) and ratio (1.35) to prevent bass cycles clipping/buzzing
+    compEnabled: true, compThreshold: -7.0, compRatio: 1.35, compAttack: 0.05, compRelease: 0.20, // Tamed attack (50ms) and ratio (1.35) to prevent bass cycles clipping/buzzing (v4.0.0)
     stereoWidth: 1.30, limiterBoost: 5.0, sideHighPassFreq: 150 // Slightly reduced limiter boost (5.0dB) for safer headroom
   },
   hiphop: {
@@ -846,20 +846,6 @@ export class AetherEnhancer {
       this[`eqCorrective${i}`].Q.setValueAtTime(18.0, context.currentTime);
     }
 
-    this.satSumNode.connect(this.eqLow);
-    this.eqLow.connect(this.kickPeaking);
-    this.kickPeaking.connect(this.eqMid);
-    this.eqMid.connect(this.eqHigh);
-    this.eqHigh.connect(this.sibilanceNotch);
-    this.sibilanceNotch.connect(this.eqCorrective1);
-    this.eqCorrective1.connect(this.eqCorrective2);
-    this.eqCorrective2.connect(this.eqCorrective3);
-    this.eqCorrective3.connect(this.eqCorrective4);
-    this.eqCorrective4.connect(this.eqCorrective5);
-    this.eqCorrective5.connect(this.eqCorrective6);
-    this.eqCorrective6.connect(this.eqCorrective7);
-    this.eqCorrective7.connect(this.eqCorrective8);
-
     // 7. Dynamics Compressor
     this.compressor = context.createDynamicsCompressor();
     this.compressor.knee.setValueAtTime(6.0, context.currentTime);
@@ -868,7 +854,13 @@ export class AetherEnhancer {
     this.compressor.attack.setValueAtTime(0.03, context.currentTime);
     this.compressor.release.setValueAtTime(0.15, context.currentTime);
 
-    this.eqCorrective8.connect(this.compressor);
+    this.satSumNode.connect(this.eqLow);
+    this.eqLow.connect(this.kickPeaking);
+    this.kickPeaking.connect(this.eqMid);
+    this.eqMid.connect(this.eqHigh);
+    this.eqHigh.connect(this.sibilanceNotch);
+    // Connect eqHigh to sibilanceNotch, then to compressor, keeping the dynamic de-esser active while bypassing the 8x surgical notches
+    this.sibilanceNotch.connect(this.compressor);
 
     // 8. Stereo Imager Matrix (Mid/Side Processing)
     this.splitter = context.createChannelSplitter(2);
