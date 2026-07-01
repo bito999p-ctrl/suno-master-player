@@ -400,11 +400,15 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
         const wideFloor = wideSum / (wideCount || 1);
         const ratioWide = val / (wideFloor + 1e-9);
         
-        if (ratioWide > 1.30) { // 周辺の広い平均より30%（約2.3dB）以上盛り上がっている場合
+        let humpThreshold = 1.30;
+        if (avgCorrelation < 0.72) {
+          humpThreshold = 1.45; // 歓声やリバーブがある場合は広帯域ハンプカットを大幅に抑制
+        }
+        if (ratioWide > humpThreshold) { // 周辺の広い平均より盛り上がっている場合
           isBroad = true;
           peakQ = 6.0; // 緩やかなノッチ（Q=6.0）で膨らみを滑らかに補正する
           ratioToUse = ratioWide;
-          thresholdToUse = 1.30;
+          thresholdToUse = humpThreshold;
         }
       }
       
