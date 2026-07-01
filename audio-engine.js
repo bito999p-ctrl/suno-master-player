@@ -443,7 +443,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   }  // 4. 最適マスタリングパラメーターの動的算出（ターゲット比率への収束）
   // 設計変更: AI AUTO（auto）またはカスタム（custom）の場合は中立なフラット特性（auto）をベースにする。
   // それ以外の個別プリセット（edm, rock等）が選ばれている場合は、そのプリセットをベースにAIが動的に最適化する。
-  const genreSelect = document.getElementById('preset-select');
+  const genreSelect = typeof document !== 'undefined' ? document.getElementById('preset-select') : null;
   const userGenreKey = userPresetKey || (genreSelect ? genreSelect.value : 'auto');
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
@@ -633,8 +633,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       stereoWidth: stereoWidth,
       sideHighPassFreq: basePreset.sideHighPassFreq || 110,
       limiterBoost: limiterBoost,
-      rumbleCutEnabled: sugRumbleCut,
-      hissReductionAmount: sugHissAmount
+      rumbleCutEnabled: genreKey === 'auto' ? sugRumbleCut : false,
+      hissReductionAmount: genreKey === 'auto' ? sugHissAmount : 0
     }
   };
 }
