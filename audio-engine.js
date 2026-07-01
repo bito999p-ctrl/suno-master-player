@@ -370,8 +370,9 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       const localFloor = localBins.reduce((sum, v) => sum + v, 0) / localBins.length;
       const ratio = val / (localFloor + 1e-9);
       
-      const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
-      const thresholdMultiplier = isSunoRange ? 1.20 : 1.25;
+      // 8,000Hz 〜 11,000Hz は耳障りな「キンキン音」が最も発生しやすい超重要帯域のため、検出感度を引き上げる
+      const isSunoRange = (peakFreq >= 8000 && peakFreq <= 11000);
+      const thresholdMultiplier = isSunoRange ? 1.15 : 1.25;
       
       let isBroad = false;
       let peakQ = 15.0;
@@ -395,11 +396,13 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
         const wideFloor = wideSum / (wideCount || 1);
         const ratioWide = val / (wideFloor + 1e-9);
         
-        if (ratioWide > 1.30) { // 周辺の広い平均より30%（約2.3dB）以上盛り上がっている場合
+        // 超重要帯域（8k〜11kHz）では、なだらかな膨らみの検出基準も 1.30 から 1.20 に緩和し、耳障りな山を確実にキャッチする
+        const humpThreshold = isSunoRange ? 1.20 : 1.30;
+        if (ratioWide > humpThreshold) { 
           isBroad = true;
           peakQ = 6.0; // 緩やかなノッチ（Q=6.0）で膨らみを滑らかに補正する
           ratioToUse = ratioWide;
-          thresholdToUse = 1.30;
+          thresholdToUse = humpThreshold;
         }
       }
       
