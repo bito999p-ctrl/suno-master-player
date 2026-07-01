@@ -593,24 +593,26 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     ambient: 13.5,
     podcast: 10.5, // ポッドキャスト: 会話が聞き取りやすい圧縮率
     classic: 15.0,
-    jazz: 12.0,
-    acoustic: 14.0, // アコースティック: 生楽器の強弱を最大限活かす
-    custom: 11.0
-  };
-  const targetCrest = genreTargetCrest[genreKey] || genreTargetCrest.auto;
-
-  const crestDiff = crestFactorDb - targetCrest;
-  if (crestDiff > 1.5) {
-    // 音源が非常にダイナミックな場合（強弱の幅が広い） -> コンプレッサーを少し深めに設定、音圧ブーストも多めに許容
-    compThreshold = Math.max(-10.0, basePreset.compThreshold - 1.5); // マイルドに下げる（最大でも-10.0dBまでに抑制）
-    compRatio = Math.min(1.45, basePreset.compRatio + 0.1);         // 低めの比率に抑制してポンピング（ほわほわ音）を防止
-    crestDesc = "High (Highly Dynamic)";
-    const bonus = Math.min(1.0, crestDiff * 0.25); // マイルドな加算に調整
-    limiterBoost = baseBoost + bonus;
-  } else if (crestDiff < -1.5) {
-    // 音源が既に圧縮されている場合 -> 二重圧縮による歪みを防ぐため、圧縮を極めて浅くし、ブーストを適度に抑制
-    compThreshold = Math.min(-6.0, basePreset.compThreshold + 1.5); // 圧縮しすぎないように浅いしきい値
-    compRatio = Math.max(1.15, basePreset.compRatio - 0.15);       // 低い圧縮比率
+    jazz:   // Only override input gain, noise cleaner and limiter boost if loading the AI suggested baseline
+  if (isAiAutoActive) {
+    params.inputGainDb = aiSuggestedParams.inputGainDb;
+    params.rumbleCutEnabled = aiSuggestedParams.rumbleCutEnabled;
+    params.hissReductionAmount = aiSuggestedParams.hissReductionAmount;
+    params.limiterBoost = aiSuggestedParams.limiterBoost;
+    // Set UI badge to show detected genre
+    const genreBadge = document.getElementById('ai-detected-genre-badge');
+    if (genreBadge && aiDetectedGenre) {
+      genreBadge.innerText = aiDetectedGenre.toUpperCase();
+    }
+  } else {
+    // プリセット変更時、ユーザーが設定した現在のノイズクリーナーの値（手動の調節値）を保持してクリアさせない
+    
+    // Reset UI badge back to AUTO if loading normal auto template or another preset
+    const genreBadge = document.getElementById('ai-detected-genre-badge');
+    if (genreBadge) {
+      genreBadge.innerText = genreKey === 'auto' ? 'AUTO' : genreKey.toUpperCase();
+    }
+  } - 0.15);       // 低い圧縮比率
     crestDesc = "Low (Highly Compressed)";
     const penalty = Math.min(2.5, -crestDiff * 0.40); // マイルドな減衰に調整
     limiterBoost = baseBoost - penalty;
