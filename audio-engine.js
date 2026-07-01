@@ -7,7 +7,7 @@
 const baseLoudnessTarget = 'genre';
 const params = { limiterBoost: 3.5 };
 
-export const GENRE_PRESETS = {
+const GENRE_PRESETS = {
   auto: {
     satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
     eqLowGain: 0.0, eqLowFreq: 90,
@@ -164,7 +164,7 @@ function fft(re, im) {
   }
 }
 
-export function analyzeAudioResonances(buffer, userPresetKey) {
+export function analyzeAudioResonances(buffer) {
   const fftSize = 2048;
   const numSlices = 32; // サンプリング精度を高めるため、32箇所を走査
   const sampleRate = buffer.sampleRate;
@@ -339,9 +339,9 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     sugHissAmount = Math.round(Math.max(0, Math.min(80, (hissNoiseFloorDb + 56.0) * 4.0)));
   }
 
-  // 3. 耳障りな高音域（シャリシャリした sibilance 帯域：6.5kHz 〜 10.5kHz）のマルチピーク走査
+  // 3. 耳障りな高音域（シャリシャリした sibilance 帯域：6.5kHz 〜 20kHz）のマルチピーク走査（上限撤廃）
   const sibilanceMinBin = Math.floor((6500 * fftSize) / sampleRate);
-  const sibilanceMaxBin = Math.floor((10500 * fftSize) / sampleRate);
+  const sibilanceMaxBin = Math.min(fftSize / 2 - 1, Math.floor((20000 * fftSize) / sampleRate));
   
   // ローカルピーク（極大値かつ周辺のローカルノイズフロアより著しく高いピーク）をすべて検出
   const rawPeaks = [];
@@ -363,7 +363,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       
       // Suno AIの音源で特に耳に刺さりやすい 9kHz〜10kHz 帯域（マージンを取り8800Hz〜10200Hz）の判定
       const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
-      const thresholdMultiplier = isSunoRange ? 1.45 : 1.55; // 45% / 55% の突出度で検出（cymbals等の自然な高域保護）
+      const thresholdMultiplier = isSunoRange ? 1.28 : 1.34; // 28% / 34% の突出度（約2.1dB〜2.5dB）で検出し、中程度のキンキン音も的確に補足
       
       if (ratio > thresholdMultiplier) {
         // 超過度合い（比率）に基づき減衰幅をダイナミックに算出（極端なこもりを防ぐため最大 -3.2dB までに制限）
@@ -443,8 +443,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   }  // 4. 最適マスタリングパラメーターの動的算出（ターゲット比率への収束）
   // 設計変更: AI AUTO（auto）またはカスタム（custom）の場合は中立なフラット特性（auto）をベースにする。
   // それ以外の個別プリセット（edm, rock等）が選ばれている場合は、そのプリセットをベースにAIが動的に最適化する。
-  const genreSelect = typeof document !== 'undefined' ? document.getElementById('preset-select') : null;
-  const userGenreKey = userPresetKey || (genreSelect ? genreSelect.value : 'auto');
+  const genreSelect = document.getElementById('preset-select');
+  const userGenreKey = genreSelect ? genreSelect.value : 'auto';
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
   const genreTargets = {
@@ -633,8 +633,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       stereoWidth: stereoWidth,
       sideHighPassFreq: basePreset.sideHighPassFreq || 110,
       limiterBoost: limiterBoost,
-      rumbleCutEnabled: genreKey === 'auto' ? sugRumbleCut : false,
-      hissReductionAmount: genreKey === 'auto' ? sugHissAmount : 0
+      rumbleCutEnabled: sugRumbleCut,
+      hissReductionAmount: sugHissAmount
     }
   };
 }
