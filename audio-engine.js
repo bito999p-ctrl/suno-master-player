@@ -568,9 +568,6 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     eqHighGain = Math.min(-1.5, eqHighGain);
   }
 
-  // 中域はジャンルの特性を維持 (Dynamic sibilance de-esser and satHpf integrated)
-  const eqMidGain = basePreset.eqMidGain;
-
   // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
   // バグ修正: AIオートコレクトの重複加算を防ぐため、スライダー変更で 'custom' になる前の基準ターゲット (baseLoudnessTarget) を参照
   const loudnessKey = typeof baseLoudnessTarget !== 'undefined' ? baseLoudnessTarget : (document.getElementById('loudness-select')?.value || 'genre');
@@ -595,7 +592,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     baseLoudnessDesc = `CUSTOM (+${baseBoost.toFixed(1)} dB)`;
   }
 
-  // ダイナミクス補正 (クレストファクター分析)
+  // ダイナミクス補正 (音楽理論・ダイナミックレンジ基準によるクレストファクター分析)
   let compThreshold = basePreset.compThreshold;
   let compRatio = basePreset.compRatio;
   let limiterBoost = baseBoost;
