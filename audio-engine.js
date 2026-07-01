@@ -12,7 +12,7 @@ export const GENRE_PRESETS = {
     satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
     eqLowGain: 0.0, eqLowFreq: 90,
     eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 1.0,
-    eqHighGain: 0.0, eqHighFreq: 12500,
+    eqHighGain: -1.5, eqHighFreq: 9000,
     compEnabled: true, compThreshold: -8.0, compRatio: 1.35, compAttack: 0.04, compRelease: 0.20,
     stereoWidth: 1.15, limiterBoost: 3.5, sideHighPassFreq: 110
   },
