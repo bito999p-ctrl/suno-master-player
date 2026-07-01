@@ -273,30 +273,40 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     avgCorrelation = Math.max(-1.0, Math.min(1.0, avgCorrelation));
   }
 
-  // 2. 周波数帯域別エネルギーの集計
-  // 低域: 20Hz - 250Hz, 中域: 250Hz - 4kHz, 高域: 4kHz - 20kHz
-  const binLowStart = Math.floor((20 * fftSize) / sampleRate);
-  const binLowEnd = Math.floor((250 * fftSize) / sampleRate);
-  const binMidStart = binLowEnd + 1;
-  const binMidEnd = Math.floor((4000 * fftSize) / sampleRate);
-  const binHighStart = binMidEnd + 1;
-  const binHighEnd = Math.min(fftSize / 2 - 1, Math.floor((20000 * fftSize) / sampleRate));
+  // 2. 周波数帯域別エネルギーの集計（音楽音響工学に基づいた4バンド分割）
+  // Bass (低域基礎): 20Hz - 160Hz
+  // Low-Mids (基音・温かみ・厚み): 160Hz - 800Hz
+  // High-Mids (母音・倍音・存在感): 800Hz - 5,000Hz (聴覚感度が最も高いエリア)
+  // Treble (空気感・煌びやかさ): 5,000Hz - 20,000Hz
+  const binSub = Math.floor((20 * fftSize) / sampleRate);
+  const binBassEnd = Math.floor((160 * fftSize) / sampleRate);
+  const binMidStart = binBassEnd + 1;
+  const binMidEnd = Math.floor((800 * fftSize) / sampleRate);
+  const binHighMidStart = binMidEnd + 1;
+  const binHighMidEnd = Math.floor((5000 * fftSize) / sampleRate);
+  const binAirStart = binHighMidEnd + 1;
+  const binAirEnd = Math.min(fftSize / 2 - 1, Math.floor((20000 * fftSize) / sampleRate));
 
-  let lowSum = 0;
-  for (let j = binLowStart; j <= binLowEnd; j++) lowSum += avgSpectrum[j];
-  const lowEnergy = lowSum / (binLowEnd - binLowStart + 1);
+  let bassSum = 0;
+  for (let j = binSub; j <= binBassEnd; j++) bassSum += avgSpectrum[j];
+  const energyBass = bassSum / (binBassEnd - binSub + 1);
 
-  let midSum = 0;
-  for (let j = binMidStart; j <= binMidEnd; j++) midSum += avgSpectrum[j];
-  const midEnergy = midSum / (binMidEnd - binMidStart + 1);
+  let lowMidSum = 0;
+  for (let j = binMidStart; j <= binMidEnd; j++) lowMidSum += avgSpectrum[j];
+  const energyLowMid = lowMidSum / (binMidEnd - binMidStart + 1);
 
-  let highSum = 0;
-  for (let j = binHighStart; j <= binHighEnd; j++) highSum += avgSpectrum[j];
-  const highEnergy = highSum / (binHighEnd - binHighStart + 1);
+  let highMidSum = 0;
+  for (let j = binHighMidStart; j <= binHighMidEnd; j++) highMidSum += avgSpectrum[j];
+  const energyHighMid = highMidSum / (binHighMidEnd - binHighMidStart + 1);
 
-  // 実際のエネルギー比率
-  const actualLowMidRatio = lowEnergy / (midEnergy + 1e-6);
-  const actualHighMidRatio = highEnergy / (midEnergy + 1e-6);
+  let trebleSum = 0;
+  for (let j = binAirStart; j <= binAirEnd; j++) trebleSum += avgSpectrum[j];
+  const energyTreble = trebleSum / (binAirEnd - binAirStart + 1);
+
+  // 実際のエネルギー比率 (中低域/ローミッドを基準とする)
+  const actualLowMidRatio = energyBass / (energyLowMid + 1e-6);
+  const actualHighMidRatio = energyTreble / (energyLowMid + 1e-6);
+  const actualPresenceRatio = energyHighMid / (energyLowMid + 1e-6);
 
   // Noise Floor Estimation in the quietest segment
   let minRmsIdx = 0;
