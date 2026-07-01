@@ -352,24 +352,57 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     
     // 極大値（ピーク）判定
     if (val > avgSpectrum[j - 1] && val > avgSpectrum[j + 1]) {
-      // 周辺のローカルノイズフロア（ピークの直近2ビンを除いた左右5ビンの平均）を計算
+      // 1. 鋭いホイッスル共鳴の検出（直近2ビンを除いた左右5ビンの平均）
       const localBins = [
         avgSpectrum[j - 5], avgSpectrum[j - 4], avgSpectrum[j - 3], avgSpectrum[j - 2],
         avgSpectrum[j + 2], avgSpectrum[j + 3], avgSpectrum[j + 4], avgSpectrum[j + 5]
       ];
       const localFloor = localBins.reduce((sum, v) => sum + v, 0) / localBins.length;
-      
       const ratio = val / (localFloor + 1e-9);
       
-      // Suno AIの音源で特に耳に刺やすく 9kHz〜10kHz 帯域（マージンを取り8800Hz〜10200Hz）の判定
       const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
-      const thresholdMultiplier = isSunoRange ? 1.20 : 1.25; // 20% / 25% の突出度（約1.6dB〜1.9dB）で検出し、残存する微細なキンキン音も漏らさず補足
+      const thresholdMultiplier = isSunoRange ? 1.20 : 1.25;
+      
+      let isBroad = false;
+      let peakQ = 15.0;
+      let ratioToUse = ratio;
+      let thresholdToUse = thresholdMultiplier;
       
       if (ratio > thresholdMultiplier) {
-        // 超過度合い（比率）に基づき減衰幅をダイナミックに算出（Q=15.0の鋭さにより原音を活かしつつ確実にトゲを抜くため、最大 -6.0dB まで深くカット）
-        let cutDb = -Math.min(6.0, Math.max(1.5, (ratio - thresholdMultiplier) * 8.0 + 1.5));
+        // 鋭い金属音（WHISTLE）として検知
+        isBroad = false;
+        peakQ = 15.0;
+      } else {
+        // 2. 広範囲な高音の盛り上がり（HUMP：例: 10kHz〜12kHz帯域の膨らみ）を検知するために広い近傍フロアと比較
+        let wideSum = 0;
+        let wideCount = 0;
+        for (let k = j - 30; k <= j + 30; k++) {
+          if (k >= sibilanceMinBin && k <= sibilanceMaxBin && (k < j - 8 || k > j + 8)) {
+            wideSum += avgSpectrum[k];
+            wideCount++;
+          }
+        }
+        const wideFloor = wideSum / (wideCount || 1);
+        const ratioWide = val / (wideFloor + 1e-9);
         
-        // 8500Hz未満のカットは、極度に痩せるのを防ぎつつもしっかり金属音を除去できる安全ライン（85%）に緩和
+        if (ratioWide > 1.30) { // 周辺の広い平均より30%（約2.3dB）以上盛り上がっている場合
+          isBroad = true;
+          peakQ = 6.0; // 緩やかなノッチ（Q=6.0）で膨らみを滑らかに補正する
+          ratioToUse = ratioWide;
+          thresholdToUse = 1.30;
+        }
+      }
+      
+      if (ratio > thresholdMultiplier || isBroad) {
+        // 減衰幅の算出
+        let cutDb = 0;
+        if (isBroad) {
+          cutDb = -Math.min(4.5, Math.max(1.5, (ratioToUse - thresholdToUse) * 6.0 + 1.5));
+        } else {
+          cutDb = -Math.min(6.0, Math.max(1.5, (ratioToUse - thresholdToUse) * 8.0 + 1.5));
+        }
+        
+        // 8500Hz未満のカットは緩和
         if (peakFreq < 8500) {
           cutDb *= 0.85;
         }
@@ -377,10 +410,12 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
         rawPeaks.push({
           freq: peakFreq,
           cut: cutDb,
+          q: peakQ,
           val: val,
           isSunoRange: isSunoRange,
-          // 突出度（ratio）を優先度スコアにする（Suno帯域は1.5倍の優先度）
-          score: ratio * (isSunoRange ? 1.5 : 1.0)
+          isBroad: isBroad,
+          // スコア計算：鋭い共鳴（ホイッスル）を最優先にしつつ、広範囲の盛り上がり（ハンプ）もカバー
+          score: ratioToUse * (isSunoRange ? 1.5 : 1.0) * (isBroad ? 0.9 : 1.0)
         });
       }
     }
