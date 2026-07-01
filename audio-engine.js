@@ -7,7 +7,7 @@
 const baseLoudnessTarget = 'genre';
 const params = { limiterBoost: 3.5 };
 
-export const GENRE_PRESETS = {
+const GENRE_PRESETS = {
   auto: {
     satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
     eqLowGain: 0.0, eqLowFreq: 90,
@@ -1059,4 +1059,6 @@ export class AetherEnhancer {
     }
     return curve;
   }
+}
+ }
 }
