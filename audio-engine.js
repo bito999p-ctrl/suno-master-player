@@ -785,7 +785,7 @@ export class AetherEnhancer {
       this[`eqCorrective${i}`].type = 'peaking';
       this[`eqCorrective${i}`].frequency.setValueAtTime(1000.0, context.currentTime);
       this[`eqCorrective${i}`].gain.setValueAtTime(0.0, context.currentTime);
-      this[`eqCorrective${i}`].Q.setValueAtTime(12.0, context.currentTime);
+      this[`eqCorrective${i}`].Q.setValueAtTime(18.0, context.currentTime);
     }
 
     // Connect EQ chain
@@ -966,7 +966,7 @@ export class AetherEnhancer {
       if (notches && notches[i]) {
         filter.frequency.setTargetAtTime(notches[i].freq, t, 0.05);
         filter.gain.setTargetAtTime(notches[i].cut * setupHissFactor, t, 0.05);
-        filter.Q.setTargetAtTime(12.0, t, 0.05);
+        filter.Q.setTargetAtTime(18.0, t, 0.05);
       } else {
         filter.gain.setTargetAtTime(0.0, t, 0.05);
       }
