@@ -1,5 +1,4 @@
 /**
- * Version: 2.4.2 (Re-deployed to ensure complete file sync)
  * AetherEnhancer - Web Audio API Mastering Engine
  * Automatically synced from audio-mastering-tool/app.js.
  */
@@ -340,9 +339,9 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     sugHissAmount = Math.round(Math.max(0, Math.min(80, (hissNoiseFloorDb + 56.0) * 4.0)));
   }
 
-  // 3. 耳障りな高音域（シャリシャリした sibilance 帯域：5kHz 〜 12kHz）のマルチピーク走査
-  const sibilanceMinBin = Math.floor((5000 * fftSize) / sampleRate);
-  const sibilanceMaxBin = Math.floor((12000 * fftSize) / sampleRate);
+  // 3. 耳障りな高音域（シャリシャリした sibilance 帯域：6.5kHz 〜 10.5kHz）のマルチピーク走査
+  const sibilanceMinBin = Math.floor((6500 * fftSize) / sampleRate);
+  const sibilanceMaxBin = Math.floor((10500 * fftSize) / sampleRate);
   
   // ローカルピーク（極大値かつ周辺のローカルノイズフロアより著しく高いピーク）をすべて検出
   const rawPeaks = [];
@@ -364,11 +363,11 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       
       // Suno AIの音源で特に耳に刺さりやすい 9kHz〜10kHz 帯域（マージンを取り8800Hz〜10200Hz）の判定
       const isSunoRange = (peakFreq >= 8800 && peakFreq <= 10200);
-      const thresholdMultiplier = isSunoRange ? 1.15 : 1.22; // 15% / 22% の突出度で検出
+      const thresholdMultiplier = isSunoRange ? 1.45 : 1.55; // 45% / 55% の突出度で検出（cymbals等の自然な高域保護）
       
       if (ratio > thresholdMultiplier) {
-        // 超過度合い（比率）に基づき減衰幅をダイナミックに算出（最大 -5.0dB まで）
-        let cutDb = -Math.min(5.0, Math.max(1.0, (ratio - thresholdMultiplier) * 7.0 + 1.0));
+        // 超過度合い（比率）に基づき減衰幅をダイナミックに算出（極端なこもりを防ぐため最大 -3.2dB までに制限）
+        let cutDb = -Math.min(3.2, Math.max(0.8, (ratio - thresholdMultiplier) * 4.0 + 0.8));
         
         // 8500Hz未満のカットは、極度に痩せるのを防ぎつつもしっかり金属音を除去できる安全ライン（85%）に緩和
         if (peakFreq < 8500) {
@@ -390,10 +389,10 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   // 優先度スコアの高い順にソート
   rawPeaks.sort((a, b) => b.score - a.score);
 
-  // 互いに400Hz以上離れた上位最大8個のピークを抽出（8連 corrective notches をフル活用）
+  // 互いに400Hz以上離れた上位最大4個のピークを抽出（削りすぎを防止）
   const filteredPeaks = [];
   for (const peak of rawPeaks) {
-    if (filteredPeaks.length >= 8) break;
+    if (filteredPeaks.length >= 4) break;
     const tooClose = filteredPeaks.some(p => Math.abs(p.freq - peak.freq) < 400);
     if (!tooClose) {
       filteredPeaks.push({ freq: peak.freq, cut: peak.cut });
@@ -489,6 +488,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   } else if (highDiffDb < -0.5) {
     eqHighAdjustment = Math.min(3.0, -highDiffDb * 0.8);
   }
+
   const eqHighGain = Math.max(-5.0, Math.min(4.0, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2));
 
   // 中域はジャンルの特性を維持
@@ -1000,7 +1000,7 @@ export class AetherEnhancer {
   _generateSoftClipCurve() {
     const n_samples = 44100;
     const curve = new Float32Array(n_samples);
-    const threshold = 0.85;
+    const threshold = 0.96; // Linear up to 0.96 amplitude (~ -0.35 dBFS) to prevent low-end intermodulation distortion
     for (let i = 0; i < n_samples; ++i) {
       const x = (i * 2) / n_samples - 1;
       const absX = Math.abs(x);
