@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 2.5.8 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.5.8';
+// Version: 2.5.9 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.5.9';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -71,6 +71,7 @@ let currentAnalysisId = 0;
 let activeAbortController = null;
 let currentAnalysisResult = null;
 let currentAudioBuffer = null;
+let isUserDraggingProgress = false;
 
 // --- DOM Elements ---
 const landingScreen = document.getElementById('landing-screen');
@@ -445,11 +446,23 @@ function setupEventListeners() {
   
   if (progressBar) {
     progressBar.addEventListener('input', () => {
+      isUserDraggingProgress = true;
+      const duration = getDuration();
+      if (duration > 0) {
+        const dragTime = (progressBar.value / 100) * duration;
+        currentTimeEl.textContent = formatTime(dragTime);
+      }
+    });
+
+    progressBar.addEventListener('change', () => {
       const duration = getDuration();
       if (duration > 0) {
         const seekTime = (progressBar.value / 100) * duration;
-        if (audioPlayer) audioPlayer.currentTime = seekTime;
+        if (audioPlayer) {
+          audioPlayer.currentTime = seekTime;
+        }
       }
+      isUserDraggingProgress = false;
     });
   }
 
@@ -1351,6 +1364,8 @@ function onTrackLoaded() {
 }
 
 function updateProgressBar() {
+  if (isUserDraggingProgress) return;
+
   const duration = getDuration();
   if (duration > 0) {
     const percentage = (audioPlayer.currentTime / duration) * 100;
