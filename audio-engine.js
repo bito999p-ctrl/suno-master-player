@@ -653,6 +653,15 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const originalPeakDb = 20 * Math.log10(maxAbsSample + 1e-6);
   const suggestedInputGainDb = Math.max(-12.0, Math.min(12.0, -6.0 - originalPeakDb));
 
+  // 8kHz〜11kHzのキンキン音（サ行やシンバルの鋭いピーク）をスキャン
+  let sibilanceDynamicFreq = 0;
+  const sunoRangePeaks = rawPeaks.filter(p => p.freq >= 8000 && p.freq <= 11000);
+  if (sunoRangePeaks.length > 0) {
+    // スコア（共鳴の鋭さ・目立ち具合）が最大のピークを特定
+    sunoRangePeaks.sort((a, b) => b.score - a.score);
+    sibilanceDynamicFreq = sunoRangePeaks[0].freq;
+  }
+
   return {
     detected: filteredPeaks.length > 0,
     notches: filteredPeaks,
@@ -686,7 +695,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       sideHighPassFreq: basePreset.sideHighPassFreq || 110,
       limiterBoost: limiterBoost,
       rumbleCutEnabled: sugRumbleCut,
-      hissReductionAmount: sugHissAmount
+      hissReductionAmount: sugHissAmount,
+      sibilanceDynamicFreq: sibilanceDynamicFreq
     }
   };
 }
