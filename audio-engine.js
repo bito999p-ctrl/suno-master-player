@@ -940,7 +940,7 @@ export class AetherEnhancer {
       this.compressor.threshold.setTargetAtTime(params.compThreshold, t, 0.05);
       this.compressor.ratio.setTargetAtTime(params.compRatio, t, 0.05);
       if (params.compAttack) this.compressor.attack.setTargetAtTime(params.compAttack, t, 0.05);
-      if (params.compRelease) this.compressor.release.setTargetAtTime(params.compRelease, t, 0.05);
+      if (params.compReleas.compressor.release.setTargetAtTime(params.compRelease, t, 0.05);
     } else {
       this.compressor.threshold.setTargetAtTime(0.0, t, 0.05);
       this.compressor.ratio.setTargetAtTime(1.0, t, 0.05);
