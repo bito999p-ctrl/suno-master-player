@@ -7,7 +7,7 @@
 const baseLoudnessTarget = 'genre';
 const params = { limiterBoost: 3.5 };
 
-const GENRE_PRESETS = {
+export const GENRE_PRESETS = {
   auto: {
     satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
     eqLowGain: 0.0, eqLowFreq: 90,
@@ -633,8 +633,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       stereoWidth: stereoWidth,
       sideHighPassFreq: basePreset.sideHighPassFreq || 110,
       limiterBoost: limiterBoost,
-      rumbleCutEnabled: genreKey === 'auto' ? sugRumbleCut : false,
-      hissReductionAmount: genreKey === 'auto' ? sugHissAmount : 0
+      rumbleCutEnabled: sugRumbleCut,
+      hissReductionAmount: sugHissAmount
     }
   };
 }
