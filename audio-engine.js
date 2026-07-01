@@ -730,6 +730,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     correlationDesc: corrDesc,
     bassDiff: lowDiffDb,
     trebleDiff: highDiffDb,
+    rumbleNoiseFloorDb: rumbleNoiseFloorDb,
+    hissNoiseFloorDb: hissNoiseFloorDb,
     baseLoudnessDesc: baseLoudnessDesc,
     detectedGenre: detectedGenre,
     suggestedParams: {
