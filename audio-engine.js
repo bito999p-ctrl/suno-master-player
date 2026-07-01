@@ -328,25 +328,22 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const rumbleNoiseFloor = rumbleSum / (binRumbleEnd - binRumbleStart + 1);
   const rumbleNoiseFloorDb = 20 * Math.log10(rumbleNoiseFloor + 1e-6);
 
-  // Suggested values (ノイズクリーナーの感度を引き上げ、より的確にノイズを除去するよう最適化)
-  let sugRumbleCut = false;
-  if (rumbleNoiseFloorDb > -58.0) { // -55dB から -58dB へ微調整し、微小な超低域ハムも検出しやすく補正
-    sugRumbleCut = true;
-  }
+  // Suggested values (ノイズクリーナーが自動判定で確実にONになるよう、安全な初期値をデフォルトでONにする仕様へ改善)
+  let sugRumbleCut = true; // 超低域の不要な泥（サブベース泥やDCオフセット）を常にカットするためデフォルトでON
+  let sugHissAmount = 20;  // 聴感上ほぼ無害でクリーンな高域を保つ20%のヒス除去を最低限常時ON
 
-  let sugHissAmount = 0;
   if (hissNoiseFloorDb > -68.0) { // -62dB から -68dB へ緩やかに感度を引き下げ、ヘッドホンで聴こえるノイズ成分を自動検出
-    // -68dB で 0%、-40dB で最大 90% になるよう比率を調整（3.2倍スケール）
-    const rawHiss = Math.round(Math.max(0, Math.min(90, (hissNoiseFloorDb + 68.0) * 3.2)));
+    // -68dB で 20%、-40dB で最大 90% になるよう比率を調整（2.5倍スケール + 初期値20%）
+    const rawHiss = Math.round(Math.max(20, Math.min(90, (hissNoiseFloorDb + 68.0) * 2.5 + 20)));
     
     // 静寂区間（最も静かな1秒間）のRMS音量が比較的高い場合、それはヒスではなく楽曲の音（シンセパッドやエフェクトの残響等）である可能性が高いため
-    // 高域の過剰な低域カット（LPF）を防ぐため、Hiss Reducerの適用度を減衰・または完全にOFFにする安全スケーラー
+    // LPFの過剰カットを防ぐため、Hiss Reducerの適用度を減衰する安全スケーラー
     let quietnessScale = 1.0;
     if (minRmsVal > 0.03) {
-      // 最低RMSが 0.03（約-30dBFS）〜0.12（約-18dBFS）の間で、スケール値を 1.0 から 0.35 まで滑らかに減衰（完全に0%になるのを防ぎ、マイルドなノイズ除去を最低限残す）
+      // 最低RMSが 0.03（約-30dBFS）〜0.12（約-18dBFS）の間で、スケール値を 1.0 から 0.35 まで滑らかに減衰
       quietnessScale = Math.max(0.35, 1.0 - (minRmsVal - 0.03) / 0.09);
     }
-    sugHissAmount = Math.round(rawHiss * quietnessScale);
+    sugHissAmount = Math.max(20, Math.round(rawHiss * quietnessScale));
   }
 
   // 3. 耳障りな高音域（シャリシャリした sibilance 帯域：7.0kHz 〜 20kHz）のマルチピーク走査（上限撤廃）
