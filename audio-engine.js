@@ -343,8 +343,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     // 高域の過剰な低域カット（LPF）を防ぐため、Hiss Reducerの適用度を減衰・または完全にOFFにする安全スケーラー
     let quietnessScale = 1.0;
     if (minRmsVal > 0.03) {
-      // 最低RMSが 0.03（約-30dBFS）〜0.12（約-18dBFS）の間で、スケール値を 1.0 から 0.0 まで滑らかに減衰
-      quietnessScale = Math.max(0, 1.0 - (minRmsVal - 0.03) / 0.09);
+      // 最低RMSが 0.03（約-30dBFS）〜0.12（約-18dBFS）の間で、スケール値を 1.0 から 0.35 まで滑らかに減衰（完全に0%になるのを防ぎ、マイルドなノイズ除去を最低限残す）
+      quietnessScale = Math.max(0.35, 1.0 - (minRmsVal - 0.03) / 0.09);
     }
     sugHissAmount = Math.round(rawHiss * quietnessScale);
   }
