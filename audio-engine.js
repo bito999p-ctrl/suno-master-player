@@ -259,7 +259,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     
     // スペクトラム強度の算出と累積（FFTサイズで正規化して正確なdBFSレベルにする）
     const spec = new Float32Array(fftSize / 2);
-    const normFactor = fftSize / 2; // Cooley-Tukey FFTの振幅正規化係数 (N/2)
+    const normFactor = fftSize / 4; // ハニング窓のコヒーレントゲイン（0.5）を補正した振幅正規化係数 (N/4)
     for (let j = 0; j < fftSize / 2; j++) {
       const mag = Math.sqrt(re[j] * re[j] + im[j] * im[j]) / normFactor;
       avgSpectrum[j] += mag / numSlices;
@@ -524,7 +524,14 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     acoustic: { low: 2.5, high: 0.15 }, // ACOUSTIC: 繊細な弦のピッキングと豊かな生音ボディ
     custom: { low: 3.1, high: 0.17 }
   };
-  const target = genreTargets[genreKey] || genreTargets.auto;
+  let target = genreTargets[genreKey] || genreTargets.auto;
+  if (genreKey === 'reference') {
+    if (referenceTarget !== null) {
+      target = referenceTarget;
+    } else {
+      target = genreTargets.auto; // レファレンス音源が未ロード時のフォールバック
+    }
+  }
 
   // 各帯域のエネルギー差分（dB換算）
   const lowDiffDb = 20 * Math.log10(actualLowMidRatio / target.low);
