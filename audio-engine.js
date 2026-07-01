@@ -461,11 +461,11 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
 
   let eqMidAdjustment = 0;
   if (presenceDiffDb > 0.5) {
-    eqMidAdjustment = -Math.min(2.5, presenceDiffDb * 0.7);
+    eqMidAdjustment = -Math.min(1.8, presenceDiffDb * 0.5); // 派手すぎる場合は中域を抑えてマイルドに（最大-1.8dB）
   } else if (presenceDiffDb < -0.5) {
-    eqMidAdjustment = Math.min(2.5, -presenceDiffDb * 0.7);
+    eqMidAdjustment = Math.min(1.2, -presenceDiffDb * 0.45); // こもっている場合はマイルドに補強（最大+1.2dB）
   }
-  const eqMidGain = Math.max(-4.0, Math.min(3.0, Math.round((basePreset.eqMidGain + eqMidAdjustment) * 2) / 2));
+  const eqMidGain = Math.max(-4.0, Math.min(1.5, Math.round((basePreset.eqMidGain + eqMidAdjustment) * 2) / 2)); // 中音域が強くなりすぎないよう最大値を+1.5dBにクランプ
 
   let eqHighAdjustment = 0;
   if (highDiffDb > 0.5) {
