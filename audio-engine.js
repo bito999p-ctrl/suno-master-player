@@ -566,7 +566,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     eqHighGain = Math.min(-1.5, eqHighGain);
   }
 
-  // 中域はジャンルの特性を維持 (Dynamic sibilance de-esser integrated)
+  // 中域はジャンルの特性を維持 (Dynamic sibilance de-esser and satHpf integrated)
   const eqMidGain = basePreset.eqMidGain;
 
   // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
@@ -806,7 +806,7 @@ export class AetherEnhancer {
 
     this.envelopeSmoother = context.createBiquadFilter();
     this.envelopeSmoother.type = 'lowpass';
-    this.envelopeSmoother.frequency.setValueAtTime(10.0, context.currentTime);
+    this.envelopeSmoother.frequency.setValueAtTime(2.0, context.currentTime); // Slowed down from 10Hz to 2Hz to smooth out dynamic filter sweeps and eliminate swirling/phasing artifacts on reverb tails and cheers.
     this.envelopeSmoother.Q.setValueAtTime(0.707, context.currentTime);
 
     this.hissEnvelopeGain = context.createGain();
@@ -826,6 +826,12 @@ export class AetherEnhancer {
     this.waveShaper = context.createWaveShaper();
     this.satSumNode = context.createGain();
 
+    // High-pass filter for Saturator Wet path to prevent low-end intermodulation mud (ボワボワ)
+    this.satHpf = context.createBiquadFilter();
+    this.satHpf.type = 'highpass';
+    this.satHpf.frequency.setValueAtTime(150.0, context.currentTime); // Cut sub-bass/bass saturation
+    this.satHpf.Q.setValueAtTime(0.707, context.currentTime);
+
     this.waveShaper.curve = this._generateSaturatorCurve('tape', 10.0);
     this.waveShaper.oversample = 'none';
 
@@ -835,7 +841,8 @@ export class AetherEnhancer {
     this.rumbleFilter.connect(this.hissFilter);
 
     this.hissFilter.connect(this.satDryGain);
-    this.hissFilter.connect(this.waveShaper);
+    this.hissFilter.connect(this.satHpf);
+    this.satHpf.connect(this.waveShaper); // Feed highpassed signal to waveshaper to keep low end clean
     this.waveShaper.connect(this.satWetGain);
 
     this.satDryGain.connect(this.satSumNode);
