@@ -12,15 +12,7 @@ export const GENRE_PRESETS = {
     satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
     eqLowGain: 0.0, eqLowFreq: 90,
     eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 1.0,
-    eqHighGain: -1.5, eqHighFreq: 9000,
-    compEnabled: true, compThreshold: -8.0, compRatio: 1.35, compAttack: 0.04, compRelease: 0.20,
-    stereoWidth: 1.15, limiterBoost: 3.5, sideHighPassFreq: 110
-  },
-  reference: {
-    satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
-    eqLowGain: 0.0, eqLowFreq: 90,
-    eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 1.0,
-    eqHighGain: -1.5, eqHighFreq: 9000,
+    eqHighGain: 0.0, eqHighFreq: 11000,
     compEnabled: true, compThreshold: -8.0, compRatio: 1.35, compAttack: 0.04, compRelease: 0.20,
     stereoWidth: 1.15, limiterBoost: 3.5, sideHighPassFreq: 110
   },
@@ -259,7 +251,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     
     // スペクトラム強度の算出と累積（FFTサイズで正規化して正確なdBFSレベルにする）
     const spec = new Float32Array(fftSize / 2);
-    const normFactor = fftSize / 4; // ハニング窓のコヒーレントゲイン（0.5）を補正した振幅正規化係数 (N/4)
+    const normFactor = fftSize / 2; // Cooley-Tukey FFTの振幅正規化係数 (N/2)
     for (let j = 0; j < fftSize / 2; j++) {
       const mag = Math.sqrt(re[j] * re[j] + im[j] * im[j]) / normFactor;
       avgSpectrum[j] += mag / numSlices;
@@ -351,8 +343,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     // 高域の過剰な低域カット（LPF）を防ぐため、Hiss Reducerの適用度を減衰・または完全にOFFにする安全スケーラー
     let quietnessScale = 1.0;
     if (minRmsVal > 0.03) {
-      // 最低RMSが 0.03（約-30dBFS）〜0.12（約-18dBFS）の間で、スケール値を 1.0 から 0.35 まで滑らかに減衰（完全に0%になるのを防ぎ、マイルドなノイズ除去を最低限残す）
-      quietnessScale = Math.max(0.35, 1.0 - (minRmsVal - 0.03) / 0.09);
+      // 最低RMSが 0.03（約-30dBFS）〜0.12（約-18dBFS）の間で、スケール値を 1.0 から 0.0 まで滑らかに減衰
+      quietnessScale = Math.max(0, 1.0 - (minRmsVal - 0.03) / 0.09);
     }
     sugHissAmount = Math.round(rawHiss * quietnessScale);
   }
@@ -524,14 +516,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     acoustic: { low: 2.5, high: 0.15 }, // ACOUSTIC: 繊細な弦のピッキングと豊かな生音ボディ
     custom: { low: 3.1, high: 0.17 }
   };
-  let target = genreTargets[genreKey] || genreTargets.auto;
-  if (genreKey === 'reference') {
-    if (referenceTarget !== null) {
-      target = referenceTarget;
-    } else {
-      target = genreTargets.auto; // レファレンス音源が未ロード時のフォールバック
-    }
-  }
+  const target = genreTargets[genreKey] || genreTargets.auto;
 
   // 各帯域のエネルギー差分（dB換算）
   const lowDiffDb = 20 * Math.log10(actualLowMidRatio / target.low);
@@ -553,12 +538,12 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   if (highDiffDb > 0.5) {
     eqHighAdjustment = -Math.min(3.0, highDiffDb * 0.8);
   } else if (highDiffDb < -0.5) {
-    eqHighAdjustment = Math.min(2.0, -highDiffDb * 0.6); // 高音の硬さを防ぐため、最大補正幅を+3.0dBから+2.0dBに緩和し、スロープをマイルドに（0.8から0.6倍に）調整
+    eqHighAdjustment = Math.min(3.0, -highDiffDb * 0.8);
   }
 
-  const eqHighGain = Math.max(-5.0, Math.min(3.0, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2)); // 高域ブーストの上限を+4.0dBから+3.0dBに抑える
+  const eqHighGain = Math.max(-5.0, Math.min(4.0, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2));
 
-  // 中域はジャンルの特性を維持 (Treble adjustments completed)
+  // 中域はジャンルの特性を維持
   const eqMidGain = basePreset.eqMidGain;
 
   // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
