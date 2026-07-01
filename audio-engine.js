@@ -570,6 +570,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
 
   // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
   // バグ修正: AIオートコレクトの重複加算を防ぐため、スライダー変更で 'custom' になる前の基準ターゲット (baseLoudnessTarget) を参照
+  // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
   const loudnessKey = typeof baseLoudnessTarget !== 'undefined' ? baseLoudnessTarget : (document.getElementById('loudness-select')?.value || 'genre');
   let baseBoost = 4.0;
   let baseLoudnessDesc = "STREAMING (-14 LUFS)";
@@ -600,43 +601,46 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
 
   // ジャンル別理想ターゲット・クレストファクター（強弱の幅）
   const genreTargetCrest = {
-    auto: 11.0, // AI AUTO: バランスの良い適度なダイナミクス幅
-    pops: 12.5,
-    rnb: 11.5,   // R&B: 滑らかで心地よいダイナミクス
-    rock: 10.0,
-    metal: 8.5,   // メタル: 音圧が高く手数が速いドラムに合わせた狭い幅
-    edm: 8.0,
-    hiphop: 9.0,
-    lofi: 12.0,
-    hardcore: 7.5,
-    ambient: 13.5,
-    podcast: 10.5, // ポッドキャスト: 会話が聞き取りやすい圧縮率
-    classic: 15.0,
-    jazz: 12.0,
-    acoustic: 14.0, // アコースティック: 生楽器の強弱を最大限活かす
-    custom: 11.0
+    auto: 10.5,     // AI AUTO: リファレンス中立（適正ダイナミクス）
+    pops: 11.0,     // POPS: 標準的なポップス
+    rnb: 10.0,      // R&B: 低域圧縮とグルーヴ
+    rock: 11.0,     // ROCK: 生ドラムのパンチ感を残す
+    metal: 9.5,     // METAL: 音圧の壁とタイトさ
+    edm: 8.5,       // EDM: クラブ向けの均一で高い音圧
+    hiphop: 9.0,    // HIPHOP: キックの抜けとアタック重視
+    lofi: 12.0,     // LOFI: 生音の暖かみ・広がり
+    hardcore: 7.5,  // HARDCORE: 最大限の押し込み
+    ambient: 13.5,  // AMBIENT: 広い強弱と空気感
+    podcast: 10.5,  // PODCAST: 会話の聞き取りやすさ優先
+    classic: 14.5,  // CLASSIC: 生楽器의 ダイナミクスを最大限活かす
+    jazz: 12.5,     // JAZZ: アコースティックなニュアンス
+    acoustic: 13.0, // ACOUSTIC: ピッキング等の生々しさ
+    custom: 10.5
   };
   const targetCrest = genreTargetCrest[genreKey] || genreTargetCrest.auto;
 
   const crestDiff = crestFactorDb - targetCrest;
-  if (crestDiff > 1.5) {
-    // 音源が非常にダイナミックな場合（強弱の幅が広い） -> コンプレッサーを少し深めに設定、音圧ブーストも多めに許容
-    compThreshold = Math.max(-10.0, basePreset.compThreshold - 1.5); // マイルドに下げる（最大でも-10.0dBまでに抑制）
-    compRatio = Math.min(1.45, basePreset.compRatio + 0.1);         // 低めの比率に抑制してポンピング（ほわほわ音）を防止
+  if (crestDiff > 0.0) {
+    // 音源がターゲットよりもダイナミック（強弱が広い） -> コンプレッサーのしきい値を下げ、リミッターのブースト量を増やして適正レベルに収束させる
+    const compressionFactor = Math.min(6.0, crestDiff * 0.4); // 最大-6dBしきい値を下げる
+    const ratioFactor = Math.min(0.2, crestDiff * 0.05);     // 圧縮比もマイルドに加算
+    compThreshold = Math.max(-14.0, basePreset.compThreshold - compressionFactor);
+    compRatio = Math.min(1.6, basePreset.compRatio + ratioFactor);
     crestDesc = "High (Highly Dynamic)";
-    const bonus = Math.min(1.0, crestDiff * 0.25); // マイルドな加算に調整
+    
+    // リミッターを適正にドライブして音圧を出す
+    const bonus = Math.min(3.5, crestDiff * 0.75);
     limiterBoost = baseBoost + bonus;
-  } else if (crestDiff < -1.5) {
-    // 音源が既に圧縮されている場合 -> 二重圧縮による歪みを防ぐため、圧縮を極めて浅くし、ブーストを適度に抑制
-    compThreshold = Math.min(-6.0, basePreset.compThreshold + 1.5); // 圧縮しすぎないように浅いしきい値
-    compRatio = Math.max(1.15, basePreset.compRatio - 0.15);       // 低い圧縮比率
-    crestDesc = "Low (Highly Compressed)";
-    const penalty = Math.min(2.5, -crestDiff * 0.40); // マイルドな減衰に調整
-    limiterBoost = baseBoost - penalty;
   } else {
-    // 標準的なダイナミクス -> 基準ブースト値に追従
-    crestDesc = "Normal (Balanced)";
-    limiterBoost = baseBoost;
+    // 音源がすでに強く圧縮されている -> 二重圧縮での音割れを防ぐため、コンプレッサーを逃がし（浅くし）、ブーストも下げる
+    const releaseFactor = Math.min(4.0, -crestDiff * 0.5);
+    const ratioFactor = Math.min(0.2, -crestDiff * 0.05);
+    compThreshold = Math.min(-5.0, basePreset.compThreshold + releaseFactor);
+    compRatio = Math.max(1.15, basePreset.compRatio - ratioFactor);
+    crestDesc = "Low (Highly Compressed)";
+    
+    const penalty = Math.min(3.0, -crestDiff * 0.6);
+    limiterBoost = Math.max(1.5, baseBoost - penalty);
   }
 
   // 低域飽和による音割れ・ビビリ防止（低域が基準ターゲットより著しく大きい場合、リミッターブーストを自動で控えめにする）
@@ -648,21 +652,19 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   // 0.0〜10.0dB の範囲に制限し（歪み防止のため最大値を10dBに抑制）、小数点第一位に丸める
   limiterBoost = Math.max(0.0, Math.min(10.0, Math.round(limiterBoost * 10) / 10));
 
-  // ステレオ幅の補正 (相関値分析)
+  // ステレオ幅の補正 (位相相関に基づいた連続的スケーリング)
   let stereoWidth = basePreset.stereoWidth;
   let corrDesc = "Balanced";
   
   if (avgCorrelation > 0.82) {
-    // 位相がほぼセンターに集まっている（モノラルに近い）-> ステレオ感を拡張
-    stereoWidth = Math.min(2.0, basePreset.stereoWidth + 0.2);
+    // 位相がほぼセンターに集まっている（モノラルに近い）-> 音源の広がり不足に応じて自動拡張
+    const expansion = Math.min(0.25, (avgCorrelation - 0.82) * 1.5);
+    stereoWidth = Math.min(1.4, basePreset.stereoWidth + expansion);
     corrDesc = "Mono-leaning (Expanded)";
   } else if (avgCorrelation < 0.72) {
-    // ライブ音源やリバーブで既に左右に広がりすぎている -> 歪みやコムフィルター現象を防ぐため、1.0（等倍）以下にクランプする
-    stereoWidth = Math.min(1.0, basePreset.stereoWidth - 0.2);
-    // さらに極端に逆位相・拡散している場合はモノラル側へ少し寄せる
-    if (avgCorrelation < 0.45) {
-      stereoWidth = Math.max(0.9, stereoWidth - 0.1);
-    }
+    // ライブ音源やリバーブで既に左右に広がりすぎている -> コムフィルターや歪みを防ぐため、1.0（等倍）以下にクランプする
+    const reduction = Math.min(0.2, (0.72 - avgCorrelation) * 0.8);
+    stereoWidth = Math.max(0.85, Math.min(1.0, basePreset.stereoWidth - 0.2 - reduction));
     corrDesc = "Wide/Phasey (Clamped)";
   } else {
     corrDesc = "Balanced Stereo";
