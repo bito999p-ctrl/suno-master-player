@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 2.5.9 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.5.9';
+// Version: 2.6.0 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=2.6.0';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -72,6 +72,7 @@ let activeAbortController = null;
 let currentAnalysisResult = null;
 let currentAudioBuffer = null;
 let isUserDraggingProgress = false;
+let seekTimeout = null;
 
 // --- DOM Elements ---
 const landingScreen = document.getElementById('landing-screen');
@@ -405,6 +406,10 @@ function setupEventListeners() {
     audioPlayer.addEventListener('timeupdate', updateProgressBar);
     audioPlayer.addEventListener('loadedmetadata', onTrackLoaded);
     audioPlayer.addEventListener('ended', onTrackEnded);
+    audioPlayer.addEventListener('seeked', () => {
+      if (seekTimeout) clearTimeout(seekTimeout);
+      isUserDraggingProgress = false;
+    });
 
     audioPlayer.addEventListener('pause', () => {
       isPlaying = false;
@@ -462,7 +467,10 @@ function setupEventListeners() {
           audioPlayer.currentTime = seekTime;
         }
       }
-      isUserDraggingProgress = false;
+      if (seekTimeout) clearTimeout(seekTimeout);
+      seekTimeout = setTimeout(() => {
+        isUserDraggingProgress = false;
+      }, 1000); // 1s fallback safety reset
     });
   }
 
@@ -1364,7 +1372,7 @@ function onTrackLoaded() {
 }
 
 function updateProgressBar() {
-  if (isUserDraggingProgress) return;
+  if (isUserDraggingProgress || (audioPlayer && audioPlayer.seeking)) return;
 
   const duration = getDuration();
   if (duration > 0) {
