@@ -7,7 +7,7 @@
 const baseLoudnessTarget = 'genre';
 const params = { limiterBoost: 3.5 };
 
-export const GENRE_PRESETS = {
+const GENRE_PRESETS = {
   auto: {
     satEnabled: true, satType: 'tube', satDrive: 12, satMix: 10,
     eqLowGain: 0.0, eqLowFreq: 90,
@@ -430,7 +430,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     if (filteredPeaks.length >= 6) break;
     const tooClose = filteredPeaks.some(p => Math.abs(p.freq - peak.freq) < 400);
     if (!tooClose) {
-      filteredPeaks.push({ freq: peak.freq, cut: peak.cut });
+      filteredPeaks.push({ freq: peak.freq, cut: peak.cut, q: peak.q, isBroad: peak.isBroad });
     }
   }
 
