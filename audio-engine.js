@@ -450,17 +450,14 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
           val: val,
           isSunoRange: isSunoRange,
           isBroad: isBroad,
-          // スコア計算：鋭い共鳴（ホイッスル）を最優先にしつつ、広範囲の盛り上がり（ハンプ）もカバー
           score: ratioToUse * (isSunoRange ? 1.5 : 1.0) * (isBroad ? 0.9 : 1.0)
         });
       }
     }
   }
 
-  // 優先度スコアの高い順にソート
   rawPeaks.sort((a, b) => b.score - a.score);
 
-  // 互いに400Hz以上離れた上位最大4個のピークを抽出（削りすぎを防止）
   const filteredPeaks = [];
   for (const peak of rawPeaks) {
     if (filteredPeaks.length >= 6) break;
@@ -470,37 +467,28 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     }
   }
 
-  // 8kHz〜11kHzのキンキン音（サ行やシンバルの鋭いピーク）をスキャン（ブースト判定クランプで先に使用するため上部で定義）
   let sibilanceDynamicFreq = 0;
   const sunoRangePeaks = rawPeaks.filter(p => p.freq >= 8000 && p.freq <= 11000);
   if (sunoRangePeaks.length > 0) {
-    // スコア（共鳴の鋭さ・目立ち具合）が最大のピークを特定
     sunoRangePeaks.sort((a, b) => b.score - a.score);
     sibilanceDynamicFreq = sunoRangePeaks[0].freq;
   }
 
-  // 3.5. AIジャンル自動判定 (Heuristic Genre Classifier - お勧め提案用)
-
-  // 3.5. AIジャンル自動判定 (Heuristic Genre Classifier)
   let detectedGenre = 'pops';
   if (actualLowMidRatio > 3.2 && actualHighMidRatio > 0.16 && crestFactorDb < 12.8) {
     detectedGenre = 'edm';
   } else if (actualLowMidRatio > 3.1 && actualHighMidRatio <= 0.16 && crestFactorDb < 12.8) {
     detectedGenre = 'hiphop';
   } else if (actualLowMidRatio >= 1.6 && actualLowMidRatio <= 3.3 && crestFactorDb < 15.5) {
-    // ロック・メタル・ポップス・ジャズの中間帯域グループ（ステレオ相関と高音特性で詳細分類）
     if (crestFactorDb >= 12.8) {
-      // ダイナミクスが広い生音系構成の場合
       if (actualLowMidRatio >= 2.4 && actualLowMidRatio <= 3.1 && avgCorrelation > 0.75 && actualHighMidRatio < 0.12) {
         detectedGenre = 'jazz';
       } else if (actualLowMidRatio < 2.4 && avgCorrelation > 0.75 && actualHighMidRatio < 0.12) {
         detectedGenre = 'acoustic';
       } else {
-        // ステレオ幅が広い（avgCorrelation <= 0.75）または高域が明るい場合は、ダイナミックなロック/メタルと判定
         detectedGenre = (actualHighMidRatio > 0.14) ? 'metal' : 'rock';
       }
     } else {
-      // 音圧が高い商業系構成の場合
       if (actualHighMidRatio >= 0.11) {
         detectedGenre = (actualHighMidRatio > 0.14) ? 'metal' : 'rock';
       } else {
@@ -508,7 +496,6 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       }
     }
   } else if (crestFactorDb >= 13.0) {
-    // 高ダイナミクス極端帯域（クラシック・アンビエント等）
     if (actualLowMidRatio < 2.2 && actualHighMidRatio < 0.12) {
       detectedGenre = 'classic';
     } else if (actualHighMidRatio > 0.18 && actualLowMidRatio < 2.8) {
@@ -520,48 +507,53 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     detectedGenre = 'podcast';
   } else {
     detectedGenre = 'pops';
-  }  // 4. 最適マスタリングパラメーターの動的算出（ターゲット比率への収束）
-  // 設計変更: AI AUTO（auto）またはカスタム（custom）の場合は中立なフラット特性（auto）をベースにする。
-  // それ以外の個別プリセット（edm, rock等）が選ばれている場合は、そのプリセットをベースにAIが動的に最適化する。
+  }
+
   const genreSelect = document.getElementById('preset-select');
   const userGenreKey = userPresetKey || (genreSelect ? genreSelect.value : 'auto');
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
+
   const genreTargets = {
-    auto: { low: 3.1, high: 0.17 }, // AI AUTO: 豊かな低域の伸びとシルキーな高域の空気感
-    pops: { low: 2.8, high: 0.18 }, // POPS: 明瞭なボーカルと煌びやかな高域
-    rnb: { low: 3.4, high: 0.18 },   // R&B: ディープなサブベースと滑らかな広がり
-    rock: { low: 3.1, high: 0.15 },  // ROCK: 厚みのあるキックとエッジの効いた中高域
-    metal: { low: 3.3, high: 0.18 }, // METAL: 重低音とScoop-Midギターの壁、鋭いエッジ
-    edm: { low: 3.3, high: 0.19 },   // EDM: パワフルなキックとパンチのあるシンセ高域
-    hiphop: { low: 3.5, high: 0.16 }, // HIPHOP: 極太の超低域とタイトなアタック
-    lofi: { low: 3.5, high: 0.08 },   // LOFI: 温かみのあるローミッドとくすんだビンテージ高域
-    hardcore: { low: 3.4, high: 0.20 }, // HARDCORE: 極限のクラブ音圧とサチュレーション
-    ambient: { low: 3.2, high: 0.24 },  // AMBIENT: 超ワイドで広がりのある空気感
-    podcast: { low: 1.8, high: 0.11 },  // ポッドキャスト: 低域カットと会話明瞭度
-    classic: { low: 2.4, high: 0.12 },  // CLASSIC: 生楽器のナチュラルな強弱と奥行き
-    jazz: { low: 3.0, high: 0.14 },     // JAZZ: ウッディなベースと有機的なホーン中域
-    acoustic: { low: 2.5, high: 0.15 }, // ACOUSTIC: 繊細な弦のピッキングと豊かな生音ボディ
-    custom: { low: 3.1, high: 0.17 }
+    auto: { low: 2.8, high: 0.14, presence: 0.45 },
+    pops: { low: 2.6, high: 0.16, presence: 0.48 },
+    rnb: { low: 3.2, high: 0.15, presence: 0.43 },
+    rock: { low: 2.9, high: 0.13, presence: 0.46 },
+    metal: { low: 3.0, high: 0.15, presence: 0.45 },
+    edm: { low: 3.2, high: 0.16, presence: 0.42 },
+    hiphop: { low: 3.3, high: 0.13, presence: 0.40 },
+    lofi: { low: 3.1, high: 0.08, presence: 0.38 },
+    hardcore: { low: 3.2, high: 0.18, presence: 0.44 },
+    ambient: { low: 2.9, high: 0.20, presence: 0.48 },
+    podcast: { low: 1.6, high: 0.10, presence: 0.50 },
+    classic: { low: 2.2, high: 0.11, presence: 0.42 },
+    jazz: { low: 2.7, high: 0.12, presence: 0.44 },
+    acoustic: { low: 2.4, high: 0.13, presence: 0.46 },
+    custom: { low: 2.8, high: 0.14, presence: 0.45 }
   };
   const target = genreTargets[genreKey] || genreTargets.auto;
 
-  // 各帯域のエネルギー差分（dB換算）
   const lowDiffDb = 20 * Math.log10(actualLowMidRatio / target.low);
   const highDiffDb = 20 * Math.log10(actualHighMidRatio / target.high);
+  const targetPresence = target.presence || 0.45;
+  const presenceDiffDb = 20 * Math.log10(actualPresenceRatio / targetPresence);
 
-  // 3バンドEQ補正量の算出 (元のプリセット値に対して緩やかに補正)
-  // 低域: Bassが多すぎる場合は下げ、足りない場合は持ち上げる
   let eqLowAdjustment = 0;
   if (lowDiffDb > 0.5) {
-    eqLowAdjustment = -Math.min(3.5, lowDiffDb * 0.75); // マイルドに下げる
+    eqLowAdjustment = -Math.min(3.5, lowDiffDb * 0.75);
   } else if (lowDiffDb < -0.5) {
-    eqLowAdjustment = Math.min(2.2, -lowDiffDb * 0.75); // 不足分を足す（低域割れ防止のため最大+2.2dBに制限）
+    eqLowAdjustment = Math.min(2.2, -lowDiffDb * 0.75);
   }
-  // 低域EQブーストを最大 +3.0 dB、カットを最大 -5.0 dB に制限して割れを防止
   const eqLowGain = Math.max(-5.0, Math.min(3.0, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2));
 
-  // 高域: Highが派手すぎる場合は下げ、こもっている場合は持ち上げる
+  let eqMidAdjustment = 0;
+  if (presenceDiffDb > 0.5) {
+    eqMidAdjustment = -Math.min(2.5, presenceDiffDb * 0.7);
+  } else if (presenceDiffDb < -0.5) {
+    eqMidAdjustment = Math.min(2.5, -presenceDiffDb * 0.7);
+  }
+  const eqMidGain = Math.max(-4.0, Math.min(3.0, Math.round((basePreset.eqMidGain + eqMidAdjustment) * 2) / 2));
+
   let eqHighAdjustment = 0;
   if (highDiffDb > 0.5) {
     eqHighAdjustment = -Math.min(3.0, highDiffDb * 0.8);
