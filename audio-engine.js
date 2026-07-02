@@ -655,6 +655,13 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   
   finalLimiterBoost = Math.round(finalLimiterBoost * 10) / 10;
 
+  // 動的なディエッサー強度の算出
+  let suggestedDeesserAmount = 40; // デフォルトで基本有効（40%）
+  if (sibilanceDynamicFreq > 0 && rawSibilancePeaks.length > 0) {
+    const maxScore = rawSibilancePeaks[0].score;
+    suggestedDeesserAmount = Math.round(Math.min(85, Math.max(40, 40 + (maxScore - 1.15) * 60)));
+  }
+
   return {
     detected: filteredPeaks.length > 0,
     notches: filteredPeaks,
@@ -692,7 +699,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       rumbleCutEnabled: sugRumbleCut,
       hissReductionAmount: sugHissAmount,
       sibilanceDynamicFreq: sibilanceDynamicFreq,
-      deesserAmount: 60
+      deesserAmount: suggestedDeesserAmount
     }
   };
 }
