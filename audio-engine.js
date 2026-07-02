@@ -692,7 +692,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       rumbleCutEnabled: sugRumbleCut,
       hissReductionAmount: sugHissAmount,
       sibilanceDynamicFreq: sibilanceDynamicFreq,
-      deesserEnabled: true
+      deesserAmount: 60
     }
   };
 }
