@@ -3781,6 +3781,12 @@ async function runOutputEvaluation() {
     }
   } catch (e) {
     console.error("Mastering evaluation failed", e);
+    const badge = document.getElementById('evaluation-status-badge');
+    if (badge) {
+      badge.innerText = "ERROR";
+      badge.style.background = "#dc3545";
+    }
+    logToUI("[QA Error] " + e.message, "danger");
   }
 }
 
