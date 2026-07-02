@@ -539,8 +539,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     compRatio = Math.min(1.6, basePreset.compRatio + ratioFactor);
     crestDesc = "High (Highly Dynamic)";
     
-    // リミッターを適正にドライブして音圧を出す
-    const bonus = Math.min(3.5, crestDiff * 0.75);
+    // リミッターを適正にドライブして音圧を出す (過剰な音圧を防ぐためbonusを最大+1.8dBに制限)
+    const bonus = Math.min(1.8, crestDiff * 0.4);
     limiterBoost = baseBoost + bonus;
   } else {
     // 音源がすでに強く圧縮されている -> 二重圧縮での音割れを防ぐため、コンプレッサーを逃がし（浅くし）、ブーストも下げる
@@ -550,8 +550,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     compRatio = Math.max(1.15, basePreset.compRatio - ratioFactor);
     crestDesc = "Low (Highly Compressed)";
     
-    const penalty = Math.min(3.0, -crestDiff * 0.6);
-    limiterBoost = Math.max(1.5, baseBoost - penalty);
+    const penalty = Math.min(4.0, -crestDiff * 0.8);
+    limiterBoost = Math.max(1.0, baseBoost - penalty);
   }
 
   // 低域飽和による音割れ・ビビリ防止（低域が基準ターゲットより著しく大きい場合、リミッターブーストを自動で控えめにする）
@@ -560,8 +560,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     limiterBoost = Math.max(2.0, limiterBoost - bassOverloadPenalty);
   }
 
-  // 0.0〜10.0dB の範囲に制限し（歪み防止のため最大値を10dBに抑制）、小数点第一位に丸める
-  limiterBoost = Math.max(0.0, Math.min(10.0, Math.round(limiterBoost * 10) / 10));
+  // 0.0〜8.0dB の範囲に制限し（耳を保護するため最大値を8.0dBに抑制）、小数点第一位に丸める
+  limiterBoost = Math.max(0.0, Math.min(8.0, Math.round(limiterBoost * 10) / 10));
 
   // ステレオ幅の補正 (位相相関に基づいた連続的スケーリング)
   let stereoWidth = basePreset.stereoWidth;
