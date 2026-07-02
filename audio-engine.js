@@ -3573,31 +3573,43 @@ async function runOutputEvaluation() {
         correlationSum += 1.0;
       }
       
-      // IIR filter processing for bands (using absolute values for amplitude average matching FFT bins)
+      // IIR filter processing for bands (using squared values for true RMS/power conversion in dB)
       lpBassL += alphaBass * (l - lpBassL);
       lpBassR += alphaBass * (r - lpBassR);
-      energyBass += Math.abs(lpBassL) + Math.abs(lpBassR);
+      energyBass += lpBassL*lpBassL + lpBassR*lpBassR;
       
       lpLowMidL += alphaLowMid * (l - lpLowMidL);
       lpLowMidR += alphaLowMid * (r - lpLowMidR);
       const lowMidSampleL = lpLowMidL - lpBassL;
       const lowMidSampleR = lpLowMidR - lpBassR;
-      energyLowMid += Math.abs(lowMidSampleL) + Math.abs(lowMidSampleR);
+      energyLowMid += lowMidSampleL*lowMidSampleL + lowMidSampleR*lowMidSampleR;
       
       hpTrebleL += alphaTreble * (l - hpTrebleL);
       hpTrebleR += alphaTreble * (r - hpTrebleR);
       const trebleSampleL = l - hpTrebleL;
       const trebleSampleR = r - hpTrebleR;
-      energyTreble += Math.abs(trebleSampleL) + Math.abs(trebleSampleR);
+      energyTreble += trebleSampleL*trebleSampleL + trebleSampleR*trebleSampleR;
     }
     
     const rms = Math.sqrt(sumSquared / sampleCount);
     const rmsDb = 20 * Math.log10(rms || 0.0001);
     const avgCorrelation = correlationSum / rendered.length;
     
-    // Core Math Fix: Scale the absolute time-domain crossover ratios by the bandwidth ratio (LowMid bandwidth 640Hz / Bass bandwidth 140Hz = 4.57)
-    // This aligns the time-domain measurement exactly with the FFT amplitude bin calculation in analyzeAudioResonances!
-    const outLowMidRatio = (energyBass / (energyLowMid || 1.0)) * 4.57;
+    // Academic Math Integration: Convert time-domain crossover powers into logarithmic decibels (dB)
+    // This perfectly closes the loop by matching the FFT-based logarithmic decibel calculation in analyzeAudioResonances!
+    const bassPower = energyBass / (rendered.length * 2);
+    const lowMidPower = energyLowMid / (rendered.length * 2);
+    
+    const outBassDb = 10 * Math.log10(bassPower + 1e-12);
+    const outLowMidDb = 10 * Math.log10(lowMidPower + 1e-12);
+    
+    // Low-end difference relative to LowMid in dB
+    const outLowDiffDb = outBassDb - outLowMidDb;
+    
+    // Retrieve the target ratio for the current genre and convert it to dB
+    const target = GENRE_TARGETS[genreKey] || GENRE_TARGETS.auto;
+    const targetLowDb = 20 * Math.log10(target.low);
+    const lowDiffDb = outLowDiffDb - targetLowDb;
     
     const items = [];
     let status = "SAFE";
