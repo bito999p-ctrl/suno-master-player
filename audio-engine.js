@@ -3665,13 +3665,13 @@ async function runOutputEvaluation() {
     }
     
     // 3. Bass Balance Evaluation
-    if (outLowMidRatio < 2.2) {
+    if (lowDiffDb < -1.8) {
       items.push({
         type: "info",
         title: "低域がやや細めです",
         desc: "全体に対して低音が少し薄いです。マニュアル調整で Low EQ (低域) のスライダーを上げることで、ベースやドラムを豊かに補強できます。"
       });
-    } else if (outLowMidRatio > 3.9) {
+    } else if (lowDiffDb > 1.8) {
       if (status !== "DANGER") status = "WARNING";
       if (badgeColor !== "#dc3545") badgeColor = "#ffc107";
       items.push({
