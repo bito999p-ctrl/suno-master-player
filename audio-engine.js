@@ -18,7 +18,7 @@ export const GENRE_PRESETS = {
   },
   pops: {
     satEnabled: true, satType: 'tube', satDrive: 15, satMix: 10,
-    eqLowGain: 1.5, eqLowFreq: 100,
+    eqLowGain: 2.0, eqLowFreq: 100,
     eqMidGain: 0.6, eqMidFreq: 1800, eqMidQ: 1.0,
     eqHighGain: 1.0, eqHighFreq: 12000,
     compEnabled: true, compThreshold: -8.0, compRatio: 1.35, compAttack: 0.035, compRelease: 0.16,
@@ -34,7 +34,7 @@ export const GENRE_PRESETS = {
   },
   rock: {
     satEnabled: true, satType: 'tape', satDrive: 22, satMix: 12,
-    eqLowGain: 2.0, eqLowFreq: 90,
+    eqLowGain: 2.4, eqLowFreq: 90,
     eqMidGain: 0.8, eqMidFreq: 2800, eqMidQ: 1.2,
     eqHighGain: 0.6, eqHighFreq: 8000,
     compEnabled: true, compThreshold: -7.5, compRatio: 1.35, compAttack: 0.05, compRelease: 0.15,
@@ -42,7 +42,7 @@ export const GENRE_PRESETS = {
   },
   metal: {
     satEnabled: true, satType: 'tape', satDrive: 25, satMix: 14,
-    eqLowGain: 2.2, eqLowFreq: 85,
+    eqLowGain: 2.6, eqLowFreq: 85,
     eqMidGain: -1.5, eqMidFreq: 400, eqMidQ: 0.8,
     eqHighGain: 1.2, eqHighFreq: 8500,
     compEnabled: true, compThreshold: -7.5, compRatio: 1.40, compAttack: 0.02, compRelease: 0.10,
@@ -50,7 +50,7 @@ export const GENRE_PRESETS = {
   },
   edm: {
     satEnabled: true, satType: 'tape', satDrive: 18, satMix: 20,
-    eqLowGain: 1.8, eqLowFreq: 90,
+    eqLowGain: 2.2, eqLowFreq: 90,
     eqMidGain: -0.5, eqMidFreq: 800, eqMidQ: 1.0,
     eqHighGain: 1.0, eqHighFreq: 11000,
     compEnabled: true, compThreshold: -7.0, compRatio: 1.35, compAttack: 0.05, compRelease: 0.20,
@@ -58,7 +58,7 @@ export const GENRE_PRESETS = {
   },
   hiphop: {
     satEnabled: true, satType: 'tape', satDrive: 15, satMix: 14,
-    eqLowGain: 1.8, eqLowFreq: 65,
+    eqLowGain: 2.5, eqLowFreq: 65,
     eqMidGain: -0.8, eqMidFreq: 350, eqMidQ: 1.0,
     eqHighGain: 0.5, eqHighFreq: 10000,
     compEnabled: true, compThreshold: -8.0, compRatio: 1.40, compAttack: 0.035, compRelease: 0.15,
@@ -74,7 +74,7 @@ export const GENRE_PRESETS = {
   },
   hardcore: {
     satEnabled: true, satType: 'hardcore', satDrive: 28, satMix: 22,
-    eqLowGain: 3.0, eqLowFreq: 80,
+    eqLowGain: 3.2, eqLowFreq: 80,
     eqMidGain: -1.2, eqMidFreq: 800, eqMidQ: 1.0,
     eqHighGain: 1.5, eqHighFreq: 12000,
     compEnabled: true, compThreshold: -8.5, compRatio: 1.45, compAttack: 0.015, compRelease: 0.10,
@@ -82,7 +82,7 @@ export const GENRE_PRESETS = {
   },
   ambient: {
     satEnabled: true, satType: 'tube', satDrive: 8, satMix: 6,
-    eqLowGain: 2.0, eqLowFreq: 80,
+    eqLowGain: 2.2, eqLowFreq: 80,
     eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 0.7,
     eqHighGain: 1.8, eqHighFreq: 12000,
     compEnabled: true, compThreshold: -6.0, compRatio: 1.2, compAttack: 0.12, compRelease: 0.40,
@@ -98,7 +98,7 @@ export const GENRE_PRESETS = {
   },
   classic: {
     satEnabled: false, satType: 'tube', satDrive: 0, satMix: 0,
-    eqLowGain: 0.5, eqLowFreq: 100,
+    eqLowGain: 0.8, eqLowFreq: 100,
     eqMidGain: 0.0, eqMidFreq: 1000, eqMidQ: 0.7,
     eqHighGain: 0.0, eqHighFreq: 10000,
     compEnabled: true, compThreshold: -4.0, compRatio: 1.15, compAttack: 0.15, compRelease: 0.50,
@@ -106,7 +106,7 @@ export const GENRE_PRESETS = {
   },
   jazz: {
     satEnabled: true, satType: 'tube', satDrive: 10, satMix: 8,
-    eqLowGain: 1.2, eqLowFreq: 110,
+    eqLowGain: 1.5, eqLowFreq: 110,
     eqMidGain: 0.2, eqMidFreq: 1500, eqMidQ: 1.0,
     eqHighGain: 0.4, eqHighFreq: 10000,
     compEnabled: true, compThreshold: -7.5, compRatio: 1.25, compAttack: 0.06, compRelease: 0.25,
@@ -114,7 +114,7 @@ export const GENRE_PRESETS = {
   },
   acoustic: {
     satEnabled: true, satType: 'tube', satDrive: 8, satMix: 8,
-    eqLowGain: 1.0, eqLowFreq: 120,
+    eqLowGain: 1.2, eqLowFreq: 120,
     eqMidGain: 0.4, eqMidFreq: 2000, eqMidQ: 1.0,
     eqHighGain: 0.8, eqHighFreq: 11000,
     compEnabled: true, compThreshold: -7.5, compRatio: 1.25, compAttack: 0.045, compRelease: 0.22,
@@ -427,24 +427,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
 
-  const genreTargets = {
-    auto: { low: 2.8, high: 0.10, presence: 0.42 },
-    pops: { low: 2.6, high: 0.11, presence: 0.44 },
-    rnb: { low: 3.2, high: 0.10, presence: 0.41 },
-    rock: { low: 2.9, high: 0.09, presence: 0.43 },
-    metal: { low: 3.0, high: 0.11, presence: 0.42 },
-    edm: { low: 3.2, high: 0.11, presence: 0.40 },
-    hiphop: { low: 3.3, high: 0.09, presence: 0.38 },
-    lofi: { low: 3.1, high: 0.06, presence: 0.36 },
-    hardcore: { low: 3.2, high: 0.12, presence: 0.42 },
-    ambient: { low: 2.9, high: 0.14, presence: 0.44 },
-    podcast: { low: 1.6, high: 0.08, presence: 0.47 },
-    classic: { low: 2.2, high: 0.08, presence: 0.39 },
-    jazz: { low: 2.7, high: 0.09, presence: 0.41 },
-    acoustic: { low: 2.4, high: 0.10, presence: 0.43 },
-    custom: { low: 2.8, high: 0.10, presence: 0.42 }
-  };
-  const target = genreTargets[genreKey] || genreTargets.auto;
+  const target = GENRE_TARGETS[genreKey] || GENRE_TARGETS.auto;
 
   const lowDiffDb = 20 * Math.log10(actualLowMidRatio / target.low);
   const highDiffDb = 20 * Math.log10(actualHighMidRatio / target.high);
@@ -453,11 +436,11 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
 
   let eqLowAdjustment = 0;
   if (lowDiffDb > 0.5) {
-    eqLowAdjustment = -Math.min(3.5, lowDiffDb * 0.75);
+    eqLowAdjustment = -Math.min(3.5, lowDiffDb * 0.75); // 絞りすぎ防止
   } else if (lowDiffDb < -0.5) {
-    eqLowAdjustment = Math.min(2.2, -lowDiffDb * 0.75);
+    eqLowAdjustment = Math.min(2.2, -lowDiffDb * 0.75); // 不足分引き上げ
   }
-  const eqLowGain = Math.max(-5.0, Math.min(3.0, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2));
+  const eqLowGain = Math.max(-5.0, Math.min(3.0, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2)); // クランプ範囲を元に戻す
 
   let eqMidAdjustment = 0;
   if (presenceDiffDb > 0.5) {
@@ -655,6 +638,13 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   
   finalLimiterBoost = Math.round(finalLimiterBoost * 10) / 10;
 
+  // 動的なディエッサー強度の算出
+  let suggestedDeesserAmount = 40; // デフォルトで基本有効（40%）
+  if (sibilanceDynamicFreq > 0 && rawSibilancePeaks.length > 0) {
+    const maxScore = rawSibilancePeaks[0].score;
+    suggestedDeesserAmount = Math.round(Math.min(85, Math.max(40, 40 + (maxScore - 1.15) * 60)));
+  }
+
   return {
     detected: filteredPeaks.length > 0,
     notches: filteredPeaks,
@@ -691,7 +681,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       limiterBoost: finalLimiterBoost,
       rumbleCutEnabled: sugRumbleCut,
       hissReductionAmount: sugHissAmount,
-      sibilanceDynamicFreq: sibilanceDynamicFreq
+      sibilanceDynamicFreq: sibilanceDynamicFreq,
+      deesserAmount: suggestedDeesserAmount
     }
   };
 }
