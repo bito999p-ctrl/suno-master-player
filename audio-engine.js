@@ -428,21 +428,21 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
 
   const genreTargets = {
-    auto: { low: 2.8, high: 0.10, presence: 0.42 },
-    pops: { low: 2.6, high: 0.11, presence: 0.44 },
-    rnb: { low: 3.2, high: 0.10, presence: 0.41 },
-    rock: { low: 2.9, high: 0.09, presence: 0.43 },
-    metal: { low: 3.0, high: 0.11, presence: 0.42 },
-    edm: { low: 3.2, high: 0.11, presence: 0.40 },
-    hiphop: { low: 3.3, high: 0.09, presence: 0.38 },
-    lofi: { low: 3.1, high: 0.06, presence: 0.36 },
-    hardcore: { low: 3.2, high: 0.12, presence: 0.42 },
-    ambient: { low: 2.9, high: 0.14, presence: 0.44 },
-    podcast: { low: 1.6, high: 0.08, presence: 0.47 },
-    classic: { low: 2.2, high: 0.08, presence: 0.39 },
-    jazz: { low: 2.7, high: 0.09, presence: 0.41 },
-    acoustic: { low: 2.4, high: 0.10, presence: 0.43 },
-    custom: { low: 2.8, high: 0.10, presence: 0.42 }
+    auto: { low: 3.1, high: 0.10, presence: 0.42 },
+    pops: { low: 2.9, high: 0.11, presence: 0.44 },
+    rnb: { low: 3.4, high: 0.10, presence: 0.41 },
+    rock: { low: 3.1, high: 0.09, presence: 0.43 },
+    metal: { low: 3.2, high: 0.11, presence: 0.42 },
+    edm: { low: 3.4, high: 0.11, presence: 0.40 },
+    hiphop: { low: 3.5, high: 0.09, presence: 0.38 },
+    lofi: { low: 3.3, high: 0.06, presence: 0.36 },
+    hardcore: { low: 3.4, high: 0.12, presence: 0.42 },
+    ambient: { low: 3.1, high: 0.14, presence: 0.44 },
+    podcast: { low: 1.6, broadband_high: 0.08, presence: 0.47 },
+    classic: { low: 2.4, high: 0.08, presence: 0.39 },
+    jazz: { low: 2.9, high: 0.09, presence: 0.41 },
+    acoustic: { low: 2.6, high: 0.10, presence: 0.43 },
+    custom: { low: 3.1, high: 0.10, presence: 0.42 }
   };
   const target = genreTargets[genreKey] || genreTargets.auto;
 
@@ -453,11 +453,11 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
 
   let eqLowAdjustment = 0;
   if (lowDiffDb > 0.5) {
-    eqLowAdjustment = -Math.min(2.0, lowDiffDb * 0.4); // 絞りすぎ防止（最大-2.0dB、スロープを0.75から0.4へマイルドに）
+    eqLowAdjustment = -Math.min(1.5, lowDiffDb * 0.35); // 絞りすぎ防止：過剰な場合もカットは穏やか（最大-1.5dB）
   } else if (lowDiffDb < -0.5) {
-    eqLowAdjustment = Math.min(2.8, -lowDiffDb * 0.75); // 不足している場合は豊かに補強（最大+2.8dBまで引き上げ）
+    eqLowAdjustment = Math.min(4.5, -lowDiffDb * 1.2); // 不足分はアカデミックに基づき1.2倍の力強い補正率でしっかりと引き上げる（最大+4.5dB）
   }
-  const eqLowGain = Math.max(-3.0, Math.min(3.5, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2)); // クランプ範囲を拡張して低音を豊かに
+  const eqLowGain = Math.max(-2.5, Math.min(4.5, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2)); // クランプ範囲を拡張して低音を豊かに
 
   let eqMidAdjustment = 0;
   if (presenceDiffDb > 0.5) {
