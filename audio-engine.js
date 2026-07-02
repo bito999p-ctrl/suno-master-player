@@ -1851,24 +1851,7 @@ function analyzeAudioResonances(buffer, userPresetKey) {
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
 
-  const genreTargets = {
-    auto: { low: 3.1, high: 0.10, presence: 0.42 },
-    pops: { low: 2.9, high: 0.11, presence: 0.44 },
-    rnb: { low: 3.4, high: 0.10, presence: 0.41 },
-    rock: { low: 3.1, high: 0.09, presence: 0.43 },
-    metal: { low: 3.2, high: 0.11, presence: 0.42 },
-    edm: { low: 3.4, high: 0.11, presence: 0.40 },
-    hiphop: { low: 3.5, high: 0.09, presence: 0.38 },
-    lofi: { low: 3.3, high: 0.06, presence: 0.36 },
-    hardcore: { low: 3.4, high: 0.12, presence: 0.42 },
-    ambient: { low: 3.1, high: 0.14, presence: 0.44 },
-    podcast: { low: 1.6, broadband_high: 0.08, presence: 0.47 },
-    classic: { low: 2.4, high: 0.08, presence: 0.39 },
-    jazz: { low: 2.9, high: 0.09, presence: 0.41 },
-    acoustic: { low: 2.6, high: 0.10, presence: 0.43 },
-    custom: { low: 3.1, high: 0.10, presence: 0.42 }
-  };
-  const target = genreTargets[genreKey] || genreTargets.auto;
+  const target = GENRE_TARGETS[genreKey] || GENRE_TARGETS.auto;
 
   const lowDiffDb = 20 * Math.log10(actualLowMidRatio / target.low);
   const highDiffDb = 20 * Math.log10(actualHighMidRatio / target.high);
@@ -4095,24 +4078,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const genreKey = (userGenreKey === 'auto' || userGenreKey === 'custom') ? 'auto' : userGenreKey;
   const basePreset = GENRE_PRESETS[genreKey] || GENRE_PRESETS.auto;
 
-  const genreTargets = {
-    auto: { low: 3.1, high: 0.10, presence: 0.42 },
-    pops: { low: 2.9, high: 0.11, presence: 0.44 },
-    rnb: { low: 3.4, high: 0.10, presence: 0.41 },
-    rock: { low: 3.1, high: 0.09, presence: 0.43 },
-    metal: { low: 3.2, high: 0.11, presence: 0.42 },
-    edm: { low: 3.4, high: 0.11, presence: 0.40 },
-    hiphop: { low: 3.5, high: 0.09, presence: 0.38 },
-    lofi: { low: 3.3, high: 0.06, presence: 0.36 },
-    hardcore: { low: 3.4, high: 0.12, presence: 0.42 },
-    ambient: { low: 3.1, high: 0.14, presence: 0.44 },
-    podcast: { low: 1.6, broadband_high: 0.08, presence: 0.47 },
-    classic: { low: 2.4, high: 0.08, presence: 0.39 },
-    jazz: { low: 2.9, high: 0.09, presence: 0.41 },
-    acoustic: { low: 2.6, high: 0.10, presence: 0.43 },
-    custom: { low: 3.1, high: 0.10, presence: 0.42 }
-  };
-  const target = genreTargets[genreKey] || genreTargets.auto;
+  const target = GENRE_TARGETS[genreKey] || GENRE_TARGETS.auto;
 
   const lowDiffDb = 20 * Math.log10(actualLowMidRatio / target.low);
   const highDiffDb = 20 * Math.log10(actualHighMidRatio / target.high);
