@@ -691,7 +691,8 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
       limiterBoost: finalLimiterBoost,
       rumbleCutEnabled: sugRumbleCut,
       hissReductionAmount: sugHissAmount,
-      sibilanceDynamicFreq: sibilanceDynamicFreq
+      sibilanceDynamicFreq: sibilanceDynamicFreq,
+      deesserEnabled: true
     }
   };
 }
