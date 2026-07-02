@@ -455,9 +455,9 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   if (lowDiffDb > 0.5) {
     eqLowAdjustment = -Math.min(1.5, lowDiffDb * 0.35); // 絞りすぎ防止：過剰な場合もカットは穏やか（最大-1.5dB）
   } else if (lowDiffDb < -0.5) {
-    eqLowAdjustment = Math.min(4.5, -lowDiffDb * 1.2); // 不足分はアカデミックに基づき1.2倍の力強い補正率でしっかりと引き上げる（最大+4.5dB）
+    eqLowAdjustment = Math.min(6.0, -lowDiffDb * 1.4); // 不足分はアカデミックに基づき1.4倍の力強い補正率でしっかりと引き上げる（最大+6.0dB）
   }
-  const eqLowGain = Math.max(-2.5, Math.min(4.5, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2)); // クランプ範囲を拡張して低音を豊かに
+  const eqLowGain = Math.max(-2.5, Math.min(6.0, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2)); // クランプ範囲を最大+6.0dBに拡張
 
   let eqMidAdjustment = 0;
   if (presenceDiffDb > 0.5) {
