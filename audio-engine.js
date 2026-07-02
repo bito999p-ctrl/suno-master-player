@@ -3607,6 +3607,8 @@ async function runOutputEvaluation() {
     const outLowDiffDb = outBassDb - outLowMidDb;
     
     // Retrieve the target ratio for the current genre and convert it to dB
+    const genreSelect = document.getElementById('preset-select');
+    const genreKey = genreSelect ? genreSelect.value : 'auto';
     const target = GENRE_TARGETS[genreKey] || GENRE_TARGETS.auto;
     const targetLowDb = 20 * Math.log10(target.low);
     const lowDiffDb = outLowDiffDb - targetLowDb;
