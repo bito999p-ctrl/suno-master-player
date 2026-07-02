@@ -453,11 +453,11 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
 
   let eqLowAdjustment = 0;
   if (lowDiffDb > 0.5) {
-    eqLowAdjustment = -Math.min(3.5, lowDiffDb * 0.75);
+    eqLowAdjustment = -Math.min(2.0, lowDiffDb * 0.4); // 絞りすぎ防止（最大-2.0dB、スロープを0.75から0.4へマイルドに）
   } else if (lowDiffDb < -0.5) {
-    eqLowAdjustment = Math.min(2.2, -lowDiffDb * 0.75);
+    eqLowAdjustment = Math.min(2.8, -lowDiffDb * 0.75); // 不足している場合は豊かに補強（最大+2.8dBまで引き上げ）
   }
-  const eqLowGain = Math.max(-5.0, Math.min(3.0, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2));
+  const eqLowGain = Math.max(-3.0, Math.min(3.5, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2)); // クランプ範囲を拡張して低音を豊かに
 
   let eqMidAdjustment = 0;
   if (presenceDiffDb > 0.5) {
