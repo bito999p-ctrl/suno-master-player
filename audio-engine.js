@@ -465,7 +465,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   } else if (presenceDiffDb < -0.5) {
     eqMidAdjustment = Math.min(1.2, -presenceDiffDb * 0.45); // こもっている場合はマイルドに補強（最大+1.2dB）
   }
-  const eqMidGain = Math.max(-4.0, Math.min(1.5, Math.round((basePreset.eqMidGain + eqMidAdjustment) * 2) / 2)); // 中音域が強くなりすぎないよう最大値を+1.5dBにクランプ
+  const eqMidGain = Math.max(-4.0, Math.min(1.0, Math.round((basePreset.eqMidGain + eqMidAdjustment) * 2) / 2)); // 中音域が強くなりすぎないよう最大値を+1.0dBにクランプ
 
   let eqHighAdjustment = 0;
   if (highDiffDb > 0.5) {
@@ -474,15 +474,13 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     eqHighAdjustment = Math.min(1.5, -highDiffDb * 0.45); // 不足している場合はマイルドに補強（最大+1.5dB）
   }
 
-  let eqHighGain = Math.max(-5.0, Math.min(2.0, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2)); // キンキンしすぎないよう最大ブースト量を+2.0dBに制限
+  let eqHighGain = Math.max(-5.0, Math.min(1.2, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2)); // キンキンしすぎないよう最大ブースト量を+1.2dBに制限
 
   // キンキン共鳴音 (sibilanceDynamicFreq > 0) が検知されている場合、高域EQのブーストを禁止し、安全のために少なくとも-1.5dB以下の減衰量にクランプ
   if (sibilanceDynamicFreq > 0) {
     eqHighGain = Math.min(-1.5, eqHighGain);
   }
 
-  // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
-  // バグ修正: AIオートコレクトの重複加算を防ぐため、スライダー変更で 'custom' になる前の基準ターゲット (baseLoudnessTarget) を参照
   // 現在選択されているラウドネス・ターゲットの取得と基準ブースト値の設定
   const loudnessKey = typeof baseLoudnessTarget !== 'undefined' ? baseLoudnessTarget : (document.getElementById('loudness-select')?.value || 'genre');
   let baseBoost = 4.0;
@@ -525,7 +523,7 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     hardcore: 7.5,  // HARDCORE: 最大限の押し込み
     ambient: 13.5,  // AMBIENT: 広い強弱と空気感
     podcast: 10.5,  // PODCAST: 会話の聞き取りやすさ優先
-    classic: 14.5,  // CLASSIC: 生楽器의 ダイナミクスを最大限活かす
+    classic: 14.5,  // CLASSIC: 生楽器のダイナミクスを最大限活かす
     jazz: 12.5,     // JAZZ: アコースティックなニュアンス
     acoustic: 13.0, // ACOUSTIC: ピッキング等の生々しさ
     custom: 10.5
