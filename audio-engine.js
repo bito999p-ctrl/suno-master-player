@@ -122,6 +122,24 @@ export const GENRE_PRESETS = {
   }
 }
 
+export const GENRE_TARGETS = {
+  auto: { low: 2.8, high: 0.092, presence: 0.42 },
+  pops: { low: 2.6, high: 0.10, presence: 0.44 },
+  rnb: { low: 3.2, high: 0.09, presence: 0.41 },
+  rock: { low: 2.9, high: 0.082, presence: 0.43 },
+  metal: { low: 3.0, high: 0.10, presence: 0.42 },
+  edm: { low: 3.2, high: 0.10, presence: 0.40 },
+  hiphop: { low: 3.3, high: 0.08, presence: 0.38 },
+  lofi: { low: 3.1, high: 0.06, presence: 0.36 },
+  hardcore: { low: 3.2, high: 0.11, presence: 0.42 },
+  ambient: { low: 2.9, high: 0.13, presence: 0.44 },
+  podcast: { low: 1.6, high: 0.08, presence: 0.47 },
+  classic: { low: 2.2, high: 0.075, presence: 0.39 },
+  jazz: { low: 2.7, high: 0.082, presence: 0.41 },
+  acoustic: { low: 2.4, high: 0.09, presence: 0.43 },
+  custom: { low: 2.8, high: 0.092, presence: 0.42 }
+}
+
 const LOUDNESS_TARGETS = {
   genre: { boost: null },     // Genre Default (follows selected preset)
   streaming: { boost: 4.0 },  // Standard Streaming -14 LUFS target
@@ -947,11 +965,11 @@ export class AetherEnhancer {
     this.merger.connect(this.limiterGain);
 
     this.limiter = context.createDynamicsCompressor();
-    this.limiter.threshold.setValueAtTime(-3.0, context.currentTime); // -3.0dB threshold provides look-ahead emulation cushion
-    this.limiter.knee.setValueAtTime(3.0, context.currentTime);      // Smooth knee
+    this.limiter.threshold.setValueAtTime(-1.0, context.currentTime); // -1.0dB に引き上げて過剰な圧縮圧と高域トランジェントの潰れを低減（ダイナミクスを保護）
+    this.limiter.knee.setValueAtTime(4.0, context.currentTime);      // 4.0dB に広げてよりなだらかで滑らかな制限動作へ
     this.limiter.ratio.setValueAtTime(20.0, context.currentTime);    // Dynamic limiting brickwall
     this.limiter.attack.setValueAtTime(0.0001, context.currentTime); // 0.1ms (near-instant reaction to catch peaks)
-    this.limiter.release.setValueAtTime(0.08, context.currentTime);  // 80ms (optimized to prevent low-end distortion)
+    this.limiter.release.setValueAtTime(0.12, context.currentTime);  // 120ms に拡張し、高域の微細な歪みやポンピング（音の硬さ）を防止
 
     // 9b. Safety Soft Clipper (WaveShaper Node)
     this.safetyClipper = context.createWaveShaper();
