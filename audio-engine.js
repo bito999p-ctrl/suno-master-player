@@ -122,24 +122,6 @@ export const GENRE_PRESETS = {
   }
 }
 
-export const GENRE_TARGETS = {
-  auto: { low: 2.8, high: 0.10, presence: 0.42 },
-  pops: { low: 2.6, high: 0.11, presence: 0.44 },
-  rnb: { low: 3.2, high: 0.10, presence: 0.41 },
-  rock: { low: 2.9, high: 0.09, presence: 0.43 },
-  metal: { low: 3.0, high: 0.11, presence: 0.42 },
-  edm: { low: 3.2, high: 0.11, presence: 0.40 },
-  hiphop: { low: 3.3, high: 0.09, presence: 0.38 },
-  lofi: { low: 3.1, high: 0.06, presence: 0.36 },
-  hardcore: { low: 3.2, high: 0.12, presence: 0.42 },
-  ambient: { low: 2.9, high: 0.14, presence: 0.44 },
-  podcast: { low: 1.6, high: 0.08, presence: 0.47 },
-  classic: { low: 2.2, high: 0.08, presence: 0.39 },
-  jazz: { low: 2.7, high: 0.09, presence: 0.41 },
-  acoustic: { low: 2.4, high: 0.10, presence: 0.43 },
-  custom: { low: 2.8, high: 0.10, presence: 0.42 }
-}
-
 const LOUDNESS_TARGETS = {
   genre: { boost: null },     // Genre Default (follows selected preset)
   streaming: { boost: 4.0 },  // Standard Streaming -14 LUFS target
@@ -476,10 +458,10 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const eqMidGain = Math.max(-4.0, Math.min(1.0, Math.round((basePreset.eqMidGain + eqMidAdjustment) * 2) / 2)); // 中音域が強くなりすぎないよう最大値を+1.0dBにクランプ
 
   let eqHighAdjustment = 0;
-  if (highDiffDb > 0.5) {
-    eqHighAdjustment = -Math.min(2.0, highDiffDb * 0.5); // 派手すぎる場合はマイルドに減衰（最大-2.0dB）
-  } else if (highDiffDb < -0.5) {
-    eqHighAdjustment = Math.min(1.5, -highDiffDb * 0.45); // 不足している場合はマイルドに補強（最大+1.5dB）
+  if (highDiffDb > 0.0) { // 音源が既にターゲットより明るい場合は、高域EQを抑制・カット方向に動的調整（デッドゾーンを排除してキンキン音を防止）
+    eqHighAdjustment = -Math.min(2.5, highDiffDb * 0.75);
+  } else if (highDiffDb < 0.0) { // 不足している場合はマイルドに補強
+    eqHighAdjustment = Math.min(1.5, -highDiffDb * 0.5);
   }
 
   let eqHighGain = Math.max(-5.0, Math.min(1.2, Math.round((basePreset.eqHighGain + eqHighAdjustment) * 2) / 2)); // キンキンしすぎないよう最大ブースト量を+1.2dBに制限
