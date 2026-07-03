@@ -122,6 +122,24 @@ export const GENRE_PRESETS = {
   }
 }
 
+export const GENRE_TARGETS = {
+  auto: { low: 2.8, high: 0.10, presence: 0.42 },
+  pops: { low: 2.6, high: 0.11, presence: 0.44 },
+  rnb: { low: 3.2, high: 0.10, presence: 0.41 },
+  rock: { low: 2.9, high: 0.09, presence: 0.43 },
+  metal: { low: 3.0, high: 0.11, presence: 0.42 },
+  edm: { low: 3.2, high: 0.11, presence: 0.40 },
+  hiphop: { low: 3.3, high: 0.09, presence: 0.38 },
+  lofi: { low: 3.1, high: 0.06, presence: 0.36 },
+  hardcore: { low: 3.2, high: 0.12, presence: 0.42 },
+  ambient: { low: 2.9, high: 0.14, presence: 0.44 },
+  podcast: { low: 1.6, high: 0.08, presence: 0.47 },
+  classic: { low: 2.2, high: 0.08, presence: 0.39 },
+  jazz: { low: 2.7, high: 0.09, presence: 0.41 },
+  acoustic: { low: 2.4, high: 0.10, presence: 0.43 },
+  custom: { low: 2.8, high: 0.10, presence: 0.42 }
+}
+
 const LOUDNESS_TARGETS = {
   genre: { boost: null },     // Genre Default (follows selected preset)
   streaming: { boost: 4.0 },  // Standard Streaming -14 LUFS target
@@ -987,11 +1005,13 @@ export class AetherEnhancer {
 
     // 3. Hiss Reduction
     const hissAmount = params.hissReductionAmount || 0;
-    const baseFreq = 20000.0 - (16250.0 * (hissAmount / 100.0)); // Maps 80% to 7,000Hz and 100% to 3,750Hz
+    // 高域の抜け（空気感）を潰さないよう、ローパスの遮断周波数の下限を13,000Hz付近に留めるマイルド設計に調整（100%設定時でも13,000Hzを維持し、音が曇るのを防止）
+    const baseFreq = 20000.0 - (7000.0 * (hissAmount / 100.0));
     this.hissFilter.frequency.setTargetAtTime(baseFreq, t, 0.05);
     
     // 高域ヒスノイズ（13kHz〜20kHz）が楽曲再生中も完全に消え去るよう、上限遮断周波数（天井）を制限
-    const ceilFreq = 20000.0 - (7000.0 * (hissAmount / 100.0)); // hissAmount=100%で最大天井を13,000Hzに固定
+    // 高域ヒスノイズ（超高域成分）をマイルドに抑制する天井周波数（最大でも15,000Hz以下には下げない）
+    const ceilFreq = 20000.0 - (5000.0 * (hissAmount / 100.0));
     const maxEnvGain = Math.max(0, ceilFreq - baseFreq);
     this.hissEnvelopeGain.gain.setTargetAtTime(maxEnvGain, t, 0.05);
 
