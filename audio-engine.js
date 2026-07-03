@@ -122,6 +122,24 @@ export const GENRE_PRESETS = {
   }
 }
 
+export const GENRE_TARGETS = {
+  auto: { low: 2.8, high: 0.10, presence: 0.42 },
+  pops: { low: 2.6, high: 0.11, presence: 0.44 },
+  rnb: { low: 3.2, high: 0.10, presence: 0.41 },
+  rock: { low: 2.9, high: 0.09, presence: 0.43 },
+  metal: { low: 3.0, high: 0.11, presence: 0.42 },
+  edm: { low: 3.2, high: 0.11, presence: 0.40 },
+  hiphop: { low: 3.3, high: 0.09, presence: 0.38 },
+  lofi: { low: 3.1, high: 0.06, presence: 0.36 },
+  hardcore: { low: 3.2, high: 0.12, presence: 0.42 },
+  ambient: { low: 2.9, high: 0.14, presence: 0.44 },
+  podcast: { low: 1.6, high: 0.08, presence: 0.47 },
+  classic: { low: 2.2, high: 0.08, presence: 0.39 },
+  jazz: { low: 2.7, high: 0.09, presence: 0.41 },
+  acoustic: { low: 2.4, high: 0.10, presence: 0.43 },
+  custom: { low: 2.8, high: 0.10, presence: 0.42 }
+}
+
 const LOUDNESS_TARGETS = {
   genre: { boost: null },     // Genre Default (follows selected preset)
   streaming: { boost: 4.0 },  // Standard Streaming -14 LUFS target
@@ -442,12 +460,13 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
   const presenceDiffDb = 20 * Math.log10(actualPresenceRatio / targetPresence);
 
   let eqLowAdjustment = 0;
-  if (lowDiffDb > 0.5) {
+  if (lowDiffDb > 0.0) { // 音源が既に十分な低域を持っている場合はブーストを抑制（デッドゾーンの排除）
     eqLowAdjustment = -Math.min(3.5, lowDiffDb * 0.75);
-  } else if (lowDiffDb < -0.5) {
-    eqLowAdjustment = Math.min(2.2, -lowDiffDb * 0.75);
+  } else if (lowDiffDb < 0.0) { // 低域が不足している場合は、プロのレンジに追いつくよう動的にブースト
+    eqLowAdjustment = Math.min(3.0, -lowDiffDb * 0.85); // 追従感度を高めてより豊かな低域を算出
   }
-  const eqLowGain = Math.max(-5.0, Math.min(3.0, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2));
+  // 最大ブースト許容値を +3.0dB から +4.5dB に引き上げ、薄い音源でもプロ水準の豊かな低音を再現可能に
+  const eqLowGain = Math.max(-5.0, Math.min(4.5, Math.round((basePreset.eqLowGain + eqLowAdjustment) * 2) / 2));
 
   let eqMidAdjustment = 0;
   if (presenceDiffDb > 0.5) {
