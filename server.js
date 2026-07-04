@@ -1,4 +1,4 @@
-// Version: 3.0.23 (Re-deployed to ensure complete file sync)
+// Version: 3.0.24 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 
@@ -57,6 +57,7 @@ function resolveRscReference(combined, ref) {
  * Fetches and parses a Suno playlist or profile URL.
  */
 app.get('/api/suno', async (req, res) => {
+  const tStart = Date.now();
   let targetUrl = req.query.url;
 
   if (!targetUrl) {
@@ -354,24 +355,7 @@ app.get('/api/suno', async (req, res) => {
         }
       }
 
-      // 2. Fallback to SSR static HTML href tags
-      const playlistRegex = /href="\/playlist\/([a-f0-9\-]{36})"[^>]*>[\s\S]*?<img\s+alt="([^"]*)"\s+src="([^"]*)"/g;
-      let match;
-      while ((match = playlistRegex.exec(html)) !== null) {
-        const id = match[1];
-        const name = match[2];
-        const image_url = match[3];
-
-        if (!seenPlaylists.has(id)) {
-          seenPlaylists.add(id);
-          playlists.push({
-            id,
-            name,
-            image_url,
-            url: `https://suno.com/playlist/${id}`
-          });
-        }
-      }
+      // Removed vulnerable SSR HTML fallback regex to prevent catastrophic backtracking ReDoS
     }
 
     // Extract name of profile or playlist
@@ -397,6 +381,7 @@ app.get('/api/suno', async (req, res) => {
       tracks.length = 20;
     }
 
+    console.log(`[Proxy] Parsing completed in ${Date.now() - tStart}ms. Tracks: ${tracks.length}, Playlists: ${playlists.length}`);
     return res.json({
       type: isProfile ? 'profile' : isPlaylist ? 'playlist' : (tracks.length === 1 ? 'song' : 'unknown'),
       name,
