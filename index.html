@@ -1,4 +1,4 @@
-<!-- Version: 4.0.1 (Re-deployed to ensure complete file sync) -->
+<!-- Version: 4.0.2 (Re-deployed to ensure complete file sync) -->
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
 <head>
@@ -42,9 +42,111 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.0.1">
+  <link rel="stylesheet" href="styles.css?v=4.0.2">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- [RESTORE POINT] To resume service:
+       1. Delete or comment out the <style> and <script> redirect block below
+       2. Delete the .service-notice-overlay <div> at the bottom of the body
+  -->
+  <style>
+    /* Hiding the original player interface */
+    .app-container, #mobile-nav-bar {
+      display: none !important;
+    }
+    
+    .service-notice-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #181528 0%, #09070f 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999999;
+      color: #ffffff;
+      font-family: 'Inter', 'Outfit', sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    .service-notice-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 40px 30px;
+      max-width: 480px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .notice-icon {
+      font-size: 48px;
+      color: #ff007f;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    .service-notice-card h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ff007f 0%, #7f00ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+    .service-notice-card p {
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .redirect-timer {
+      font-size: 0.85rem !important;
+      color: #00f2fe !important;
+      margin-top: 24px;
+      margin-bottom: 24px !important;
+      font-weight: 500;
+    }
+    .portal-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 600;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #7f00ff 0%, #ff007f 100%);
+      border-radius: 99px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(255, 0, 127, 0.2);
+    }
+    .portal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(255, 0, 127, 0.3);
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.9; }
+    }
+  </style>
+  <script>
+    // Automatically redirect to Sonografica after 5 seconds
+    setTimeout(() => {
+      window.location.replace("https://bito999p-ctrl.github.io/sonografica");
+    }, 5000);
+    
+    // Initialize icons for the notice overlay immediately
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -568,7 +670,19 @@
     </button>
   </div>
 
+  <!-- Service Suspension Announcement -->
+  <div class="service-notice-overlay">
+    <div class="service-notice-card">
+      <div class="notice-icon"><i data-lucide="info"></i></div>
+      <h2>AetherPlayer 提供終了のお知らせ</h2>
+      <p>音源取得ルートの変更に伴い、本サービスの提供を終了いたしました。</p>
+      <p>長らくのご利用、誠にありがとうございました。</p>
+      <p class="redirect-timer">数秒後に新ポータル「Sonografica」へ自動移動します...</p>
+      <a href="https://bito999p-ctrl.github.io/sonografica" class="portal-btn">Sonografica ポータルを開く &rarr;</a>
+    </div>
+  </div>
+
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.0.1"></script>
+  <script type="module" src="player.js?v=4.0.2"></script>
 </body>
 </html>
