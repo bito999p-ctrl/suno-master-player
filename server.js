@@ -1,6 +1,7 @@
-// Version: 4.0.2 (Re-deployed to ensure complete file sync)
+// Version: 4.0.3 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,17 @@ app.use(express.static(__dirname));
 // Explicit route for the homepage to send index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Route: GET /api/playlist (Serves Layer 1 cached playlist.json)
+app.get('/api/playlist', (req, res) => {
+  const jsonPath = path.join(__dirname, 'playlist.json');
+  if (fs.existsSync(jsonPath)) {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(jsonPath);
+  } else {
+    res.status(404).json({ error: 'Playlist cache not found' });
+  }
 });
 
 function resolveRscReference(combined, ref) {
@@ -84,6 +96,108 @@ app.get('/api/suno', async (req, res) => {
     const parsedUrl = new URL(targetUrl);
     if (!parsedUrl.hostname.endsWith('suno.com')) {
       return res.status(400).json({ error: 'URL must be a suno.com link' });
+    }
+
+    // 1. Fast path for playlists via Studio API
+    if (parsedUrl.pathname.startsWith('/playlist/')) {
+      const playlistId = parsedUrl.pathname.split('/playlist/')[1].split('?')[0].split('/')[0];
+      if (/^[a-f0-9\-]{36}$/i.test(playlistId)) {
+        try {
+          console.log(`[API] Fetching Suno Studio API for playlist: ${playlistId}`);
+          const studioRes = await fetch(`https://studio-api.prod.suno.com/api/playlist/${playlistId}`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+          });
+          if (studioRes.ok) {
+            const studioData = await studioRes.json();
+            const playlistName = studioData.name || studioData.title || 'Suno Playlist';
+            const rawClips = studioData.playlist_clips || [];
+            const tracks = [];
+            const seenIds = new Set();
+            for (const item of rawClips) {
+              const clip = item.clip || {};
+              const id = clip.id;
+              const title = clip.title;
+              if (!id || !title || seenIds.has(id)) continue;
+              seenIds.add(id);
+
+              let artist = 'Bito';
+              if (clip.user_display_name && !/^[uv][0-9]/i.test(clip.user_display_name)) {
+                artist = clip.user_display_name;
+              } else if (clip.user_handle) {
+                artist = clip.user_handle;
+              }
+              if (artist.toLowerCase().includes('bito999') || artist.toLowerCase() === 'bito') {
+                artist = 'Bito';
+              }
+
+              tracks.push({
+                id: id,
+                title: title,
+                artist_name: artist,
+                image_url: clip.image_large_url || clip.image_url || `https://cdn1.suno.ai/image_${id}.png`,
+                audio_url: `https://cdn1.suno.ai/${id}.mp4`,
+                duration: clip.duration || 0,
+                play_count: clip.play_count || 0,
+                upvote_count: clip.upvote_count || 0,
+                description: (clip.metadata && clip.metadata.prompt) || ''
+              });
+            }
+
+            console.log(`[API] Studio API parsed in ${Date.now() - tStart}ms. Tracks: ${tracks.length}`);
+            return res.json({
+              type: 'playlist',
+              title: playlistName,
+              playlists: [],
+              tracks: tracks
+            });
+          }
+        } catch (studioErr) {
+          console.warn(`[API] Studio API failed, falling back to HTML parser: ${studioErr.message}`);
+        }
+      }
+    }
+
+    // 2. Fast path for single song page
+    if (parsedUrl.pathname.startsWith('/song/')) {
+      const songId = parsedUrl.pathname.split('/song/')[1].split('?')[0].split('/')[0];
+      if (/^[a-f0-9\-]{36}$/i.test(songId)) {
+        try {
+          console.log(`[API] Fetching single song page for: ${songId}`);
+          const songPageRes = await fetch(`https://suno.com/song/${songId}`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+          });
+          if (songPageRes.ok) {
+            const songHtml = await songPageRes.text();
+            const ogTitleMatch = songHtml.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || songHtml.match(/<title>([^<]+)<\/title>/i);
+            const ogImageMatch = songHtml.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+            const title = ogTitleMatch ? ogTitleMatch[1].replace(/\s*\|\s*Suno\s*$/i, '') : 'Suno Track';
+            const image = ogImageMatch ? ogImageMatch[1] : `https://cdn1.suno.ai/image_${songId}.png`;
+
+            return res.json({
+              type: 'song',
+              title: title,
+              playlists: [],
+              tracks: [{
+                id: songId,
+                title: title,
+                artist_name: 'Suno Artist',
+                image_url: image,
+                audio_url: `https://cdn1.suno.ai/${songId}.mp4`,
+                duration: 0,
+                play_count: 0,
+                upvote_count: 0,
+                description: ''
+              }]
+            });
+          }
+        } catch (songErr) {
+          console.warn(`[API] Single song fetch error: ${songErr.message}`);
+        }
+      }
     }
 
     console.log(`[Proxy] Fetching target URL: ${targetUrl}`);
@@ -235,9 +349,8 @@ app.get('/api/suno', async (req, res) => {
 
           // Use robust regex-based property extraction to bypass malformed JSON / unquoted references in Next.js RSC payload
           const titleMatch = trackBlock.match(/"title"\s*:\s*"([^"]+)"/i);
-          const audioMatch = trackBlock.match(/"audio_url"\s*:\s*"([^"]+)"/i);
-          if (titleMatch && audioMatch) {
-            const audio_url = audioMatch[1];
+          if (titleMatch) {
+            const audio_url = `https://cdn1.suno.ai/${uuid}.mp4`;
             
             // Skip duplicate audio URLs (e.g. hook schemas, video uploads, or multiple references)
             if (seenAudioUrls.has(audio_url)) continue;
