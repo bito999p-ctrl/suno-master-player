@@ -1,4 +1,4 @@
-// Version: 4.0.5 (Re-deployed to ensure complete file sync)
+// Version: 4.0.6 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -148,7 +148,9 @@ app.get('/api/suno', async (req, res) => {
             console.log(`[API] Studio API parsed in ${Date.now() - tStart}ms. Tracks: ${tracks.length}`);
             return res.json({
               type: 'playlist',
+              name: playlistName,
               title: playlistName,
+              url: targetUrl,
               playlists: [],
               tracks: tracks
             });
@@ -179,7 +181,9 @@ app.get('/api/suno', async (req, res) => {
 
             return res.json({
               type: 'song',
+              name: title,
               title: title,
+              url: targetUrl,
               playlists: [],
               tracks: [{
                 id: songId,
