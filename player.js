@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 4.0.4 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.4';
+// Version: 4.0.5 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.5';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -262,6 +262,8 @@ function initAudio() {
 
   // Initialize Enhancer
   enhancer = new AetherEnhancer(audioCtx);
+  const isEnhancerActive = Boolean(enhancerToggle && enhancerToggle.checked);
+  enhancer.setBypass(!isEnhancerActive);
 
   // Setup Analyser
   analyser = audioCtx.createAnalyser();

@@ -1,4 +1,4 @@
-// Version: 4.0.4 (Re-deployed to ensure complete file sync)
+// Version: 4.0.5 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
