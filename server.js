@@ -1,4 +1,4 @@
-// Version: 4.0.3 (Re-deployed to ensure complete file sync)
+// Version: 4.0.4 (Re-deployed to ensure complete file sync)
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -474,11 +474,11 @@ app.get('/api/suno', async (req, res) => {
     // Extract name of profile or playlist
     let name = 'Suno Catalog';
     if (isProfile) {
-      const match = html.match(/<title>([^|]+)/);
-      if (match) {
-        name = match[1].replace('Profile', '').trim();
+      const match = html.match(/<title>([^|<]+)/);
+      if (match && match[1] && !match[1].includes('undefined')) {
+        name = match[1].replace(/Profile/i, '').trim();
       } else {
-        name = parsedUrl.pathname.replace('/@', '');
+        name = parsedUrl.pathname.replace('/@', '').trim() || 'Suno Artist';
       }
     } else if (isPlaylist) {
       const match = html.match(/<title>([^|]+)/);
