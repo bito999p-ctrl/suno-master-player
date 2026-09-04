@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 4.0.7 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.7';
+// Version: 4.0.8 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.8';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -153,7 +153,10 @@ const dropContentFavorites = document.getElementById('drop-content-favorites');
 
 // Bottom Nav Tab Bar DOM references
 const navBtnLibrary = document.getElementById('nav-btn-library');
+const navBtnPlayer = document.getElementById('nav-btn-player');
 const navBtnUtility = document.getElementById('nav-btn-utility');
+const landingTabHistoryBtn = document.getElementById('landing-tab-history-btn');
+const landingTabFavoritesBtn = document.getElementById('landing-tab-favorites-btn');
 const workspaceSidebar = document.querySelector('.workspace-sidebar');
 const workspacePlayer = document.querySelector('.workspace-player');
 const workspaceUtility = document.querySelector('.workspace-utility');
@@ -363,15 +366,40 @@ function setupEventListeners() {
     sourceLikeBtn.addEventListener('click', toggleSourceLike);
   }
 
+  // Landing Segmented Tabs (History / Favorites)
+  if (landingTabHistoryBtn && landingTabFavoritesBtn) {
+    const historySection = document.getElementById('history-container');
+    const favoritesSection = document.getElementById('favorites-container');
+
+    landingTabHistoryBtn.addEventListener('click', () => {
+      landingTabHistoryBtn.classList.add('active');
+      landingTabFavoritesBtn.classList.remove('active');
+      if (historySection) historySection.classList.remove('hidden');
+      if (favoritesSection) favoritesSection.classList.add('hidden');
+    });
+
+    landingTabFavoritesBtn.addEventListener('click', () => {
+      landingTabFavoritesBtn.classList.add('active');
+      landingTabHistoryBtn.classList.remove('active');
+      if (favoritesSection) favoritesSection.classList.remove('hidden');
+      if (historySection) historySection.classList.add('hidden');
+    });
+  }
+
   // Dropdown Tab Switchers
   if (dropTabHistory && dropTabFavorites) {
     dropTabHistory.addEventListener('click', () => switchDropdownTab('history'));
     dropTabFavorites.addEventListener('click', () => switchDropdownTab('favorites'));
   }
 
-  // Mobile Bottom Navigation Tabs
-  if (navBtnLibrary && navBtnUtility) {
+  // Mobile Bottom Navigation Tabs (3 Tabs)
+  if (navBtnLibrary) {
     navBtnLibrary.addEventListener('click', () => switchMobileTab('library'));
+  }
+  if (navBtnPlayer) {
+    navBtnPlayer.addEventListener('click', () => switchMobileTab('player'));
+  }
+  if (navBtnUtility) {
     navBtnUtility.addEventListener('click', () => switchMobileTab('utility'));
   }
 
@@ -1498,6 +1526,11 @@ function updateProgressBar() {
     progressBar.value = percentage;
     currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
 
+    const miniFill = document.getElementById('mini-progress-fill');
+    if (miniFill) {
+      miniFill.style.width = `${percentage}%`;
+    }
+
     // Check and trigger pre-fetching in the background
     checkAndPreFetchNextTrack();
   }
@@ -1836,36 +1869,47 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// --- Mobile Tab Navigation (SPA) ---
+// --- Mobile Tab Navigation (3 Tabs) ---
 function switchMobileTab(tabName) {
   if (!workspaceSidebar || !workspacePlayer || !workspaceUtility) return;
 
-  // Reset active classes
-  workspaceSidebar.classList.add('mobile-hidden');
-  workspaceUtility.classList.add('mobile-hidden');
+  if (window.innerWidth <= 768) {
+    // Reset active tab classes
+    workspaceSidebar.classList.remove('active-tab');
+    workspacePlayer.classList.remove('active-tab');
+    workspaceUtility.classList.remove('active-tab');
 
-  navBtnLibrary.classList.remove('active');
-  navBtnUtility.classList.remove('active');
+    if (navBtnLibrary) navBtnLibrary.classList.remove('active');
+    if (navBtnPlayer) navBtnPlayer.classList.remove('active');
+    if (navBtnUtility) navBtnUtility.classList.remove('active');
 
-  if (tabName === 'library') {
-    workspaceSidebar.classList.remove('mobile-hidden');
-    navBtnLibrary.classList.add('active');
-  } else if (tabName === 'utility') {
-    workspaceUtility.classList.remove('mobile-hidden');
-    navBtnUtility.classList.add('active');
+    if (tabName === 'library') {
+      workspaceSidebar.classList.add('active-tab');
+      if (navBtnLibrary) navBtnLibrary.classList.add('active');
+      if (miniPlayer && tracks.length > 0) miniPlayer.classList.remove('hidden');
+    } else if (tabName === 'player') {
+      workspacePlayer.classList.add('active-tab');
+      if (navBtnPlayer) navBtnPlayer.classList.add('active');
+      if (miniPlayer) miniPlayer.classList.add('hidden'); // Hide mini player inside full player
+      resizeCanvas();
+    } else if (tabName === 'utility') {
+      workspaceUtility.classList.add('active-tab');
+      if (navBtnUtility) navBtnUtility.classList.add('active');
+      if (miniPlayer && tracks.length > 0) miniPlayer.classList.remove('hidden');
+    }
   }
 }
 
 // --- Mobile Full-Screen Player Modal controls ---
 function openPlayerModal() {
-  if (workspacePlayer) {
-    workspacePlayer.classList.add('active-modal');
+  if (window.innerWidth <= 768) {
+    switchMobileTab('player');
   }
 }
 
 function closePlayerModal() {
-  if (workspacePlayer) {
-    workspacePlayer.classList.remove('active-modal');
+  if (window.innerWidth <= 768) {
+    switchMobileTab('library');
   }
   if (playerLyricsOverlay) {
     playerLyricsOverlay.classList.remove('active-lyrics');
@@ -1877,10 +1921,9 @@ function closePlayerModal() {
 
 function handleResponsiveLayout() {
   if (window.innerWidth > 768) {
-    if (workspaceSidebar) workspaceSidebar.classList.remove('mobile-hidden');
-    if (workspacePlayer) workspacePlayer.classList.remove('mobile-hidden');
-    if (workspaceUtility) workspaceUtility.classList.remove('mobile-hidden');
-    closePlayerModal(); // Ensure modal styles don't affect desktop columns
+    if (workspaceSidebar) workspaceSidebar.classList.remove('active-tab');
+    if (workspacePlayer) workspacePlayer.classList.remove('active-tab');
+    if (workspaceUtility) workspaceUtility.classList.remove('active-tab');
   } else {
     // If on mobile, make sure the active nav tab is shown, default to library
     const activeBtn = document.querySelector('.mobile-nav-bar .nav-btn.active');
@@ -1900,12 +1943,17 @@ function updateMobileNavigationVisibility() {
       if (miniPlayer) miniPlayer.classList.add('hidden');
     } else {
       if (mobileNavBar) mobileNavBar.classList.remove('hidden');
-      // Only show mini player if tracks are loaded
-      if (miniPlayer && tracks.length > 0) miniPlayer.classList.remove('hidden');
+      // Only show mini player if tracks are loaded and we are not on the player tab
+      const isPlayerTabActive = workspacePlayer && workspacePlayer.classList.contains('active-tab');
+      if (miniPlayer && tracks.length > 0 && !isPlayerTabActive) {
+        miniPlayer.classList.remove('hidden');
+      } else if (miniPlayer && isPlayerTabActive) {
+        miniPlayer.classList.add('hidden');
+      }
     }
   } else {
-    // Desktop: make sure hidden states are removed if window resized
-    if (mobileNavBar) mobileNavBar.classList.remove('hidden');
+    // Desktop: hide mobile elements
+    if (mobileNavBar) mobileNavBar.classList.add('hidden');
     if (miniPlayer) miniPlayer.classList.add('hidden');
   }
 }
