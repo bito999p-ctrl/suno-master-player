@@ -1,4 +1,4 @@
-// Version: 4.2.2
+// Version: 4.2.3
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -35,10 +35,11 @@ function resolveRscReference(combined, ref) {
   if (!ref || typeof ref !== 'string' || !ref.startsWith('$')) return ref;
   
   const key = ref.replace(/^\$L?/, '');
-  const regex = new RegExp(`(?:^|\n)${key}:`, 'm');
-  const m = combined.match(regex);
-  if (m) {
-    const afterKey = combined.slice(m.index + m[0].length);
+  const searchTarget = `${key}:`;
+  const idx = combined.indexOf(searchTarget);
+
+  if (idx !== -1) {
+    const afterKey = combined.slice(idx + searchTarget.length);
     if (afterKey.startsWith('T')) {
       const commaIdx = afterKey.indexOf(',');
       if (commaIdx !== -1) {
@@ -104,6 +105,10 @@ app.get('/api/suno', async (req, res) => {
       return res.status(400).json({ error: 'URL must be a suno.com link' });
     }
 
+    const INVALID_ARTISTS = new Set([
+      'studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'
+    ]);
+
     // 1. Fast path for playlists via Studio API
     if (parsedUrl.pathname.startsWith('/playlist/')) {
       const playlistId = parsedUrl.pathname.split('/playlist/')[1].split('?')[0].split('/')[0];
@@ -121,9 +126,6 @@ app.get('/api/suno', async (req, res) => {
             const rawClips = studioData.playlist_clips || [];
             const tracks = [];
             const seenIds = new Set();
-            const INVALID_ARTISTS = new Set([
-              'studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'
-            ]);
 
             for (const item of rawClips) {
               const clip = item.clip || {};
@@ -280,10 +282,6 @@ app.get('/api/suno', async (req, res) => {
       defaultArtist = 'Bito';
     }
 
-    const INVALID_ARTISTS = new Set([
-      'studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'
-    ]);
-
     // Extract tracks
     const trackMap = new Map();
     const idRegex = /"id"\s*:\s*"([a-f0-9\-]{36})"/gi;
@@ -337,7 +335,7 @@ app.get('/api/suno', async (req, res) => {
             const image_url = imageMatch ? imageMatch[1] : `https://cdn1.suno.ai/image_${uuid}.png`;
 
             let artist_name = defaultArtist;
-            const userObjMatch = trackBlock.match(/"user"\s*:\s*\{([^\}]+)\}/i);
+            const userObjMatch = trackBlock.match(/"user"\s*:\s*\{([^}]+)\}/i);
             if (userObjMatch) {
               const userContent = userObjMatch[1];
               const dispMatch = userContent.match(/"display_name"\s*:\s*"([^"]+)"/i);
@@ -422,7 +420,7 @@ app.get('/api/suno', async (req, res) => {
     const playlists = [];
     if (isProfile) {
       const seenPlaylists = new Set();
-      const rscPlaylistRegex = /playlist_id\\\"\s*:\s*\\\"([a-f0-9\-]{36})\\\"\s*,\s*\\\"playlist_name\\\"\s*:\s*\\\"([^\\\"]+)\\\"\s*,\s*\\\"playlist_image_url\\\"\s*:\s*\\\"([^\\\"]+)\\\"/gi;
+      const rscPlaylistRegex = /playlist_id\\"\s*:\s*\\"([a-f0-9\-]{36})\\"\s*,\s*\\"playlist_name\\"\s*:\s*\\"([^\\"]+)\\"\s*,\s*\\"playlist_image_url\\"\s*:\s*\\"([^\\"]+)\\"/gi;
       let rscMatch;
       while ((rscMatch = rscPlaylistRegex.exec(html)) !== null) {
         const id = rscMatch[1];

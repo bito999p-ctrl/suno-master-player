@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Complete Clean Rebuilt Frontend Controller
- * Version: 4.2.2
+ * Version: 4.2.3
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.2';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.3';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
