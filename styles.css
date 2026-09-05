@@ -3,7 +3,7 @@
    Theme: Fine Art Watercolor & Handmade Paper Glass Deck
    Typography: Inter & Outfit
    Icons: Ultra-Refined Thin Lines (stroke-width: 1.25px)
-   Version: 4.2.7
+   Version: 4.2.8
    ========================================================================== */
 
 :root {
@@ -76,9 +76,10 @@ html, body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
-  background-color: #f1f3f6;
+  background-color: #eae5db;
   background-image:
-    radial-gradient(circle at 50% 10%, #ffffff 0%, #f4f6f9 50%, #e9ecf1 100%);
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.50) 0%, rgba(240, 234, 222, 0.65) 50%, rgba(222, 214, 200, 0.80) 100%),
+    linear-gradient(135deg, #eae5dc 0%, #dfd8cb 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -161,12 +162,12 @@ a {
 
 /* Cards & Glassmorphism */
 .card {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.90);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 4px 18px -2px rgba(45, 35, 25, 0.05), 0 1px 3px rgba(45, 35, 25, 0.02);
 }
 
 .card-nested {
@@ -306,17 +307,18 @@ a {
   gap: 24px;
   margin: auto 0;
   border-radius: var(--radius-xl);
-  /* Crisp Fine Art White Paper Sheet */
-  background-color: #ffffff;
-  background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.89) 100%), url('assets/ambient_bg.jpg');
+  /* Natural Warm Cotton Watercolor Paper */
+  background-color: #fdfbf7;
+  background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(251, 247, 238, 0.89) 100%), url('assets/ambient_bg.jpg');
   background-size: cover;
   background-position: center center;
-  border: 1px solid rgba(226, 232, 240, 0.90);
+  border: 1px solid rgba(218, 208, 192, 0.75);
   box-shadow:
-    0 2px 5px rgba(15, 23, 42, 0.02),
-    0 12px 28px -4px rgba(15, 23, 42, 0.05),
-    0 28px 64px -10px rgba(15, 23, 42, 0.08),
-    inset 0 0 0 1px #ffffff;
+    0 2px 5px rgba(45, 35, 25, 0.035),
+    0 12px 30px -4px rgba(45, 35, 25, 0.08),
+    0 32px 70px -10px rgba(45, 35, 25, 0.13),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.92),
+    inset 0 0 45px rgba(248, 242, 230, 0.45);
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -587,39 +589,51 @@ a {
     margin: 14px auto;
     padding: 16px 18px;
     border-radius: 22px;
-    /* Crisp Fine Art White Paper Canvas resting on Studio Desk */
-    background-color: #ffffff;
-    background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.93) 0%, rgba(255, 255, 255, 0.88) 100%), url('assets/ambient_bg.jpg');
+    /* Natural Warm Cotton Watercolor Paper resting on Desk */
+    background-color: #fdfbf7;
+    background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.83) 0%, rgba(251, 247, 238, 0.88) 100%), url('assets/ambient_bg.jpg');
     background-size: cover;
     background-position: center center;
-    border: 1px solid rgba(226, 232, 240, 0.90);
+    border: 1px solid rgba(218, 208, 192, 0.75);
     box-shadow:
-      0 2px 5px rgba(15, 23, 42, 0.03),
-      0 12px 30px -4px rgba(15, 23, 42, 0.06),
-      0 32px 72px -10px rgba(15, 23, 42, 0.09),
-      inset 0 0 0 1px #ffffff;
+      0 2px 5px rgba(45, 35, 25, 0.035),
+      0 12px 30px -4px rgba(45, 35, 25, 0.08),
+      0 32px 70px -10px rgba(45, 35, 25, 0.13),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.92),
+      inset 0 0 50px rgba(248, 242, 230, 0.45);
   }
 }
-}
 
-/* App Header */
+/* App Header - Robust Horizontal Flex Layout */
 .app-header {
   height: 52px;
   padding: 0 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
   flex-shrink: 0;
   border-radius: var(--radius-md);
+  gap: 12px;
+  white-space: nowrap;
 }
+
+.header-left-group {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
 .clickable-logo {
   cursor: pointer;
 }
+
 .header-portal-links {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .portal-link-item {
   display: inline-flex;
   align-items: center;
@@ -629,32 +643,41 @@ a {
   color: var(--text-secondary);
   padding: 4px 10px;
   border-radius: var(--radius-sm);
+  background: var(--bg-nested);
+  border: 1px solid var(--border-subtle);
   transition: all var(--transition-fast);
 }
+
 .portal-link-item:hover {
-  background: var(--bg-hover);
+  background: #ffffff;
   color: var(--text-primary);
+  border-color: var(--border-medium);
 }
+
 .portal-link-item i {
   width: 14px;
   height: 14px;
 }
+
 .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
+
 .header-actions .btn-icon-text {
   padding: 6px 12px;
   font-size: 12px;
   gap: 6px;
 }
+
 .header-actions .btn-icon-text i {
   width: 14px;
   height: 14px;
 }
 
-/* History Dropdown Overlay */
 .history-dropdown-wrapper {
   position: relative;
 }

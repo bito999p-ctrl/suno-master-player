@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.7
+ * Version: 4.2.8
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.7';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.8';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
