@@ -1,0 +1,7 @@
+# Global Search Engine Crawlers Directive
+User-agent: *
+Allow: /
+
+# Canonical Sitemaps
+Sitemap: https://aether-player-blush.vercel.app/sitemap.xml
+Sitemap: https://bito999p-ctrl.github.io/bito-music-static/AETHER_PLAYER/sitemap.xml

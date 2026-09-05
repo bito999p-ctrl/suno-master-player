@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://aether-player-blush.vercel.app/</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://aether-player-blush.vercel.app/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://aether-player-blush.vercel.app/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://aether-player-blush.vercel.app/" />
+    <image:image>
+      <image:loc>https://bito999p-ctrl.github.io/sonografica/hero_bg.png</image:loc>
+      <image:title>AetherPlayer - Suno AI Music Player &amp; AI Mastering</image:title>
+      <image:caption>Studio sound web audio player for Suno AI songs and playlists</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://bito999p-ctrl.github.io/bito-music-static/AETHER_PLAYER/</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://bito999p-ctrl.github.io/bito-music-static/AETHER_PLAYER/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://bito999p-ctrl.github.io/bito-music-static/AETHER_PLAYER/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://bito999p-ctrl.github.io/bito-music-static/AETHER_PLAYER/" />
+  </url>
+</urlset>

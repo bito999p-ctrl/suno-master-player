@@ -1,0 +1,21 @@
+{
+  "name": "AetherPlayer - Suno AI Player & AI Mastering",
+  "short_name": "AetherPlayer",
+  "description": "Dedicated web music player for Suno AI songs and playlists, enhanced with AetherMaster AI mastering DSP.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f6f3",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://bito999p-ctrl.github.io/sonografica/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://bito999p-ctrl.github.io/sonografica/hero_bg.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

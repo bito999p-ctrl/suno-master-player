@@ -1,4 +1,4 @@
-<!-- Version: 4.2.9 (Fine Art Studio Edition) -->
+<!-- Version: 4.2.10 (Fine Art Studio Edition) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,34 +13,147 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>AetherPlayer - Suno AI & AetherMaster AI Enhancer</title>
-  <meta name="description" content="Dedicated music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI mastering engine.">
-  <meta name="keywords" content="Suno AI, AetherPlayer, AetherMaster, Web Music Player, AI Mastering, Web Audio API, Sonografica">
-  <meta name="robots" content="index, follow">
+
+  <!-- Primary SEO Meta Tags (Worldwide Search Engines) -->
+  <title>AetherPlayer - Suno AI Music Player & AI Mastering Engine | Sonografica</title>
+  <meta name="title" content="AetherPlayer - Suno AI Music Player & AI Mastering Engine | Sonografica">
+  <meta name="description" content="Dedicated high-fidelity web music player for Suno AI public songs and playlists. Experience studio-grade sound with AetherMaster AI real-time mastering DSP, synchronized lyrics, and background mobile playback.">
+  <meta name="keywords" content="Suno AI player, Suno music player, Suno AI playlist player, AI mastering, Web Audio API DSP, Sonografica, AetherPlayer, AetherMaster, Suno lyrics viewer, AI music enhancement, online web music player, Bito music">
+  <meta name="author" content="Sonografica / Bito">
+  <meta name="publisher" content="Sonografica">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <link rel="canonical" href="https://aether-player-blush.vercel.app/">
 
-  <!-- Open Graph / Twitter -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://aether-player-blush.vercel.app/">
-  <meta property="og:title" content="AetherPlayer - Suno AI & AetherMaster AI Enhancer">
-  <meta property="og:description" content="Dedicated music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI mastering engine.">
-  <meta property="og:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
-  <meta property="og:site_name" content="AetherPlayer">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="AetherPlayer - Suno AI & AetherMaster AI Enhancer">
-  <meta name="twitter:description" content="Dedicated music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI mastering engine.">
-  <meta name="twitter:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
+  <!-- Hreflang for Global & Multi-regional Crawlers -->
+  <link rel="alternate" hreflang="x-default" href="https://aether-player-blush.vercel.app/">
+  <link rel="alternate" hreflang="en" href="https://aether-player-blush.vercel.app/">
+  <link rel="alternate" hreflang="ja" href="https://aether-player-blush.vercel.app/">
 
-  <!-- Favicon -->
+  <!-- Mobile Browser & PWA Integration -->
+  <meta name="theme-color" content="#f7f6f3">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="AetherPlayer">
+  <meta name="application-name" content="AetherPlayer">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Open Graph / Facebook / Discord / LinkedIn -->
+  <meta property="og:type" content="music.playlist">
+  <meta property="og:url" content="https://aether-player-blush.vercel.app/">
+  <meta property="og:title" content="AetherPlayer - Suno AI Music Player & AI Mastering Engine">
+  <meta property="og:description" content="Dedicated high-fidelity web music player for Suno AI public songs and playlists with real-time AetherMaster AI auto-mastering DSP and lyrics.">
+  <meta property="og:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="AetherPlayer Studio Deck Interface">
+  <meta property="og:site_name" content="AetherPlayer by Sonografica">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ja_JP">
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@bito999">
+  <meta name="twitter:creator" content="@bito999">
+  <meta name="twitter:url" content="https://aether-player-blush.vercel.app/">
+  <meta name="twitter:title" content="AetherPlayer - Suno AI Music Player & AI Mastering Engine">
+  <meta name="twitter:description" content="Dedicated high-fidelity web music player for Suno AI public tracks & playlists with AetherMaster AI auto-mastering DSP.">
+  <meta name="twitter:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
+  <meta name="twitter:image:alt" content="AetherPlayer Studio Interface">
+
+  <!-- Favicons -->
   <link rel="icon" type="image/png" href="https://bito999p-ctrl.github.io/sonografica/favicon.png">
-  <!-- Fonts -->
+  <link rel="apple-touch-icon" href="https://bito999p-ctrl.github.io/sonografica/favicon.png">
+
+  <!-- Fonts Preconnect -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.2.9">
+  <link rel="stylesheet" href="styles.css?v=4.2.10">
+  
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Schema.org JSON-LD Structured Data (Rich Search Results) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://aether-player-blush.vercel.app/#webapp",
+        "name": "AetherPlayer",
+        "url": "https://aether-player-blush.vercel.app/",
+        "applicationCategory": "MultimediaApplication, MusicApplication",
+        "operatingSystem": "All (Web Browser, iOS, Android, macOS, Windows, Linux)",
+        "browserRequirements": "Requires Web Audio API support (Chrome, Safari, Firefox, Edge)",
+        "description": "Dedicated web music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI real-time mastering DSP, lyrics visualization, and background playback.",
+        "image": "https://bito999p-ctrl.github.io/sonografica/hero_bg.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Sonografica",
+          "url": "https://bito999p-ctrl.github.io/sonografica"
+        },
+        "featureList": [
+          "Suno AI Public Playlist & Track Streaming",
+          "AetherMaster Real-time Web Audio API AI Mastering DSP",
+          "Dynamic Resonance Analysis & Notch Filtering",
+          "14 Studio Mastering Presets (Pops, Rock, R&B, EDM, Metal, Lo-Fi, Ambient, etc.)",
+          "Synchronized Lyrics & Prompt Viewer",
+          "Mobile Background Playback with W3C MediaSession API",
+          "Lock Screen Controls & Bluetooth Earphone Integration"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://aether-player-blush.vercel.app/#website",
+        "url": "https://aether-player-blush.vercel.app/",
+        "name": "AetherPlayer",
+        "description": "Suno AI Music Player & AetherMaster AI Sound Enhancer",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Sonografica",
+          "url": "https://bito999p-ctrl.github.io/sonografica"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I play Suno AI songs and playlists on AetherPlayer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Simply paste any public Suno artist profile URL (e.g. @bito999) or public playlist URL into the input field on AetherPlayer and click Load to stream and browse songs instantly."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I listen to Suno AI music in the background on mobile devices?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. AetherPlayer fully supports background playback on iOS Safari and Android Chrome with lock screen media controls, artwork display, and Bluetooth earphone remote actions."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the AetherMaster AI mastering DSP work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The built-in AetherMaster engine uses the Web Audio API to analyze audio spectral balance, dynamically suppress harsh resonance frequencies, expand stereo imaging, and optimize loudness with mastering limiters in real time."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <!-- Ambient Light Backdrop Glow -->
@@ -612,6 +725,6 @@
   </nav>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.2.9"></script>
+  <script type="module" src="player.js?v=4.2.10"></script>
 </body>
 </html>
