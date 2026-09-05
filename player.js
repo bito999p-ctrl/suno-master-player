@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.11
+ * Version: 4.2.12
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.11';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.12';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -184,11 +184,6 @@ function getNormalizedArtist(name, fallbackName) {
     return 'Bito';
   }
   return clean;
-}
-  if (lower.includes('bito999') || lower === 'bito') {
-    return 'Bito';
-  }
-  return name;
 }
 
 function canonicalizeSunoUrl(val) {
