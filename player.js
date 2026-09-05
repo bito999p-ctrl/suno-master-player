@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.14
+ * Version: 4.2.15
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.14';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.15';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -272,13 +272,12 @@ function closeShareModal() {
 
 // Execute Share or Clipboard Copy
 async function executeShare(shareData) {
-  const { title, text, url, toastMsg } = shareData;
+  const { title, url, toastMsg } = shareData;
 
   if (navigator.share && window.innerWidth <= 768) {
     try {
       await navigator.share({
         title: title || 'AetherPlayer',
-        text: text || 'Listen on AetherPlayer',
         url: url
       });
       closeShareModal();
@@ -327,7 +326,6 @@ function handleShare() {
     const shareUrl = buildAetherPlayerUrl(currentSource.url, trackId);
     executeShare({
       title: track ? `${track.title} - ${getNormalizedArtist(track.artist_name || track.artist)} | AetherPlayer` : 'AetherPlayer Track',
-      text: `Listen to "${track ? track.title : 'Track'}" on AetherPlayer (Enhanced Studio Audio)`,
       url: shareUrl,
       toastMsg: 'Track share link copied to clipboard!'
     });
@@ -418,7 +416,6 @@ function handleShare() {
       if (opt) {
         executeShare({
           title: `${opt.title}: ${opt.desc} | AetherPlayer`,
-          text: `Listen on AetherPlayer: ${opt.desc}`,
           url: opt.url,
           toastMsg: opt.toastMsg
         });
