@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.15
+ * Version: 4.2.16
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.15';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.16';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -253,8 +253,7 @@ function buildAetherPlayerUrl(sourceUrl, trackId = null) {
 }
 
 function getAetherPlayerShareUrl() {
-  const track = (currentTrackIndex >= 0 && tracks[currentTrackIndex]) ? tracks[currentTrackIndex] : null;
-  return buildAetherPlayerUrl(currentSource ? currentSource.url : null, track ? track.id : null);
+  return buildAetherPlayerUrl(currentSource ? currentSource.url : null);
 }
 
 // Dynamically sync browser address bar with current AetherPlayer state
@@ -323,7 +322,8 @@ function handleShare() {
   // Case 1: Opened directly as a Track -> Copy track URL immediately without modal
   if (isTrackDirect) {
     const trackId = track ? track.id : '';
-    const shareUrl = buildAetherPlayerUrl(currentSource.url, trackId);
+    const trackUrl = trackId ? `https://suno.com/song/${trackId}` : currentSource.url;
+    const shareUrl = buildAetherPlayerUrl(trackUrl);
     executeShare({
       title: track ? `${track.title} - ${getNormalizedArtist(track.artist_name || track.artist)} | AetherPlayer` : 'AetherPlayer Track',
       url: shareUrl,
@@ -334,7 +334,7 @@ function handleShare() {
 
   const options = [];
 
-  // 1. Artist Profile Option (Available if profile loaded or navigated from profile into playlist)
+  // 1. Artist Profile Option (Independent artist profile URL)
   if (parentProfile && parentProfile.url) {
     options.push({
       type: 'artist',
@@ -357,7 +357,7 @@ function handleShare() {
     });
   }
 
-  // 2. Playlist Option (Available if a playlist is loaded)
+  // 2. Playlist Option (Independent playlist URL)
   if (currentSource.type === 'playlist') {
     options.push({
       type: 'playlist',
@@ -370,16 +370,17 @@ function handleShare() {
     });
   }
 
-  // 3. Current Track Option (Available if a track is present)
+  // 3. Current Track Option (Independent single track URL)
   if (track) {
     const trackArtist = getNormalizedArtist(track.artist_name || track.artist);
+    const singleTrackUrl = `https://suno.com/song/${track.id}`;
     options.push({
       type: 'track',
       title: 'Current Track',
       tag: 'Track',
       desc: `${track.title} — ${trackArtist}`,
       icon: 'music',
-      url: buildAetherPlayerUrl(currentSource.url, track.id),
+      url: buildAetherPlayerUrl(singleTrackUrl),
       toastMsg: 'Track share link copied!'
     });
   }
