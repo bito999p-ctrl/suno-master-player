@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 4.0.8 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.8';
+// Version: 4.0.9 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.9';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -538,6 +538,9 @@ function setupEventListeners() {
   // Enhancer Toggle (Bypass & On-demand Analysis)
   function handleEnhancerToggleChange(isActive) {
     initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
     if (enhancerToggle) enhancerToggle.checked = isActive;
     if (mobileEnhancerToggle) mobileEnhancerToggle.checked = isActive;
     
@@ -1060,6 +1063,11 @@ async function selectTrack(idx) {
 async function runAnalysisForTrack(track, applyImmediately = true) {
   if (!track || !track.audio_url) return null;
 
+  initAudio();
+  if (audioCtx && audioCtx.state === 'suspended') {
+    await audioCtx.resume().catch(() => {});
+  }
+
   const cached = analysisCache.get(track.audio_url);
   if (cached) {
     currentAnalysisResult = cached.result;
@@ -1109,7 +1117,20 @@ async function runAnalysisForTrack(track, applyImmediately = true) {
     }
 
     console.log('[AI Auto] Decoding audio channel buffers...');
-    const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    if (!audioCtx) initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      await audioCtx.resume().catch(() => {});
+    }
+
+    let decodedBuffer;
+    try {
+      decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+    } catch (e) {
+      decodedBuffer = await new Promise((res, rej) => {
+        audioCtx.decodeAudioData(arrayBuffer.slice(0), res, rej);
+      });
+    }
+
     if (analysisId !== currentAnalysisId) return null;
 
     console.log(`[AI Auto] Audio Decoded: Duration ${decodedBuffer.duration.toFixed(2)}s, SampleRate ${decodedBuffer.sampleRate}Hz, Channels ${decodedBuffer.numberOfChannels}, Bytes ${arrayBuffer.byteLength}`);
