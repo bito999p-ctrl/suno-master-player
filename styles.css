@@ -3,7 +3,7 @@
    Theme: Fine Art Watercolor & Handmade Paper Glass Deck
    Typography: Inter & Outfit
    Icons: Ultra-Refined Thin Lines (stroke-width: 1.25px)
-   Version: 4.2.6
+   Version: 4.2.7
    ========================================================================== */
 
 :root {
@@ -76,10 +76,9 @@ html, body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
-  background-color: #ede7dd;
+  background-color: #f1f3f6;
   background-image:
-    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.50) 0%, rgba(242, 236, 226, 0.65) 45%, rgba(218, 208, 192, 0.75) 100%),
-    linear-gradient(135deg, #ede7dd 0%, #e2d8c9 100%);
+    radial-gradient(circle at 50% 10%, #ffffff 0%, #f4f6f9 50%, #e9ecf1 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -162,12 +161,12 @@ a {
 
 /* Cards & Glassmorphism */
 .card {
-  background: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 18px -2px rgba(45, 35, 25, 0.05), 0 1px 3px rgba(45, 35, 25, 0.02);
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
 }
 
 .card-nested {
@@ -307,18 +306,17 @@ a {
   gap: 24px;
   margin: auto 0;
   border-radius: var(--radius-xl);
-  /* Physical Fine Art Watercolor Paper Sheet resting on Desk */
-  background-color: #fdfbf7;
-  background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(250, 246, 239, 0.90) 100%), url('assets/ambient_bg.jpg');
+  /* Crisp Fine Art White Paper Sheet */
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.89) 100%), url('assets/ambient_bg.jpg');
   background-size: cover;
   background-position: center center;
-  border: 1px solid rgba(215, 205, 190, 0.75);
+  border: 1px solid rgba(226, 232, 240, 0.90);
   box-shadow:
-    0 2px 5px rgba(40, 30, 20, 0.04),
-    0 12px 30px -4px rgba(40, 30, 20, 0.09),
-    0 32px 72px -10px rgba(40, 30, 20, 0.15),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.95),
-    inset 0 0 50px rgba(246, 240, 228, 0.5);
+    0 2px 5px rgba(15, 23, 42, 0.02),
+    0 12px 28px -4px rgba(15, 23, 42, 0.05),
+    0 28px 64px -10px rgba(15, 23, 42, 0.08),
+    inset 0 0 0 1px #ffffff;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -589,19 +587,19 @@ a {
     margin: 14px auto;
     padding: 16px 18px;
     border-radius: 22px;
-    /* Physical Fine Art Watercolor Paper Sheet resting on Desk */
-    background-color: #fdfbf7;
-    background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.82) 0%, rgba(250, 246, 239, 0.88) 100%), url('assets/ambient_bg.jpg');
+    /* Crisp Fine Art White Paper Canvas resting on Studio Desk */
+    background-color: #ffffff;
+    background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.93) 0%, rgba(255, 255, 255, 0.88) 100%), url('assets/ambient_bg.jpg');
     background-size: cover;
     background-position: center center;
-    border: 1px solid rgba(215, 205, 190, 0.75);
+    border: 1px solid rgba(226, 232, 240, 0.90);
     box-shadow:
-      0 2px 5px rgba(40, 30, 20, 0.04),
-      0 12px 30px -4px rgba(40, 30, 20, 0.09),
-      0 32px 72px -10px rgba(40, 30, 20, 0.15),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.95),
-      inset 0 0 60px rgba(246, 240, 228, 0.5);
+      0 2px 5px rgba(15, 23, 42, 0.03),
+      0 12px 30px -4px rgba(15, 23, 42, 0.06),
+      0 32px 72px -10px rgba(15, 23, 42, 0.09),
+      inset 0 0 0 1px #ffffff;
   }
+}
 }
 
 /* App Header */

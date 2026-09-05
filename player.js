@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.6
+ * Version: 4.2.7
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.6';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.7';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -26,6 +26,7 @@ let masterGainNode = null;
 
 let tracks = [];
 let currentTrackIndex = -1;
+let currentPlayingTrack = null;
 let isPlaying = false;
 let isShuffle = false;
 let repeatMode = 'all'; // 'all', 'one', 'none'
@@ -422,15 +423,19 @@ function setupMediaSessionActions() {
 // ============================================================================
 // Playback Control & Track Selection
 // ============================================================================
-function selectTrack(index) {
+function updateActiveTrackHighlight() {
+  document.querySelectorAll('.track-item').forEach((el, idx) => {
+    const track = tracks[idx];
+    const isActive = (currentPlayingTrack && track && track.id === currentPlayingTrack.id) || (idx === currentTrackIndex);
+    el.classList.toggle('active', isActive);
+  });
+}
+
+function prepareTrack(index) {
   if (index < 0 || index >= tracks.length) return;
   currentTrackIndex = index;
   const track = tracks[index];
-
-  initAudio();
-
-  audioPlayer.src = track.audio_url;
-  audioPlayer.load();
+  currentPlayingTrack = track;
 
   if (trackTitle) trackTitle.textContent = track.title || 'Untitled Track';
   if (trackArtist) trackArtist.textContent = getNormalizedArtist(track.artist_name || track.artist);
@@ -445,26 +450,38 @@ function selectTrack(index) {
   if (miniArtist) miniArtist.textContent = getNormalizedArtist(track.artist_name || track.artist);
   if (miniArtwork) miniArtwork.src = track.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png';
 
-  // Lyrics
   const lyricsContent = track.prompt || track.lyrics || track.description || track.tags || 'Select a track to view lyrics.';
   if (mobileLyricsText) mobileLyricsText.textContent = lyricsContent;
 
   updateLikeButtonState(track.id);
+  updateActiveTrackHighlight();
+  window.renderLucideIcons();
+}
 
-  document.querySelectorAll('.track-item').forEach((el, idx) => {
-    el.classList.toggle('active', idx === index);
-  });
+function selectTrack(index, autoPlay = true) {
+  if (index < 0 || index >= tracks.length) return;
+  currentTrackIndex = index;
+  const track = tracks[index];
+  currentPlayingTrack = track;
 
+  initAudio();
+
+  audioPlayer.src = track.audio_url;
+  audioPlayer.load();
+
+  prepareTrack(index);
   updateMediaSession(track);
 
-  audioPlayer.play().then(() => {
-    isPlaying = true;
-    updatePlayStateUI();
-  }).catch(e => {
-    console.warn('[Playback] Play failed or pending user interaction:', e.message);
-    isPlaying = false;
-    updatePlayStateUI();
-  });
+  if (autoPlay) {
+    audioPlayer.play().then(() => {
+      isPlaying = true;
+      updatePlayStateUI();
+    }).catch(e => {
+      console.warn('[Playback] Play failed or pending user interaction:', e.message);
+      isPlaying = false;
+      updatePlayStateUI();
+    });
+  }
 
   if (isEnhancerEnabled) {
     runAnalysisForTrack(track);
@@ -474,11 +491,13 @@ function selectTrack(index) {
 }
 
 function togglePlay() {
-  if (tracks.length === 0) return;
+  if (tracks.length === 0 && !currentPlayingTrack) return;
   initAudio();
 
-  if (currentTrackIndex === -1) {
-    selectTrack(0);
+  if (!audioPlayer.src || audioPlayer.src === window.location.href) {
+    if (tracks.length > 0) {
+      selectTrack(0, true);
+    }
     return;
   }
 
@@ -590,9 +609,20 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     }
 
     tracks = data.tracks || [];
-    currentTrackIndex = -1;
-    isPlaying = false;
-    audioPlayer.pause();
+
+    // If no song is currently playing, prepare track 0 metadata for UI display without auto-playing
+    if (!isPlaying) {
+      currentTrackIndex = 0;
+      if (tracks.length > 0) {
+        prepareTrack(0);
+      }
+    } else {
+      // If audio IS currently playing, keep playing uninterrupted!
+      // Check if current playing track is inside this playlist to highlight it
+      if (currentPlayingTrack) {
+        currentTrackIndex = tracks.findIndex(t => t.id === currentPlayingTrack.id);
+      }
+    }
 
     currentSource = {
       type: data.type,
@@ -640,10 +670,6 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
 
     renderTracksList();
     showPlayerWorkspace();
-
-    if (tracks.length > 0) {
-      selectTrack(0);
-    }
   } catch (err) {
     console.error('Import error:', err);
     alert(`Connection error: ${err.message}`);
@@ -681,23 +707,26 @@ function renderTracksList() {
     return;
   }
 
-  const listHtml = tracks.map((t, idx) => `
-    <div class="track-item ${idx === currentTrackIndex ? 'active' : ''}" data-index="${idx}">
-      <span class="track-item-idx">${idx + 1}</span>
-      <img src="${escapeHtml(t.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png')}" class="track-item-cover" alt="Art">
-      <div class="track-item-info">
-        <span class="track-item-title">${escapeHtml(t.title || 'Untitled')}</span>
-        <span class="track-item-artist">${escapeHtml(getNormalizedArtist(t.artist_name || t.artist))}</span>
+  const listHtml = tracks.map((t, idx) => {
+    const isActive = (currentPlayingTrack && t.id === currentPlayingTrack.id) || (idx === currentTrackIndex);
+    return `
+      <div class="track-item ${isActive ? 'active' : ''}" data-index="${idx}">
+        <span class="track-item-idx">${idx + 1}</span>
+        <img src="${escapeHtml(t.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png')}" class="track-item-cover" alt="Art">
+        <div class="track-item-info">
+          <span class="track-item-title">${escapeHtml(t.title || 'Untitled')}</span>
+          <span class="track-item-artist">${escapeHtml(getNormalizedArtist(t.artist_name || t.artist))}</span>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   if (tracksList) {
     tracksList.innerHTML = listHtml;
     tracksList.querySelectorAll('.track-item').forEach(el => {
       el.addEventListener('click', () => {
         const idx = parseInt(el.getAttribute('data-index'), 10);
-        selectTrack(idx);
+        selectTrack(idx, true);
         if (window.innerWidth <= 768) {
           switchMobileTab('player');
         }
@@ -710,7 +739,7 @@ function renderTracksList() {
     mobileOverlayTracksList.querySelectorAll('.track-item').forEach(el => {
       el.addEventListener('click', () => {
         const idx = parseInt(el.getAttribute('data-index'), 10);
-        selectTrack(idx);
+        selectTrack(idx, true);
         if (playerPlaylistOverlay) playerPlaylistOverlay.classList.remove('active-playlist');
       });
     });
