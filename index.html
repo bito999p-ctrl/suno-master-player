@@ -1,4 +1,4 @@
-<!-- Version: 4.2.12 (Fine Art Studio Edition) -->
+<!-- Version: 4.2.13 (Fine Art Studio Edition) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,7 +70,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.2.12">
+  <link rel="stylesheet" href="styles.css?v=4.2.13">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -724,7 +724,13 @@
     </button>
   </nav>
 
+  <!-- Floating Toast Notification -->
+  <div id="toast-notification" class="toast-notification hidden">
+    <i data-lucide="check" class="toast-icon"></i>
+    <span id="toast-message">AetherPlayer share link copied!</span>
+  </div>
+
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.2.12"></script>
+  <script type="module" src="player.js?v=4.2.13"></script>
 </body>
 </html>

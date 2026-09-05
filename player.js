@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.12
+ * Version: 4.2.13
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.12';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.13';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -214,6 +214,98 @@ function getDisplaySubtitle(idOrUrl, type, item) {
     if (match) return match[1];
   }
   return str;
+}
+
+// Floating Toast Feedback
+let toastTimeout = null;
+function showToast(message) {
+  const toast = document.getElementById('toast-notification');
+  const toastMsg = document.getElementById('toast-message');
+  if (!toast || !toastMsg) {
+    alert(message);
+    return;
+  }
+  toastMsg.textContent = message;
+  toast.classList.remove('hidden');
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 2600);
+}
+
+// Generate AetherPlayer Share URL (with current source & track)
+function getAetherPlayerShareUrl() {
+  const urlObj = new URL(window.location.href);
+  urlObj.search = '';
+  urlObj.hash = '';
+
+  const params = new URLSearchParams();
+  if (currentSource && currentSource.url) {
+    params.set('url', currentSource.url);
+  }
+  if (currentTrackIndex >= 0 && tracks[currentTrackIndex]) {
+    params.set('track', tracks[currentTrackIndex].id);
+  }
+
+  const queryString = params.toString();
+  return queryString ? `${urlObj.origin}${urlObj.pathname}?${queryString}` : `${urlObj.origin}${urlObj.pathname}`;
+}
+
+// Dynamically sync browser address bar with current AetherPlayer state
+function updateBrowserUrl() {
+  try {
+    const shareUrl = getAetherPlayerShareUrl();
+    window.history.replaceState({}, '', shareUrl);
+  } catch (e) {}
+}
+
+// Handle Share Action (Native Web Share API on mobile, Clipboard copy on desktop)
+async function handleShare() {
+  const shareUrl = getAetherPlayerShareUrl();
+  const track = (currentTrackIndex >= 0 && tracks[currentTrackIndex]) ? tracks[currentTrackIndex] : null;
+  const trackTitleStr = track ? track.title : (currentSource.name || 'AetherPlayer');
+  const artistStr = track ? getNormalizedArtist(track.artist_name || track.artist) : (currentSource.name || 'Suno Music');
+  const shareTitle = `${trackTitleStr} - ${artistStr} | AetherPlayer`;
+  const shareText = `Listen to "${trackTitleStr}" on AetherPlayer (Enhanced Studio Audio)`;
+
+  if (navigator.share && window.innerWidth <= 768) {
+    try {
+      await navigator.share({
+        title: shareTitle,
+        text: shareText,
+        url: shareUrl
+      });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  let copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      copied = true;
+    } catch (e) {
+      copied = false;
+    }
+  }
+  if (!copied) {
+    try {
+      const input = document.createElement('textarea');
+      input.value = shareUrl;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      copied = true;
+    } catch (e) {}
+  }
+
+  showToast('AetherPlayer share link copied to clipboard!');
 }
 
 // ============================================================================
@@ -474,6 +566,7 @@ function selectTrack(index, autoPlay = true) {
 
   prepareTrack(index);
   updateMediaSession(track);
+  updateBrowserUrl();
 
   if (autoPlay) {
     audioPlayer.play().then(() => {
@@ -577,7 +670,7 @@ function updatePlayStateUI() {
 // ============================================================================
 // Import Suno URL & Screen Navigation
 // ============================================================================
-async function importSunoUrl(urlStr, isSubRequest = false) {
+async function importSunoUrl(urlStr, isSubRequest = false, targetTrackId = null) {
   if (!urlStr || !urlStr.trim()) return;
   const targetUrl = canonicalizeSunoUrl(urlStr.trim());
 
@@ -629,8 +722,11 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
       };
     });
 
-    // 3. If no song is currently playing, prepare track 0 for UI preview
-    if (!isPlaying) {
+    // 3. Track selection and playback logic
+    const targetIdx = targetTrackId ? tracks.findIndex(t => t.id === targetTrackId) : -1;
+    if (targetIdx !== -1) {
+      selectTrack(targetIdx, true);
+    } else if (!isPlaying) {
       currentTrackIndex = 0;
       if (tracks.length > 0) {
         prepareTrack(0);
@@ -641,6 +737,8 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
         currentTrackIndex = tracks.findIndex(t => t.id === currentPlayingTrack.id);
       }
     }
+
+    updateBrowserUrl();
 
     // Save to Recent History
     saveToHistory(data.type, targetUrl, currentSource.name);
@@ -682,7 +780,11 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     renderTracksList();
     showPlayerWorkspace();
     if (window.innerWidth <= 768) {
-      switchMobileTab('library');
+      if (targetIdx !== -1) {
+        switchMobileTab('player');
+      } else {
+        switchMobileTab('library');
+      }
     }
   } catch (err) {
     console.error('Import error:', err);
@@ -767,6 +869,10 @@ function showLandingScreen() {
   if (playerWorkspace) playerWorkspace.classList.add('hidden');
   if (miniPlayer) miniPlayer.classList.add('hidden');
   if (mobileNavBar) mobileNavBar.classList.add('hidden');
+  try {
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    window.history.replaceState({}, '', baseUrl);
+  } catch (e) {}
   renderHistoryUI();
   renderFavoritesUI();
   window.renderLucideIcons();
@@ -1122,12 +1228,7 @@ function initEventListeners() {
 
   // Share Button
   if (shareBtn) {
-    shareBtn.addEventListener('click', () => {
-      if (navigator.clipboard && currentSource.url) {
-        navigator.clipboard.writeText(currentSource.url);
-        alert('Share link copied to clipboard!');
-      }
-    });
+    shareBtn.addEventListener('click', handleShare);
   }
 
   // Like Buttons
@@ -1274,9 +1375,14 @@ document.addEventListener('DOMContentLoaded', () => {
   window.renderLucideIcons();
 
   const params = new URLSearchParams(window.location.search);
-  const targetParam = params.get('url') || params.get('suno');
+  const targetParam = params.get('url') || params.get('suno') || params.get('artist') || params.get('playlist');
+  const trackParam = params.get('track') || params.get('song');
   if (targetParam) {
     if (landingInput) landingInput.value = targetParam;
-    importSunoUrl(targetParam);
+    importSunoUrl(targetParam, false, trackParam);
+  } else if (trackParam) {
+    const trackUrl = `https://suno.com/song/${trackParam}`;
+    if (landingInput) landingInput.value = trackUrl;
+    importSunoUrl(trackUrl, false, trackParam);
   }
 });
