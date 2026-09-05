@@ -1,4 +1,4 @@
-<!-- Version: 4.0.9 (Re-deployed to ensure complete file sync) -->
+<!-- Version: 4.0.10 (Re-deployed to ensure complete file sync) -->
 <!<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -42,7 +42,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.0.9">
+  <link rel="stylesheet" href="styles.css?v=4.0.10">
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -71,7 +71,9 @@
         <div class="landing-hero">
           <div class="logo landing-logo">
             <div class="logo-icon-badge">
-              <i data-lucide="sparkles"></i>
+              <svg class="brand-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v18M6 8v8M18 8v8M2 11v2M22 11v2"/>
+              </svg>
             </div>
             <div class="logo-text-group">
               <h1 class="logo-title">AetherPlayer</h1>
@@ -175,7 +177,9 @@
         <div class="header-left">
           <div class="logo">
             <div class="logo-icon-badge small">
-              <i data-lucide="sparkles"></i>
+              <svg class="brand-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v18M6 8v8M18 8v8M2 11v2M22 11v2"/>
+              </svg>
             </div>
             <div class="logo-text-group">
               <span class="logo-title">AetherPlayer</span>
@@ -328,9 +332,8 @@
           </div>
 
           <div class="player-hud">
-            <!-- Audio Visualizer Canvas & Hero Artwork Container -->
-            <div class="visualizer-container">
-              <canvas id="player-visualizer"></canvas>
+            <!-- Hero Artwork Container (Visualizer removed for maximum artwork impact) -->
+            <div class="artwork-container">
               <div class="artwork-wrapper">
                 <img id="track-artwork" src="https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png" alt="Artwork" class="artwork-img">
                 <div class="artwork-ambient-ring"></div>
@@ -381,14 +384,6 @@
               </div>
               <div class="player-footer-extra">
                 <div class="footer-dropdowns-row">
-                  <div class="custom-select-wrapper">
-                    <select id="vis-mode-select" class="styled-select">
-                      <option value="pulse-ring">✦ Neon Rings (標準)</option>
-                      <option value="bars">✦ Waves (バー表示)</option>
-                      <option value="oscilloscope">✦ Oscilloscope (波形)</option>
-                      <option value="off">✦ OFF (消灯 / 省電力)</option>
-                    </select>
-                  </div>
                   <div class="custom-select-wrapper mobile-preset-mode">
                     <select id="mobile-preset-select" class="styled-select">
                       <option value="auto">✦ AI Auto (標準)</option>
@@ -411,7 +406,7 @@
 
                 <!-- Mobile Quick Mastering switch -->
                 <div class="player-mastering-control">
-                  <span class="pm-label"><i data-lucide="sparkles"></i> AetherMastering</span>
+                  <span class="pm-label"><i data-lucide="sparkles"></i> Mastering</span>
                   <label class="switch-container small-switch">
                     <input type="checkbox" id="mobile-enhancer-toggle">
                     <span class="switch-slider"></span>
@@ -635,6 +630,6 @@
   </nav>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.0.9"></script>
+  <script type="module" src="player.js?v=4.0.10"></script>
 </body>
 </html>

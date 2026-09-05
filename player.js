@@ -1,4 +1,4 @@
-function updateMediaSession(track) {
+﻿function updateMediaSession(track) {
   if ('mediaSession' in navigator && window.MediaMetadata) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 4.0.9 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.9';
+// Version: 4.0.10 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.10';
 
 // --- State Variables ---
 let audioCtx = null;
@@ -244,8 +244,18 @@ function initializeApp() {
   // Check URL query parameters for auto-import
   checkUrlParams();
 
+function renderLucideIcons() {
+  if (window.lucide) {
+    lucide.createIcons({
+      attrs: {
+        'stroke-width': 1.25
+      }
+    });
+  }
+}
+
   // Initialize Lucide Icons
-  if (window.lucide) lucide.createIcons();
+  renderLucideIcons();
 }
 
 if (document.readyState === 'loading') {
@@ -466,10 +476,10 @@ function setupEventListeners() {
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'paused';
       }
-      if (speakerPlayer) {
+      if (speakerPlayer && isSpeakerEngineActive) {
         speakerPlayer.pause();
       }
-      if (window.lucide) lucide.createIcons();
+      renderLucideIcons();
     });
 
     audioPlayer.addEventListener('play', () => {
@@ -488,7 +498,7 @@ function setupEventListeners() {
       if (speakerPlayer && speakerPlayer.paused) {
         speakerPlayer.play().catch(e => console.warn('[Audio] speakerPlayer play failed:', e.message));
       }
-      if (window.lucide) lucide.createIcons();
+      renderLucideIcons();
     });
   }
   
@@ -640,11 +650,11 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
       const text = await res.text();
       console.error('[Error] Server returned non-JSON response:', text);
       
-      let errorMsg = `サーバーエラー (ステータス: ${res.status})`;
+      let errorMsg = `繧ｵ繝ｼ繝舌・繧ｨ繝ｩ繝ｼ (繧ｹ繝・・繧ｿ繧ｹ: ${res.status})`;
       if (text.includes('502 Bad Gateway') || text.includes('502')) {
-        errorMsg += '\n\n【原因】Node.jsサーバー(server.js)が起動していない、またはNginxなどのリバースプロキシ設定が正しくありません。`node server.js`を起動してください。';
+        errorMsg += '\n\n縲仙次蝗縲鮮ode.js繧ｵ繝ｼ繝舌・(server.js)縺瑚ｵｷ蜍輔＠縺ｦ縺・↑縺・√∪縺溘・Nginx縺ｪ縺ｩ縺ｮ繝ｪ繝舌・繧ｹ繝励Ο繧ｭ繧ｷ險ｭ螳壹′豁｣縺励￥縺ゅｊ縺ｾ縺帙ｓ縲Ａnode server.js`繧定ｵｷ蜍輔＠縺ｦ縺上□縺輔＞縲・;
       } else if (text.includes('<!DOCTYPE html>') || text.includes('<html')) {
-        errorMsg += '\n\n【原因】APIへのリクエストがHTMLページ(インデックスや404)にリダイレクトされています。静的ホスティング(GitHub Pagesなど)ではNode.jsバックエンドが動かないため、エラーになります。';
+        errorMsg += '\n\n縲仙次蝗縲羨PI縺ｸ縺ｮ繝ｪ繧ｯ繧ｨ繧ｹ繝医′HTML繝壹・繧ｸ(繧､繝ｳ繝・ャ繧ｯ繧ｹ繧・04)縺ｫ繝ｪ繝繧､繝ｬ繧ｯ繝医＆繧後※縺・∪縺吶る撕逧・・繧ｹ繝・ぅ繝ｳ繧ｰ(GitHub Pages縺ｪ縺ｩ)縺ｧ縺ｯNode.js繝舌ャ繧ｯ繧ｨ繝ｳ繝峨′蜍輔°縺ｪ縺・◆繧√√お繝ｩ繝ｼ縺ｫ縺ｪ繧翫∪縺吶・;
       } else {
         errorMsg += `:\n${text.slice(0, 150)}`;
       }
@@ -656,7 +666,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     const data = await res.json();
 
     if (data.error) {
-      alert(`インポート失敗: ${data.error}`);
+      alert(`繧､繝ｳ繝昴・繝亥､ｱ謨・ ${data.error}`);
       return;
     }
 
@@ -739,12 +749,12 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     if (tracks.length > 0) {
       selectTrack(0);
     } else {
-      alert('公開曲が見つかりませんでした。プライバシー設定を確認してください。');
+      alert('蜈ｬ髢区峇縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲ゅ・繝ｩ繧､繝舌す繝ｼ險ｭ螳壹ｒ遒ｺ隱阪＠縺ｦ縺上□縺輔＞縲・);
     }
 
   } catch (err) {
     console.error(err);
-    alert(`エラーが発生しました: ${err.message}`);
+    alert(`繧ｨ繝ｩ繝ｼ縺檎匱逕溘＠縺ｾ縺励◆: ${err.message}`);
   } finally {
     landingBtnText.classList.remove('hidden');
     landingBtnLoader.classList.add('hidden');
@@ -822,7 +832,7 @@ function renderTracksList() {
     backBtn.className = 'back-to-profile-item';
     backBtn.innerHTML = `
       <span class="back-icon"><i data-lucide="arrow-left" class="icon-inline"></i></span>
-      <span class="back-text">${escapeHtml(userProfileData.name)} の公開曲に戻る</span>
+      <span class="back-text">${escapeHtml(userProfileData.name)} 縺ｮ蜈ｬ髢区峇縺ｫ謌ｻ繧・/span>
     `;
     backBtn.addEventListener('click', restoreProfileView);
     tracksList.appendChild(backBtn);
@@ -840,7 +850,7 @@ function renderTracksList() {
   }
   
   if (tracks.length === 0) {
-    const emptyHtml = '<div class="empty-list">曲が読み込まれていません</div>';
+    const emptyHtml = '<div class="empty-list">譖ｲ縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ</div>';
     tracksList.innerHTML = emptyHtml;
     if (overlayList) overlayList.innerHTML = emptyHtml;
     return;
@@ -882,7 +892,7 @@ function renderTracksList() {
     }
   });
 
-  if (window.lucide) lucide.createIcons();
+  renderLucideIcons();
 }
 
 function renderPlaylistsList(playlists) {
@@ -1004,7 +1014,7 @@ async function selectTrack(idx) {
     lyricsText.textContent = track.description;
     if (mobileLyricsText) mobileLyricsText.textContent = track.description;
   } else {
-    const emptyHtml = '<div class="empty-list">インスト曲または歌詞が見つかりません。</div>';
+    const emptyHtml = '<div class="empty-list">繧､繝ｳ繧ｹ繝域峇縺ｾ縺溘・豁瑚ｩ槭′隕九▽縺九ｊ縺ｾ縺帙ｓ縲・/div>';
     lyricsText.innerHTML = emptyHtml;
     if (mobileLyricsText) mobileLyricsText.innerHTML = emptyHtml;
   }
@@ -1084,7 +1094,7 @@ async function runAnalysisForTrack(track, applyImmediately = true) {
 
   const analyzingIndicator = document.getElementById('ai-analyzing-indicator');
   if (analyzingIndicator) {
-    analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> AIマスタリング分析中...';
+    analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> AI繝槭せ繧ｿ繝ｪ繝ｳ繧ｰ蛻・梵荳ｭ...';
     analyzingIndicator.classList.remove('hidden');
   }
   updateAiStatus('loading');
@@ -1113,7 +1123,7 @@ async function runAnalysisForTrack(track, applyImmediately = true) {
 
     updateAiStatus('analyzing');
     if (analyzingIndicator) {
-      analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> マスタリング分析中...';
+      analyzingIndicator.innerHTML = '<span class="pulse-dot"></span> 繝槭せ繧ｿ繝ｪ繝ｳ繧ｰ蛻・梵荳ｭ...';
     }
 
     console.log('[AI Auto] Decoding audio channel buffers...');
@@ -1375,7 +1385,7 @@ function updateAiHudUI(result) {
         notchesListEl.appendChild(el);
       });
     } else {
-      notchesListEl.innerHTML = '<div class="empty-notches">位相整合とトランジェント保護のためバイパス中</div>';
+      notchesListEl.innerHTML = '<div class="empty-notches">菴咲嶌謨ｴ蜷医→繝医Λ繝ｳ繧ｸ繧ｧ繝ｳ繝井ｿ晁ｭｷ縺ｮ縺溘ａ繝舌う繝代せ荳ｭ</div>';
     }
   }
 }
@@ -1423,7 +1433,7 @@ function applyDefaultAutoParams() {
   hudCompThreshEl.textContent = '-8.0 dB';
   hudCompRatioEl.textContent = '1.35:1';
   hudLimiterBoostEl.textContent = '+3.5 dB';
-  if (notchesListEl) notchesListEl.innerHTML = '<div class="empty-notches">分析待ち...</div>';
+  if (notchesListEl) notchesListEl.innerHTML = '<div class="empty-notches">蛻・梵蠕・■...</div>';
 
   const dynamicsDesc = document.getElementById('hud-dynamics-desc');
   const stereoDesc = document.getElementById('hud-stereo-desc');
@@ -1499,7 +1509,7 @@ function toggleRepeat() {
     repeatBtn.innerHTML = '<i data-lucide="repeat"></i>';
     repeatBtn.style.opacity = '1';
   }
-  if (window.lucide) lucide.createIcons();
+  renderLucideIcons();
 }
 
 function onTrackEnded() {
@@ -1850,11 +1860,11 @@ function copyShareLink() {
 
   navigator.clipboard.writeText(shareUrl)
     .then(() => {
-      alert(`共有用リンクをクリップボードにコピーしました！\n${shareUrl}`);
+      alert(`蜈ｱ譛臥畑繝ｪ繝ｳ繧ｯ繧偵け繝ｪ繝・・繝懊・繝峨↓繧ｳ繝斐・縺励∪縺励◆・―n${shareUrl}`);
     })
     .catch(err => {
       console.error(err);
-      alert(`リンクのコピーに失敗しました: ${shareUrl}`);
+      alert(`繝ｪ繝ｳ繧ｯ縺ｮ繧ｳ繝斐・縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${shareUrl}`);
     });
 }
 
@@ -2029,7 +2039,7 @@ function getDisplaySubtitle(idOrUrl, type, item) {
   return str;
 }
 
-// --- Favorites (お気に入り) LocalStorage Management ---
+// --- Favorites (縺頑ｰ励↓蜈･繧・ LocalStorage Management ---
 function loadFavorites() {
   try {
     const saved = localStorage.getItem('suno_player_favorites_v2');
@@ -2250,16 +2260,16 @@ function renderFavoritesUI() {
   const hasFavorites = favorites.users.length > 0 || favorites.playlists.length > 0 || favorites.tracks.length > 0;
   if (!hasFavorites) {
     if (container) container.classList.add('hidden');
-    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">お気に入りはありません</div>';
-    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">お気に入りはありません</div>';
-    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">お気に入りはありません</div>';
+    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
     return;
   }
   if (container) container.classList.remove('hidden');
 
   // Helper to render HTML list items
   const getListHtml = (items, type) => {
-    if (items.length === 0) return '<div class="empty-history">お気に入りはありません</div>';
+    if (items.length === 0) return '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
     return items.map(item => `
       <div class="favorite-item" data-url="${escapeHtml(item.url || item.id)}">
         <span class="favorite-item-title">${escapeHtml(item.name || item.title)}</span>
@@ -2292,7 +2302,7 @@ function renderFavoritesUI() {
     });
   });
 
-  if (window.lucide) lucide.createIcons();
+  renderLucideIcons();
 }
 
 function saveToHistory(type, id, name) {
@@ -2521,16 +2531,16 @@ function renderHistoryUI() {
   const hasHistory = history.users.length > 0 || history.playlists.length > 0 || history.tracks.length > 0;
   if (!hasHistory) {
     if (container) container.classList.add('hidden');
-    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">履歴はありません</div>';
-    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">履歴はありません</div>';
-    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">履歴はありません</div>';
+    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
     return;
   }
   if (container) container.classList.remove('hidden');
 
   // Helper to render HTML list items
   const getListHtml = (items, type) => {
-    if (items.length === 0) return '<div class="empty-history">履歴はありません</div>';
+    if (items.length === 0) return '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
     return items.map(item => `
       <div class="history-item" data-url="${escapeHtml(item.id)}">
         <span class="history-item-title">${escapeHtml(item.name)}</span>
@@ -2563,5 +2573,6 @@ function renderHistoryUI() {
     });
   });
 
-  if (window.lucide) lucide.createIcons();
+  renderLucideIcons();
 }
+
