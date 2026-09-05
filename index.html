@@ -1,4 +1,4 @@
-<!-- Version: 4.0.12 (Re-deployed to ensure complete file sync) -->
+<!-- Version: 4.2.1 (Clean Luxury Rebuild) -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -8,7 +8,6 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-C8CLCFDVX2');
   </script>
 
@@ -20,43 +19,42 @@
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://aether-player-blush.vercel.app/">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Twitter -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://aether-player-blush.vercel.app/">
   <meta property="og:title" content="AetherPlayer - Suno AI & AetherMaster AI Enhancer">
   <meta property="og:description" content="Suno AIの楽曲を、AetherMasterのAIオートマスタリング技術で再生する専用プレイヤー。">
   <meta property="og:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
   <meta property="og:site_name" content="AetherPlayer">
-
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://aether-player-blush.vercel.app/">
   <meta name="twitter:title" content="AetherPlayer - Suno AI & AetherMaster AI Enhancer">
-  <meta property="twitter:description" content="Suno AIの楽曲を、AetherMasterのAIオートマスタリング技術で再生する専用プレイヤー。">
+  <meta name="twitter:description" content="Suno AIの楽曲を、AetherMasterのAIオートマスタリング技術で再生する専用プレイヤー。">
   <meta name="twitter:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="https://bito999p-ctrl.github.io/sonografica/favicon.png">
-  <!-- Google Fonts Outfit & Inter -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.0.12">
-  <!-- Lucide Icons CDN -->
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css?v=4.2.1">
+  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <!-- Ambient Backdrop Glow (Dynamically tinted by cover art) -->
+  <!-- Ambient Light Backdrop Glow -->
   <div id="ambient-glow" class="ambient-glow"></div>
 
   <div class="app-container">
 
-    <!-- 1. Landing Screen (Shown when no parameter is present) -->
+    <!-- ==========================================
+         1. LANDING SCREEN (Top View)
+         ========================================== -->
     <div id="landing-screen" class="landing-container">
       <div class="landing-card card">
         
-        <!-- Portal Nav Buttons at the very top -->
+        <!-- Portal Navigation Header -->
         <header class="portal-header">
           <a href="https://bito999p-ctrl.github.io/sonografica" class="portal-link-btn" title="Sonografica Portal">
             <i data-lucide="home"></i>
@@ -68,6 +66,7 @@
           </a>
         </header>
 
+        <!-- Brand Hero -->
         <div class="landing-hero">
           <div class="logo landing-logo">
             <div class="logo-icon-badge">
@@ -83,7 +82,7 @@
           <p class="landing-subtitle">Sunoの公開曲やプレイリストを、AetherMasterのAI AUTOマスタリング技術で再生する専用プレイヤー</p>
         </div>
         
-        <!-- Search & Import Input Pill -->
+        <!-- Import Input Form -->
         <div class="landing-import-box">
           <div class="import-input-wrapper">
             <i data-lucide="link" class="input-icon"></i>
@@ -100,7 +99,7 @@
           </button>
         </div>
 
-        <!-- Quick Access Samples -->
+        <!-- Quick Samples -->
         <div class="quick-links">
           <span class="quick-label">サンプル:</span>
           <button class="quick-link-btn chip-btn" data-url="@bito999">
@@ -116,7 +115,7 @@
           <span>最大読込数: アーティスト <b>20曲</b> / プレイリスト <b>50曲</b></span>
         </p>
 
-        <!-- Segmented Tab Switcher for Landing History / Favorites -->
+        <!-- Segmented Tabs: History & Favorites -->
         <div id="landing-tabs-container" class="landing-tabs-container">
           <div class="landing-segment-tabs">
             <button id="landing-tab-history-btn" class="segment-tab-btn active">
@@ -127,7 +126,7 @@
             </button>
           </div>
 
-          <!-- Recent History Section -->
+          <!-- History Section -->
           <div id="history-container" class="history-container landing-subview">
             <div class="history-grid">
               <div class="history-col">
@@ -165,14 +164,16 @@
         </div>
 
         <footer class="landing-copyright-note">
-          Unauthorized reproduction or redistribution strictly prohibited. © 2026 Sonografica | v4.0.7
+          Unauthorized reproduction or redistribution strictly prohibited. © 2026 Sonografica | v4.2.0
         </footer>
       </div>
     </div>
 
-    <!-- 2. Player Workspace (Shown after data is successfully imported) -->
+    <!-- ==========================================
+         2. PLAYER WORKSPACE (3-Column / Mobile Tabs)
+         ========================================== -->
     <div id="player-workspace" class="player-workspace-container hidden">
-      <!-- Top App Header -->
+      <!-- App Header -->
       <header class="app-header">
         <div class="header-left">
           <div id="header-logo-btn" class="logo clickable-logo" role="button" tabindex="0" title="トップページに戻る">
@@ -188,16 +189,17 @@
           </div>
         </div>
         
-        <!-- Header Portal Navigation Links -->
+        <!-- Portal Links (Desktop) -->
         <div class="header-portal-links desktop-only-flex">
           <a href="https://bito999p-ctrl.github.io/sonografica" class="portal-link-item"><i data-lucide="home"></i> Portal</a>
           <a href="https://bito999p-ctrl.github.io/aether_master/" class="portal-link-item" target="_blank"><i data-lucide="sliders"></i> Engine</a>
         </div>
 
+        <!-- Header Actions -->
         <div class="header-actions">
           <!-- History Dropdown Trigger -->
           <div class="history-dropdown-wrapper">
-            <button id="history-toggle-btn" class="btn btn-secondary btn-icon-text">
+            <button id="history-toggle-btn" class="btn btn-secondary btn-icon-text" title="履歴 / お気に入り">
               <i data-lucide="history"></i>
               <span class="btn-text">履歴 / お気に入り</span>
             </button>
@@ -207,7 +209,6 @@
                 <button id="drop-tab-favorites" class="dropdown-tab-btn"><i data-lucide="heart"></i> お気に入り</button>
               </div>
               
-              <!-- History Tab Content -->
               <div id="drop-content-history" class="dropdown-tab-content">
                 <div class="dropdown-history-grid">
                   <div class="dropdown-history-col">
@@ -225,7 +226,6 @@
                 </div>
               </div>
 
-              <!-- Favorites Tab Content -->
               <div id="drop-content-favorites" class="dropdown-tab-content hidden">
                 <div class="dropdown-history-grid">
                   <div class="dropdown-history-col">
@@ -256,7 +256,7 @@
         </div>
       </header>
 
-      <!-- Main Workspace (Desktop 3-Column / Mobile Tab Views) -->
+      <!-- Main Workspace -->
       <main class="app-workspace">
 
         <!-- Column 1: Library, Playlists & Tracks List -->
@@ -275,7 +275,7 @@
             
             <div id="source-info" class="source-info-container">
               <div class="source-cover-wrapper">
-                <img id="source-cover" src="" alt="Cover" class="source-cover">
+                <img id="source-cover" src="https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png" alt="Cover" class="source-cover">
               </div>
               <div class="source-text">
                 <div class="source-title-row">
@@ -287,34 +287,33 @@
             </div>
           </div>
 
-          <!-- Tab contents -->
           <div class="sidebar-content">
-            <!-- Playlists List (Only populated when profile is imported) -->
+            <!-- Playlists List -->
             <div id="playlists-section" class="playlists-section hidden">
               <h3 class="section-title"><i data-lucide="folder"></i> 公開プレイリスト</h3>
               <div id="playlists-list" class="playlists-list"></div>
             </div>
 
-            <!-- Tracks List -->
+            <!-- Tracks Section -->
             <div class="tracks-section">
               <div class="tracks-section-header">
-                <div class="tracks-section-title-row">
-                  <h3 class="section-title"><i data-lucide="list-music"></i> トラック一覧 (<span id="tracks-count">0</span>)</h3>
-                  <span class="limit-spec-note">※アーティスト: 最大20曲 / プレイリスト: 最大50曲</span>
+                <h3 class="section-title"><i data-lucide="list-music"></i> トラック一覧</h3>
+                <span id="tracks-count" class="tracks-count-badge">0</span>
+              </div>
+              <div class="tracks-list-container">
+                <div id="tracks-list" class="tracks-list">
+                  <div class="empty-list">曲が読み込まれていません</div>
                 </div>
               </div>
-              <div id="tracks-list" class="tracks-list">
-                <div class="empty-list">曲が読み込まれていません</div>
-              </div>
             </div>
-
-            <footer class="sidebar-copyright-note">
-              © 2026 Sonografica | v4.0.7
-            </footer>
           </div>
+
+          <footer class="sidebar-copyright-note">
+            © 2026 Sonografica | v4.2.0
+          </footer>
         </section>
 
-        <!-- Column 2: Center Studio Player Deck & Visualizer -->
+        <!-- Column 2: Center Studio Player Deck -->
         <section class="workspace-player card">
           <div class="player-modal-header">
             <button id="close-player-btn" class="close-player-btn" title="プレイヤーを閉じる">
@@ -332,11 +331,10 @@
           </div>
 
           <div class="player-hud">
-            <!-- Hero Artwork Container (Visualizer removed for maximum artwork impact) -->
+            <!-- Hero 1:1 Square Artwork -->
             <div class="artwork-container">
               <div class="artwork-wrapper">
                 <img id="track-artwork" src="https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png" alt="Artwork" class="artwork-img">
-                <div class="artwork-ambient-ring"></div>
               </div>
             </div>
 
@@ -358,7 +356,7 @@
               </div>
             </div>
 
-            <!-- Progress / Seek Bar -->
+            <!-- Progress Bar -->
             <div class="player-progress">
               <span id="current-time" class="time-label">0:00</span>
               <div class="progress-bar-wrapper">
@@ -367,7 +365,7 @@
               <span id="duration-time" class="time-label">0:00</span>
             </div>
 
-            <!-- Player Transport Controls Deck -->
+            <!-- Transport Controls Deck -->
             <div class="player-controls">
               <button id="shuffle-btn" class="ctrl-btn sub-ctrl" title="シャッフル"><i data-lucide="shuffle"></i></button>
               <button id="prev-btn" class="ctrl-btn step-ctrl" title="前の曲"><i data-lucide="skip-back"></i></button>
@@ -376,7 +374,7 @@
               <button id="repeat-btn" class="ctrl-btn sub-ctrl" title="リピート"><i data-lucide="repeat"></i></button>
             </div>
 
-            <!-- Footer Volume & Controls -->
+            <!-- Footer Volume & Mastering Controls -->
             <div class="player-footer">
               <div class="volume-control">
                 <i data-lucide="volume-2" class="volume-icon-svg"></i>
@@ -404,7 +402,6 @@
                   </div>
                 </div>
 
-                <!-- Mobile Quick Mastering switch -->
                 <div class="player-mastering-control">
                   <span class="pm-label"><i data-lucide="sparkles"></i> Mastering</span>
                   <label class="switch-container small-switch">
@@ -444,16 +441,15 @@
 
         <!-- Column 3: Sound Enhancer Studio Lab & Lyrics -->
         <section class="workspace-utility card">
-          <!-- Toggle Tabs -->
           <div class="tab-header">
             <button id="tab-enhancer-btn" class="tab-btn active"><i data-lucide="sliders"></i> Sound Enhancer</button>
             <button id="tab-lyrics-btn" class="tab-btn"><i data-lucide="file-text"></i> Lyrics</button>
           </div>
 
           <div class="tab-body">
-            <!-- 1. Enhancer controls -->
+            <!-- Enhancer Tab Content -->
             <div id="tab-enhancer" class="tab-content">
-              <!-- Master Bypass Toggle Banner -->
+              <!-- Master Bypass Header -->
               <div class="enhancer-header">
                 <div class="enhancer-title-block">
                   <h3>AetherMaster Engine</h3>
@@ -465,7 +461,7 @@
                 </label>
               </div>
 
-              <!-- Genre Preset Selection -->
+              <!-- Preset Select -->
               <div class="preset-selection-row">
                 <span class="preset-label">マスタリング・プリセット</span>
                 <div class="custom-select-wrapper">
@@ -508,11 +504,10 @@
                 </div>
               </div>
 
-              <!-- Dynamic Parameters Display -->
+              <!-- DSP Parameters Telemetry Display -->
               <div class="ai-params-display">
                 <h4 class="params-header"><i data-lucide="activity"></i> リアルタイムDSP解析テレメトリー</h4>
                 
-                <!-- EQ & Width Grid -->
                 <div class="param-row-grid">
                   <div class="param-small-card">
                     <span class="lbl">Bass EQ</span>
@@ -532,7 +527,6 @@
                   </div>
                 </div>
 
-                <!-- Dynamics & Boost -->
                 <div class="param-card card-nested">
                   <span class="param-title"><i data-lucide="gauge"></i> ダイナミクス & 音圧ブースト</span>
                   <div class="dynamics-info-row">
@@ -551,7 +545,6 @@
                   </div>
                 </div>
 
-                <!-- Advanced DSP -->
                 <div class="param-card card-nested">
                   <span class="param-title"><i data-lucide="cpu"></i> アドバンスド DSP パラメータ</span>
                   <div class="dynamics-info-row">
@@ -573,7 +566,7 @@
 
             </div>
 
-            <!-- 2. Lyrics display -->
+            <!-- Lyrics Tab Content -->
             <div id="tab-lyrics" class="tab-content hidden">
               <div class="lyrics-container">
                 <div id="lyrics-text" class="lyrics-text">
@@ -630,6 +623,6 @@
   </nav>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.0.12"></script>
+  <script type="module" src="player.js?v=4.2.1"></script>
 </body>
 </html>
