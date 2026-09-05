@@ -1,4 +1,4 @@
-<!-- Version: 4.2.13 (Fine Art Studio Edition) -->
+<!-- Version: 4.2.14 (Fine Art Studio Edition) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,7 +70,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.2.13">
+  <link rel="stylesheet" href="styles.css?v=4.2.14">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -730,7 +730,29 @@
     <span id="toast-message">AetherPlayer share link copied!</span>
   </div>
 
+  <!-- Share Selection Modal -->
+  <div id="share-modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal-dialog card share-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">
+            <i data-lucide="share-2"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Share to AetherPlayer</h3>
+            <span class="modal-sub">Choose what you want to share</span>
+          </div>
+        </div>
+        <button id="close-share-modal-btn" class="modal-close-btn" title="Close"><i data-lucide="x"></i></button>
+      </div>
+
+      <div id="share-options-list" class="share-options-list">
+        <!-- Dynamic Option Cards populated by player.js -->
+      </div>
+    </div>
+  </div>
+
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.2.13"></script>
+  <script type="module" src="player.js?v=4.2.14"></script>
 </body>
 </html>

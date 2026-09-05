@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.13
+ * Version: 4.2.14
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.13';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.14';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -217,6 +217,7 @@ function getDisplaySubtitle(idOrUrl, type, item) {
 }
 
 // Floating Toast Feedback
+// Floating Toast Feedback
 let toastTimeout = null;
 function showToast(message) {
   const toast = document.getElementById('toast-notification');
@@ -233,22 +234,27 @@ function showToast(message) {
   }, 2600);
 }
 
-// Generate AetherPlayer Share URL (with current source & track)
-function getAetherPlayerShareUrl() {
+// Generate AetherPlayer Share URL for a given source and optional track ID
+function buildAetherPlayerUrl(sourceUrl, trackId = null) {
   const urlObj = new URL(window.location.href);
   urlObj.search = '';
   urlObj.hash = '';
 
   const params = new URLSearchParams();
-  if (currentSource && currentSource.url) {
-    params.set('url', currentSource.url);
+  if (sourceUrl) {
+    params.set('url', sourceUrl);
   }
-  if (currentTrackIndex >= 0 && tracks[currentTrackIndex]) {
-    params.set('track', tracks[currentTrackIndex].id);
+  if (trackId) {
+    params.set('track', trackId);
   }
 
   const queryString = params.toString();
   return queryString ? `${urlObj.origin}${urlObj.pathname}?${queryString}` : `${urlObj.origin}${urlObj.pathname}`;
+}
+
+function getAetherPlayerShareUrl() {
+  const track = (currentTrackIndex >= 0 && tracks[currentTrackIndex]) ? tracks[currentTrackIndex] : null;
+  return buildAetherPlayerUrl(currentSource ? currentSource.url : null, track ? track.id : null);
 }
 
 // Dynamically sync browser address bar with current AetherPlayer state
@@ -259,22 +265,23 @@ function updateBrowserUrl() {
   } catch (e) {}
 }
 
-// Handle Share Action (Native Web Share API on mobile, Clipboard copy on desktop)
-async function handleShare() {
-  const shareUrl = getAetherPlayerShareUrl();
-  const track = (currentTrackIndex >= 0 && tracks[currentTrackIndex]) ? tracks[currentTrackIndex] : null;
-  const trackTitleStr = track ? track.title : (currentSource.name || 'AetherPlayer');
-  const artistStr = track ? getNormalizedArtist(track.artist_name || track.artist) : (currentSource.name || 'Suno Music');
-  const shareTitle = `${trackTitleStr} - ${artistStr} | AetherPlayer`;
-  const shareText = `Listen to "${trackTitleStr}" on AetherPlayer (Enhanced Studio Audio)`;
+function closeShareModal() {
+  const backdrop = document.getElementById('share-modal-backdrop');
+  if (backdrop) backdrop.classList.add('hidden');
+}
+
+// Execute Share or Clipboard Copy
+async function executeShare(shareData) {
+  const { title, text, url, toastMsg } = shareData;
 
   if (navigator.share && window.innerWidth <= 768) {
     try {
       await navigator.share({
-        title: shareTitle,
-        text: shareText,
-        url: shareUrl
+        title: title || 'AetherPlayer',
+        text: text || 'Listen on AetherPlayer',
+        url: url
       });
+      closeShareModal();
       return;
     } catch (e) {
       if (e.name === 'AbortError') return;
@@ -284,7 +291,7 @@ async function handleShare() {
   let copied = false;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(url);
       copied = true;
     } catch (e) {
       copied = false;
@@ -293,7 +300,7 @@ async function handleShare() {
   if (!copied) {
     try {
       const input = document.createElement('textarea');
-      input.value = shareUrl;
+      input.value = url;
       input.style.position = 'fixed';
       input.style.opacity = '0';
       document.body.appendChild(input);
@@ -305,7 +312,122 @@ async function handleShare() {
     } catch (e) {}
   }
 
-  showToast('AetherPlayer share link copied to clipboard!');
+  closeShareModal();
+  showToast(toastMsg || 'Share link copied to clipboard!');
+}
+
+// Open Share Modal with Contextual Options (User, Playlist, Track)
+function handleShare() {
+  const isTrackDirect = currentSource.type === 'song' || currentSource.type === 'track';
+  const track = (currentTrackIndex >= 0 && tracks[currentTrackIndex]) ? tracks[currentTrackIndex] : null;
+
+  // Case 1: Opened directly as a Track -> Copy track URL immediately without modal
+  if (isTrackDirect) {
+    const trackId = track ? track.id : '';
+    const shareUrl = buildAetherPlayerUrl(currentSource.url, trackId);
+    executeShare({
+      title: track ? `${track.title} - ${getNormalizedArtist(track.artist_name || track.artist)} | AetherPlayer` : 'AetherPlayer Track',
+      text: `Listen to "${track ? track.title : 'Track'}" on AetherPlayer (Enhanced Studio Audio)`,
+      url: shareUrl,
+      toastMsg: 'Track share link copied to clipboard!'
+    });
+    return;
+  }
+
+  const options = [];
+
+  // 1. Artist Profile Option (Available if profile loaded or navigated from profile into playlist)
+  if (parentProfile && parentProfile.url) {
+    options.push({
+      type: 'artist',
+      title: 'Artist Profile',
+      tag: 'Artist',
+      desc: `@${parentProfile.name}`,
+      icon: 'user',
+      url: buildAetherPlayerUrl(parentProfile.url),
+      toastMsg: 'Artist profile share link copied!'
+    });
+  } else if (currentSource.type === 'profile') {
+    options.push({
+      type: 'artist',
+      title: 'Artist Profile',
+      tag: 'Artist',
+      desc: `@${currentSource.name}`,
+      icon: 'user',
+      url: buildAetherPlayerUrl(currentSource.url),
+      toastMsg: 'Artist profile share link copied!'
+    });
+  }
+
+  // 2. Playlist Option (Available if a playlist is loaded)
+  if (currentSource.type === 'playlist') {
+    options.push({
+      type: 'playlist',
+      title: 'Playlist',
+      tag: 'Playlist',
+      desc: currentSource.name,
+      icon: 'disc',
+      url: buildAetherPlayerUrl(currentSource.url),
+      toastMsg: 'Playlist share link copied!'
+    });
+  }
+
+  // 3. Current Track Option (Available if a track is present)
+  if (track) {
+    const trackArtist = getNormalizedArtist(track.artist_name || track.artist);
+    options.push({
+      type: 'track',
+      title: 'Current Track',
+      tag: 'Track',
+      desc: `${track.title} — ${trackArtist}`,
+      icon: 'music',
+      url: buildAetherPlayerUrl(currentSource.url, track.id),
+      toastMsg: 'Track share link copied!'
+    });
+  }
+
+  const optionsContainer = document.getElementById('share-options-list');
+  const backdrop = document.getElementById('share-modal-backdrop');
+  if (!optionsContainer || !backdrop) return;
+
+  optionsContainer.innerHTML = options.map((opt, idx) => `
+    <button class="share-option-card" data-idx="${idx}">
+      <div class="share-option-left">
+        <div class="share-option-icon">
+          <i data-lucide="${opt.icon}"></i>
+        </div>
+        <div class="share-option-meta">
+          <div class="share-option-title">
+            <span>${escapeHtml(opt.title)}</span>
+            <span class="share-option-tag">${escapeHtml(opt.tag)}</span>
+          </div>
+          <span class="share-option-desc">${escapeHtml(opt.desc)}</span>
+        </div>
+      </div>
+      <div class="share-option-action">
+        <i data-lucide="copy"></i>
+        <span>Share</span>
+      </div>
+    </button>
+  `).join('');
+
+  optionsContainer.querySelectorAll('.share-option-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-idx'), 10);
+      const opt = options[idx];
+      if (opt) {
+        executeShare({
+          title: `${opt.title}: ${opt.desc} | AetherPlayer`,
+          text: `Listen on AetherPlayer: ${opt.desc}`,
+          url: opt.url,
+          toastMsg: opt.toastMsg
+        });
+      }
+    });
+  });
+
+  backdrop.classList.remove('hidden');
+  window.renderLucideIcons();
 }
 
 // ============================================================================
@@ -1226,10 +1348,27 @@ function initEventListeners() {
   if (sidebarToPlayerBtn) sidebarToPlayerBtn.addEventListener('click', () => switchMobileTab('player'));
   if (closePlayerBtn) closePlayerBtn.addEventListener('click', () => switchMobileTab('library'));
 
-  // Share Button
+  // Share Button & Modal Controls
   if (shareBtn) {
     shareBtn.addEventListener('click', handleShare);
   }
+  const closeShareBtn = document.getElementById('close-share-modal-btn');
+  if (closeShareBtn) {
+    closeShareBtn.addEventListener('click', closeShareModal);
+  }
+  const shareModalBackdrop = document.getElementById('share-modal-backdrop');
+  if (shareModalBackdrop) {
+    shareModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === shareModalBackdrop) {
+        closeShareModal();
+      }
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeShareModal();
+    }
+  });
 
   // Like Buttons
   if (likeBtn) likeBtn.addEventListener('click', toggleTrackLike);
