@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Complete Clean Rebuilt Frontend Controller
- * Version: 4.2.1
+ * Version: 4.2.2
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.1';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.2';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -176,8 +176,13 @@ function formatTime(seconds) {
 }
 
 function getNormalizedArtist(name) {
-  if (!name) return 'Suno Artist';
-  if (name.toLowerCase().includes('bito999') || name.toLowerCase() === 'bito') {
+  if (!name) return (currentSource && currentSource.name) || 'Suno Artist';
+  const lower = name.trim().toLowerCase();
+  const INVALID = ['studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'];
+  if (INVALID.includes(lower) || lower.startsWith('v3.') || lower.startsWith('v4.') || /^[uv][0-9]/i.test(lower)) {
+    return (currentSource && currentSource.name && currentSource.name !== 'Suno Catalog' && currentSource.name !== 'Suno Playlist' ? currentSource.name : 'Bito');
+  }
+  if (lower.includes('bito999') || lower === 'bito') {
     return 'Bito';
   }
   return name;
@@ -452,7 +457,7 @@ function selectTrack(index) {
   if (miniArtwork) miniArtwork.src = track.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png';
 
   // Lyrics
-  const lyricsContent = track.prompt || track.tags || '歌詞またはプロンプト情報はありません。';
+  const lyricsContent = track.prompt || track.lyrics || track.description || track.tags || '歌詞またはプロンプト情報はありません。';
   if (lyricsText) lyricsText.textContent = lyricsContent;
   if (mobileLyricsText) mobileLyricsText.textContent = lyricsContent;
 

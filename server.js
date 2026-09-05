@@ -1,4 +1,4 @@
-// Version: 4.2.1 (Re-deployed to ensure complete file sync)
+// Version: 4.2.2
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -35,38 +35,45 @@ function resolveRscReference(combined, ref) {
   if (!ref || typeof ref !== 'string' || !ref.startsWith('$')) return ref;
   
   const key = ref.replace(/^\$L?/, '');
-  let searchStr = `\n${key}:`;
-  let idx = combined.indexOf(searchStr);
-  if (idx === -1) {
-    searchStr = `${key}:`;
-    if (combined.startsWith(searchStr)) {
-      idx = 0;
-    }
-  }
-  
-  if (idx !== -1) {
-    const lineStart = idx + searchStr.length;
-    // Find the end of this definition by looking for the next definition header
-    const nextDefRegex = /\n(?:[a-f0-9]+:|:)/gi;
-    nextDefRegex.lastIndex = lineStart;
-    const nextMatch = nextDefRegex.exec(combined);
-    
-    const lineEnd = nextMatch ? nextMatch.index : combined.length;
-    const lineContent = combined.slice(lineStart, lineEnd);
-    if (lineContent.startsWith('T')) {
-      const commaIdx = lineContent.indexOf(',');
+  const regex = new RegExp(`(?:^|\n)${key}:`, 'm');
+  const m = combined.match(regex);
+  if (m) {
+    const afterKey = combined.slice(m.index + m[0].length);
+    if (afterKey.startsWith('T')) {
+      const commaIdx = afterKey.indexOf(',');
       if (commaIdx !== -1) {
-        return lineContent.slice(commaIdx + 1);
+        const hexLen = afterKey.slice(1, commaIdx);
+        const len = parseInt(hexLen, 16);
+        if (!isNaN(len) && len > 0) {
+          return afterKey.slice(commaIdx + 1, commaIdx + 1 + len);
+        }
+        return afterKey.slice(commaIdx + 1);
       }
     }
-    return lineContent;
+    if (afterKey.startsWith('"')) {
+      let endQuote = -1;
+      let escaped = false;
+      for (let i = 1; i < afterKey.length; i++) {
+        if (escaped) { escaped = false; continue; }
+        if (afterKey[i] === '\\') { escaped = true; continue; }
+        if (afterKey[i] === '"') { endQuote = i; break; }
+      }
+      if (endQuote !== -1) {
+        try {
+          return JSON.parse(afterKey.slice(0, endQuote + 1));
+        } catch (e) {
+          return afterKey.slice(1, endQuote);
+        }
+      }
+    }
+    return afterKey.split('\n')[0];
   }
   return ref;
 }
 
 /**
  * Route: GET /api/suno
- * Fetches and parses a Suno playlist or profile URL.
+ * Fetches and parses a Suno playlist, song, or profile URL.
  */
 app.get('/api/suno', async (req, res) => {
   const tStart = Date.now();
@@ -87,7 +94,6 @@ app.get('/api/suno', async (req, res) => {
     if (targetUrl.includes('.') || targetUrl.includes('/')) {
       targetUrl = 'https://' + targetUrl;
     } else {
-      // Default to user profile if just a string is passed
       targetUrl = `https://suno.com/@${targetUrl}`;
     }
   }
@@ -115,6 +121,10 @@ app.get('/api/suno', async (req, res) => {
             const rawClips = studioData.playlist_clips || [];
             const tracks = [];
             const seenIds = new Set();
+            const INVALID_ARTISTS = new Set([
+              'studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'
+            ]);
+
             for (const item of rawClips) {
               const clip = item.clip || {};
               const id = clip.id;
@@ -123,25 +133,30 @@ app.get('/api/suno', async (req, res) => {
               seenIds.add(id);
 
               let artist = 'Bito';
-              if (clip.user_display_name && !/^[uv][0-9]/i.test(clip.user_display_name)) {
+              if (clip.user_display_name && !INVALID_ARTISTS.has(clip.user_display_name.toLowerCase()) && !/^[uv][0-9]/i.test(clip.user_display_name)) {
                 artist = clip.user_display_name;
-              } else if (clip.user_handle) {
+              } else if (clip.user_handle && !INVALID_ARTISTS.has(clip.user_handle.toLowerCase())) {
                 artist = clip.user_handle;
               }
               if (artist.toLowerCase().includes('bito999') || artist.toLowerCase() === 'bito') {
                 artist = 'Bito';
               }
 
+              const prompt = (clip.metadata && clip.metadata.prompt) || clip.prompt || '';
+
               tracks.push({
                 id: id,
                 title: title,
                 artist_name: artist,
+                artist: artist,
                 image_url: clip.image_large_url || clip.image_url || `https://cdn1.suno.ai/image_${id}.png`,
                 audio_url: `https://cdn1.suno.ai/${id}.mp4`,
                 duration: clip.duration || 0,
                 play_count: clip.play_count || 0,
                 upvote_count: clip.upvote_count || 0,
-                description: (clip.metadata && clip.metadata.prompt) || ''
+                prompt: prompt,
+                description: prompt,
+                lyrics: prompt
               });
             }
 
@@ -161,49 +176,6 @@ app.get('/api/suno', async (req, res) => {
       }
     }
 
-    // 2. Fast path for single song page
-    if (parsedUrl.pathname.startsWith('/song/')) {
-      const songId = parsedUrl.pathname.split('/song/')[1].split('?')[0].split('/')[0];
-      if (/^[a-f0-9\-]{36}$/i.test(songId)) {
-        try {
-          console.log(`[API] Fetching single song page for: ${songId}`);
-          const songPageRes = await fetch(`https://suno.com/song/${songId}`, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-          });
-          if (songPageRes.ok) {
-            const songHtml = await songPageRes.text();
-            const ogTitleMatch = songHtml.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || songHtml.match(/<title>([^<]+)<\/title>/i);
-            const ogImageMatch = songHtml.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
-            const title = ogTitleMatch ? ogTitleMatch[1].replace(/\s*\|\s*Suno\s*$/i, '') : 'Suno Track';
-            const image = ogImageMatch ? ogImageMatch[1] : `https://cdn1.suno.ai/image_${songId}.png`;
-
-            return res.json({
-              type: 'song',
-              name: title,
-              title: title,
-              url: targetUrl,
-              playlists: [],
-              tracks: [{
-                id: songId,
-                title: title,
-                artist_name: 'Suno Artist',
-                image_url: image,
-                audio_url: `https://cdn1.suno.ai/${songId}.mp4`,
-                duration: 0,
-                play_count: 0,
-                upvote_count: 0,
-                description: ''
-              }]
-            });
-          }
-        } catch (songErr) {
-          console.warn(`[API] Single song fetch error: ${songErr.message}`);
-        }
-      }
-    }
-
     console.log(`[Proxy] Fetching target URL: ${targetUrl}`);
     const fetchRes = await fetch(targetUrl, {
       headers: {
@@ -218,9 +190,10 @@ app.get('/api/suno', async (req, res) => {
     const html = await fetchRes.text();
     console.log(`[Proxy] Successfully fetched HTML. Length: ${html.length} bytes.`);
 
-    // Determine type: profile or playlist
+    // Determine type
     const isProfile = parsedUrl.pathname.startsWith('/@');
     const isPlaylist = parsedUrl.pathname.startsWith('/playlist/');
+    const isSong = parsedUrl.pathname.startsWith('/song/');
 
     // Parse RSC pushes (self.__next_f.push)
     let pos = 0;
@@ -248,9 +221,7 @@ app.get('/api/suno', async (req, res) => {
           continue;
         }
         if (inString) {
-          if (char === quoteChar) {
-            inString = false;
-          }
+          if (char === quoteChar) inString = false;
         } else {
           if (char === '"' || char === "'") {
             inString = true;
@@ -282,9 +253,7 @@ app.get('/api/suno', async (req, res) => {
               const decoded = JSON.parse(jsString);
               pushes.push(decoded);
             } catch (err) {
-              let unescaped = strVal
-                .replace(/\\"/g, '"')
-                .replace(/\\\\/g, '\\');
+              let unescaped = strVal.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
               pushes.push(unescaped);
             }
           }
@@ -297,20 +266,32 @@ app.get('/api/suno', async (req, res) => {
 
     const combined = pushes.join('');
 
-    // Extract tracks
-    const tracks = [];
-    const seenTrackIds = new Set();
-    const seenAudioUrls = new Set();
+    // Default artist from page metadata
+    let defaultArtist = 'Bito';
+    if (isProfile) {
+      const match = html.match(/<title>([^|<]+)/);
+      if (match && match[1] && !match[1].includes('undefined')) {
+        defaultArtist = match[1].replace(/Profile/i, '').trim();
+      } else {
+        defaultArtist = parsedUrl.pathname.replace('/@', '').trim() || 'Suno Artist';
+      }
+    }
+    if (defaultArtist.toLowerCase().includes('bito999') || defaultArtist.toLowerCase() === 'bito') {
+      defaultArtist = 'Bito';
+    }
 
-    // Find all occurrences of "id" key followed by a 36-char UUID
+    const INVALID_ARTISTS = new Set([
+      'studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'
+    ]);
+
+    // Extract tracks
+    const trackMap = new Map();
     const idRegex = /"id"\s*:\s*"([a-f0-9\-]{36})"/gi;
     let idMatch;
 
     while ((idMatch = idRegex.exec(combined)) !== null) {
       const uuid = idMatch[1];
-      if (seenTrackIds.has(uuid)) continue;
 
-      // Scan backwards from the match index to find the starting '{' of this object at braceLevel 0
       let startIdx = -1;
       let braceLevel = 0;
       for (let i = idMatch.index; i >= 0; i--) {
@@ -326,7 +307,6 @@ app.get('/api/suno', async (req, res) => {
       }
 
       if (startIdx !== -1) {
-        // Walk forward from startIdx to find the matching closing '}'
         let braceCount = 0;
         let endIdx = -1;
         for (let i = startIdx; i < combined.length; i++) {
@@ -342,8 +322,6 @@ app.get('/api/suno', async (req, res) => {
 
         if (endIdx !== -1) {
           const objStr = combined.slice(startIdx, endIdx + 1);
-          
-          // Isolate current track block to prevent matching metadata from subsequent tracks
           let trackBlock = objStr;
           const idKeyIndex = objStr.indexOf(idMatch[0]);
           const nextIdIdx = objStr.indexOf('"id"', idKeyIndex !== -1 ? idKeyIndex + idMatch[0].length : 10);
@@ -351,74 +329,48 @@ app.get('/api/suno', async (req, res) => {
             trackBlock = objStr.substring(0, nextIdIdx);
           }
 
-          // Use robust regex-based property extraction to bypass malformed JSON / unquoted references in Next.js RSC payload
           const titleMatch = trackBlock.match(/"title"\s*:\s*"([^"]+)"/i);
           if (titleMatch) {
-            const audio_url = `https://cdn1.suno.ai/${uuid}.mp4`;
-            
-            // Skip duplicate audio URLs (e.g. hook schemas, video uploads, or multiple references)
-            if (seenAudioUrls.has(audio_url)) continue;
-            
-            seenTrackIds.add(uuid);
-            seenAudioUrls.add(audio_url);
-            
             const title = titleMatch[1];
-            
+            const audio_url = `https://cdn1.suno.ai/${uuid}.mp4`;
             const imageMatch = trackBlock.match(/"image_url"\s*:\s*"([^"]+)"/i);
             const image_url = imageMatch ? imageMatch[1] : `https://cdn1.suno.ai/image_${uuid}.png`;
-            
-            let artist_name = 'Suno Artist';
-            
-            // Try to find display_name inside the "user" object first to prevent matching model version display_name
+
+            let artist_name = defaultArtist;
             const userObjMatch = trackBlock.match(/"user"\s*:\s*\{([^\}]+)\}/i);
             if (userObjMatch) {
               const userContent = userObjMatch[1];
               const dispMatch = userContent.match(/"display_name"\s*:\s*"([^"]+)"/i);
               const handMatch = userContent.match(/"handle"\s*:\s*"([^"]+)"/i);
-              if (dispMatch && !/^[uv][0-9]/i.test(dispMatch[1])) {
+              if (dispMatch && !INVALID_ARTISTS.has(dispMatch[1].toLowerCase()) && !/^[uv][0-9]/i.test(dispMatch[1])) {
                 artist_name = dispMatch[1];
-              } else if (handMatch) {
+              } else if (handMatch && !INVALID_ARTISTS.has(handMatch[1].toLowerCase())) {
                 artist_name = handMatch[1];
               }
             }
-            
-            // Fallbacks if not resolved yet
-            if (artist_name === 'Suno Artist') {
-              const legacyUserDisplay = trackBlock.match(/"user_display_name"\s*:\s*"([^"]+)"/i);
-              const legacyDisp = trackBlock.match(/"display_name"\s*:\s*"([^"]+)"/i);
-              const legacyHand = trackBlock.match(/"handle"\s*:\s*"([^"]+)"/i);
-              
-              if (legacyUserDisplay) {
-                artist_name = legacyUserDisplay[1];
-              } else if (legacyDisp && !/^[uv][0-9]/i.test(legacyDisp[1])) {
-                artist_name = legacyDisp[1];
-              } else if (legacyHand) {
-                artist_name = legacyHand[1];
-              }
-            }
 
-            // Normalize bito999 handles to 'Bito'
+            if (artist_name === 'Suno Artist' || INVALID_ARTISTS.has(artist_name.toLowerCase()) || /^[uv][0-9]/i.test(artist_name)) {
+              artist_name = defaultArtist;
+            }
             if (artist_name.toLowerCase().includes('bito999') || artist_name.toLowerCase() === 'bito') {
               artist_name = 'Bito';
             }
-            
+
             const durationMatch = trackBlock.match(/"duration"\s*:\s*([0-9\.]+)/i);
             const duration = durationMatch ? parseFloat(durationMatch[1]) : 0;
-            
+
             const playMatch = trackBlock.match(/"play_count"\s*:\s*([0-9]+)/i);
             const play_count = playMatch ? parseInt(playMatch[1], 10) : 0;
-            
+
             const upvoteMatch = trackBlock.match(/"upvote_count"\s*:\s*([0-9]+)/i);
             const upvote_count = upvoteMatch ? parseInt(upvoteMatch[1], 10) : 0;
-            
+
             const promptMatch = trackBlock.match(/"prompt"\s*:\s*"([^"]+)"/i);
-            let description = '';
+            let prompt = '';
             if (promptMatch) {
               let rawPrompt = promptMatch[1];
-              // Resolve Next.js App Router reference (e.g. "$5f") if needed
-              rawPrompt = resolveRscReference(combined, rawPrompt);
-              
-              description = rawPrompt
+              prompt = resolveRscReference(combined, rawPrompt);
+              prompt = prompt
                 .replace(/\\n/g, '\n')
                 .replace(/\\r/g, '\r')
                 .replace(/\\"/g, '"')
@@ -428,30 +380,49 @@ app.get('/api/suno', async (req, res) => {
             const createdMatch = trackBlock.match(/"created_at"\s*:\s*"([^"]+)"/i);
             const created_at = createdMatch ? createdMatch[1] : '';
 
-            tracks.push({
+            const trackObj = {
               id: uuid,
               title,
               audio_url,
               image_url,
               artist_name,
+              artist: artist_name,
               duration,
               play_count,
               upvote_count,
-              description,
+              prompt: prompt,
+              description: prompt,
+              lyrics: prompt,
               created_at
-            });
+            };
+
+            if (!trackMap.has(uuid)) {
+              trackMap.set(uuid, trackObj);
+            } else {
+              const existing = trackMap.get(uuid);
+              if ((!existing.prompt || existing.prompt.length < prompt.length) && prompt) {
+                existing.prompt = prompt;
+                existing.description = prompt;
+                existing.lyrics = prompt;
+              }
+              if (existing.artist_name === 'Suno Artist' && artist_name !== 'Suno Artist') {
+                existing.artist_name = artist_name;
+                existing.artist = artist_name;
+              }
+              if (!existing.duration && duration) existing.duration = duration;
+            }
           }
         }
       }
     }
 
-    // Extract playlists (if it's a profile page, fetch playlists from regular HTML and RSC pushes)
+    const tracks = Array.from(trackMap.values());
+
+    // Extract playlists (if profile page)
     const playlists = [];
     if (isProfile) {
       const seenPlaylists = new Set();
-
-      // 1. Extract from RSC pushes (supports all public playlists beyond the first 5 SSR limit)
-      const rscPlaylistRegex = /playlist_id\\"\s*:\s*\\"([a-f0-9\-]{36})\\"\s*,\s*\\"playlist_name\\"\s*:\s*\\"([^\\"]+)\\"\s*,\s*\\"playlist_image_url\\"\s*:\s*\\"([^\\"]+)\\"/gi;
+      const rscPlaylistRegex = /playlist_id\\\"\s*:\s*\\\"([a-f0-9\-]{36})\\\"\s*,\s*\\\"playlist_name\\\"\s*:\s*\\\"([^\\\"]+)\\\"\s*,\s*\\\"playlist_image_url\\\"\s*:\s*\\\"([^\\\"]+)\\\"/gi;
       let rscMatch;
       while ((rscMatch = rscPlaylistRegex.exec(html)) !== null) {
         const id = rscMatch[1];
@@ -471,29 +442,19 @@ app.get('/api/suno', async (req, res) => {
           });
         }
       }
-
-      // Removed vulnerable SSR HTML fallback regex to prevent catastrophic backtracking ReDoS
     }
 
-    // Extract name of profile or playlist
-    let name = 'Suno Catalog';
+    // Name of catalog
+    let name = defaultArtist;
     if (isProfile) {
-      const match = html.match(/<title>([^|<]+)/);
-      if (match && match[1] && !match[1].includes('undefined')) {
-        name = match[1].replace(/Profile/i, '').trim();
-      } else {
-        name = parsedUrl.pathname.replace('/@', '').trim() || 'Suno Artist';
-      }
+      name = defaultArtist;
     } else if (isPlaylist) {
       const match = html.match(/<title>([^|]+)/);
-      if (match) {
-        name = match[1].replace('Playlist', '').trim();
-      }
+      if (match) name = match[1].replace('Playlist', '').trim();
     } else if (tracks.length === 1) {
       name = tracks[0].title;
     }
 
-    // Truncate profile tracks to first 20 items to match Suno page 1 and avoid playlist tracks mix-in
     if (isProfile && tracks.length > 20) {
       tracks.length = 20;
     }
@@ -515,7 +476,6 @@ app.get('/api/suno', async (req, res) => {
 
 /**
  * Route: GET /api/proxy-audio
- * Proxies audio file requests from Suno CDNs to bypass browser CORS limitations and client-side adblockers.
  */
 app.get('/api/proxy-audio', (req, res) => {
   const audioUrl = req.query.url;
@@ -539,7 +499,6 @@ app.get('/api/proxy-audio', (req, res) => {
     'Origin': 'https://suno.com'
   };
 
-  // Forward client Range request header if present
   if (req.headers.range) {
     reqHeaders['Range'] = req.headers.range;
   }
@@ -551,7 +510,6 @@ app.get('/api/proxy-audio', (req, res) => {
   };
 
   https.get(options, (proxyRes) => {
-    // Forward Range response headers if present to support range seeking
     if (proxyRes.headers['content-range']) {
       res.setHeader('Content-Range', proxyRes.headers['content-range']);
     }
@@ -574,21 +532,11 @@ app.get('/api/proxy-audio', (req, res) => {
   });
 });
 
-// Start the server (only locally or on non-serverless hosts)
+// Start the server
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`[Server] Suno Player backend running on http://localhost:${PORT}`);
-    
-    // Log files in directory for debugging
-    try {
-      const fs = require('fs');
-      console.log('[Server] Current working directory:', __dirname);
-      console.log('[Server] Files in current directory:', fs.readdirSync(__dirname));
-    } catch (e) {
-      console.error('[Server] Failed to read directory:', e.message);
-    }
   });
 }
 
-// Export for Vercel Serverless Functions
 module.exports = app;
