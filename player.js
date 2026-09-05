@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.10
+ * Version: 4.2.11
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.10';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.11';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -170,13 +170,21 @@ function formatTime(seconds) {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-function getNormalizedArtist(name) {
-  if (!name) return (currentSource && currentSource.name) || 'Suno Artist';
-  const lower = name.trim().toLowerCase();
+function getNormalizedArtist(name, fallbackName) {
+  if (!name || typeof name !== 'string') {
+    return fallbackName || (currentSource && currentSource.type === 'profile' ? currentSource.name : '') || 'Suno Artist';
+  }
+  const clean = name.trim();
+  const lower = clean.toLowerCase();
   const INVALID = ['studio', 'studio plan', 'upload', 'custom', 'v1', 'v2', 'v3', 'v3.5', 'v4', 'v4.0', 'chirp', 'suno', 'suno ai', 'ai', 'undefined', 'null', 'unknown'];
   if (INVALID.includes(lower) || lower.startsWith('v3.') || lower.startsWith('v4.') || /^[uv][0-9]/i.test(lower)) {
-    return (currentSource && currentSource.name && currentSource.name !== 'Suno Catalog' && currentSource.name !== 'Suno Playlist' ? currentSource.name : 'Bito');
+    return fallbackName || (currentSource && currentSource.type === 'profile' ? currentSource.name : '') || 'Suno Artist';
   }
+  if (lower.includes('bito999') || lower === 'bito') {
+    return 'Bito';
+  }
+  return clean;
+}
   if (lower.includes('bito999') || lower === 'bito') {
     return 'Bito';
   }
@@ -608,28 +616,36 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
       };
     }
 
-    tracks = data.tracks || [];
+    // 1. Update currentSource FIRST to establish current context
+    currentSource = {
+      type: data.type,
+      url: targetUrl,
+      name: data.name || (data.type === 'profile' ? 'Artist Profile' : 'Suno Playlist'),
+      cover: (data.tracks && data.tracks.length > 0 && data.tracks[0].image_url) ? data.tracks[0].image_url : ''
+    };
 
-    // If no song is currently playing, prepare track 0 metadata for UI display without auto-playing
+    // 2. Normalize and update all loaded tracks with the new context
+    tracks = (data.tracks || []).map(t => {
+      const aName = getNormalizedArtist(t.artist_name || t.artist, data.name);
+      return {
+        ...t,
+        artist_name: aName,
+        artist: aName
+      };
+    });
+
+    // 3. If no song is currently playing, prepare track 0 for UI preview
     if (!isPlaying) {
       currentTrackIndex = 0;
       if (tracks.length > 0) {
         prepareTrack(0);
       }
     } else {
-      // If audio IS currently playing, keep playing uninterrupted!
-      // Check if current playing track is inside this playlist to highlight it
+      // If audio IS currently playing, keep playing uninterrupted
       if (currentPlayingTrack) {
         currentTrackIndex = tracks.findIndex(t => t.id === currentPlayingTrack.id);
       }
     }
-
-    currentSource = {
-      type: data.type,
-      url: targetUrl,
-      name: data.name || (data.type === 'profile' ? 'Artist Profile' : 'Suno Playlist'),
-      cover: tracks.length > 0 && tracks[0].image_url ? tracks[0].image_url : ''
-    };
 
     // Save to Recent History
     saveToHistory(data.type, targetUrl, currentSource.name);
@@ -670,6 +686,9 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
 
     renderTracksList();
     showPlayerWorkspace();
+    if (window.innerWidth <= 768) {
+      switchMobileTab('library');
+    }
   } catch (err) {
     console.error('Import error:', err);
     alert(`Connection error: ${err.message}`);

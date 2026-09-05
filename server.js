@@ -1,4 +1,4 @@
-// Version: 4.2.10
+// Version: 4.2.11
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -269,13 +269,18 @@ app.get('/api/suno', async (req, res) => {
     const combined = pushes.join('');
 
     // Default artist from page metadata
-    let defaultArtist = 'Bito';
+    let defaultArtist = 'Suno Artist';
     if (isProfile) {
       const match = html.match(/<title>([^|<]+)/);
       if (match && match[1] && !match[1].includes('undefined')) {
         defaultArtist = match[1].replace(/Profile/i, '').trim();
       } else {
         defaultArtist = parsedUrl.pathname.replace('/@', '').trim() || 'Suno Artist';
+      }
+    } else if (isPlaylist) {
+      const byMatch = html.match(/by\s+@?([a-zA-Z0-9_\-]+)/i);
+      if (byMatch) {
+        defaultArtist = byMatch[1].trim();
       }
     }
     if (defaultArtist.toLowerCase().includes('bito999') || defaultArtist.toLowerCase() === 'bito') {
@@ -335,15 +340,22 @@ app.get('/api/suno', async (req, res) => {
             const image_url = imageMatch ? imageMatch[1] : `https://cdn1.suno.ai/image_${uuid}.png`;
 
             let artist_name = defaultArtist;
+            const dispMatch = trackBlock.match(/"(?:user_)?display_name"\s*:\s*"([^"]+)"/i);
+            const handMatch = trackBlock.match(/"(?:user_)?handle"\s*:\s*"([^"]+)"/i);
             const userObjMatch = trackBlock.match(/"user"\s*:\s*\{([^}]+)\}/i);
-            if (userObjMatch) {
+
+            if (dispMatch && !INVALID_ARTISTS.has(dispMatch[1].toLowerCase()) && !/^[uv][0-9]/i.test(dispMatch[1])) {
+              artist_name = dispMatch[1];
+            } else if (handMatch && !INVALID_ARTISTS.has(handMatch[1].toLowerCase())) {
+              artist_name = handMatch[1];
+            } else if (userObjMatch) {
               const userContent = userObjMatch[1];
-              const dispMatch = userContent.match(/"display_name"\s*:\s*"([^"]+)"/i);
-              const handMatch = userContent.match(/"handle"\s*:\s*"([^"]+)"/i);
-              if (dispMatch && !INVALID_ARTISTS.has(dispMatch[1].toLowerCase()) && !/^[uv][0-9]/i.test(dispMatch[1])) {
-                artist_name = dispMatch[1];
-              } else if (handMatch && !INVALID_ARTISTS.has(handMatch[1].toLowerCase())) {
-                artist_name = handMatch[1];
+              const uDisp = userContent.match(/"display_name"\s*:\s*"([^"]+)"/i);
+              const uHand = userContent.match(/"handle"\s*:\s*"([^"]+)"/i);
+              if (uDisp && !INVALID_ARTISTS.has(uDisp[1].toLowerCase()) && !/^[uv][0-9]/i.test(uDisp[1])) {
+                artist_name = uDisp[1];
+              } else if (uHand && !INVALID_ARTISTS.has(uHand[1].toLowerCase())) {
+                artist_name = uHand[1];
               }
             }
 
