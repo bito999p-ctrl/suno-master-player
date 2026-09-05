@@ -1,4 +1,4 @@
-﻿function updateMediaSession(track) {
+function updateMediaSession(track) {
   if ('mediaSession' in navigator && window.MediaMetadata) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
@@ -44,8 +44,18 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 4.0.10 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.10';
+// Version: 4.0.11 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.11';
+
+function renderLucideIcons() {
+  if (typeof window !== 'undefined' && window.lucide) {
+    window.lucide.createIcons({
+      attrs: {
+        'stroke-width': 1.25
+      }
+    });
+  }
+}
 
 // --- State Variables ---
 let audioCtx = null;
@@ -244,16 +254,6 @@ function initializeApp() {
   // Check URL query parameters for auto-import
   checkUrlParams();
 
-function renderLucideIcons() {
-  if (window.lucide) {
-    lucide.createIcons({
-      attrs: {
-        'stroke-width': 1.25
-      }
-    });
-  }
-}
-
   // Initialize Lucide Icons
   renderLucideIcons();
 }
@@ -340,6 +340,8 @@ function setupEventListeners() {
   });
 
   // Workspace actions
+  const headerLogoBtn = document.getElementById('header-logo-btn');
+  if (headerLogoBtn) headerLogoBtn.addEventListener('click', showLandingView);
   if (backToLandingBtn) backToLandingBtn.addEventListener('click', showLandingView);
   if (sidebarBackBtn) {
     sidebarBackBtn.addEventListener('click', showLandingView);
@@ -650,15 +652,14 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
       const text = await res.text();
       console.error('[Error] Server returned non-JSON response:', text);
       
-      let errorMsg = `繧ｵ繝ｼ繝舌・繧ｨ繝ｩ繝ｼ (繧ｹ繝・・繧ｿ繧ｹ: ${res.status})`;
+      let errorMsg = `サーバーエラー (ステータス: ${res.status})`;
       if (text.includes('502 Bad Gateway') || text.includes('502')) {
-        errorMsg += '\n\n縲仙次蝗縲鮮ode.js繧ｵ繝ｼ繝舌・(server.js)縺瑚ｵｷ蜍輔＠縺ｦ縺・↑縺・√∪縺溘・Nginx縺ｪ縺ｩ縺ｮ繝ｪ繝舌・繧ｹ繝励Ο繧ｭ繧ｷ險ｭ螳壹′豁｣縺励￥縺ゅｊ縺ｾ縺帙ｓ縲Ａnode server.js`繧定ｵｷ蜍輔＠縺ｦ縺上□縺輔＞縲・;
+        errorMsg += '\n\n【原因】Node.jsサーバー(server.js)が起動していないか、接続できません。node server.js を実行してください。';
       } else if (text.includes('<!DOCTYPE html>') || text.includes('<html')) {
-        errorMsg += '\n\n縲仙次蝗縲羨PI縺ｸ縺ｮ繝ｪ繧ｯ繧ｨ繧ｹ繝医′HTML繝壹・繧ｸ(繧､繝ｳ繝・ャ繧ｯ繧ｹ繧・04)縺ｫ繝ｪ繝繧､繝ｬ繧ｯ繝医＆繧後※縺・∪縺吶る撕逧・・繧ｹ繝・ぅ繝ｳ繧ｰ(GitHub Pages縺ｪ縺ｩ)縺ｧ縺ｯNode.js繝舌ャ繧ｯ繧ｨ繝ｳ繝峨′蜍輔°縺ｪ縺・◆繧√√お繝ｩ繝ｼ縺ｫ縺ｪ繧翫∪縺吶・;
+        errorMsg += '\n\n【原因】APIへのリクエストがHTMLページにリダイレクトされています。静的ホスティングではNode.jsバックエンドが必要です。';
       } else {
         errorMsg += `:\n${text.slice(0, 150)}`;
       }
-      
       alert(errorMsg);
       return;
     }
@@ -666,7 +667,7 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     const data = await res.json();
 
     if (data.error) {
-      alert(`繧､繝ｳ繝昴・繝亥､ｱ謨・ ${data.error}`);
+      alert(`インポート失敗: ${data.error}`);
       return;
     }
 
@@ -749,12 +750,12 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     if (tracks.length > 0) {
       selectTrack(0);
     } else {
-      alert('蜈ｬ髢区峇縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆縲ゅ・繝ｩ繧､繝舌す繝ｼ險ｭ螳壹ｒ遒ｺ隱阪＠縺ｦ縺上□縺輔＞縲・);
+      alert("公開曲が見つかりませんでした。プライバシー設定をご確認ください。");
     }
 
   } catch (err) {
     console.error(err);
-    alert(`繧ｨ繝ｩ繝ｼ縺檎匱逕溘＠縺ｾ縺励◆: ${err.message}`);
+    alert(`エラーが発生しました: ${err.message}`);
   } finally {
     landingBtnText.classList.remove('hidden');
     landingBtnLoader.classList.add('hidden');
@@ -832,7 +833,7 @@ function renderTracksList() {
     backBtn.className = 'back-to-profile-item';
     backBtn.innerHTML = `
       <span class="back-icon"><i data-lucide="arrow-left" class="icon-inline"></i></span>
-      <span class="back-text">${escapeHtml(userProfileData.name)} 縺ｮ蜈ｬ髢区峇縺ｫ謌ｻ繧・/span>
+      <span class="back-text">${escapeHtml(userProfileData.name)}  の公開曲に戻る・/span>
     `;
     backBtn.addEventListener('click', restoreProfileView);
     tracksList.appendChild(backBtn);
@@ -2260,16 +2261,16 @@ function renderFavoritesUI() {
   const hasFavorites = favorites.users.length > 0 || favorites.playlists.length > 0 || favorites.tracks.length > 0;
   if (!hasFavorites) {
     if (container) container.classList.add('hidden');
-    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
-    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
-    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">お気に入りがありません</div>';
+    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">お気に入りがありません</div>';
+    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">お気に入りがありません</div>';
     return;
   }
   if (container) container.classList.remove('hidden');
 
   // Helper to render HTML list items
   const getListHtml = (items, type) => {
-    if (items.length === 0) return '<div class="empty-history">縺頑ｰ励↓蜈･繧翫・縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (items.length === 0) return '<div class="empty-history">お気に入りがありません</div>';
     return items.map(item => `
       <div class="favorite-item" data-url="${escapeHtml(item.url || item.id)}">
         <span class="favorite-item-title">${escapeHtml(item.name || item.title)}</span>
@@ -2531,16 +2532,16 @@ function renderHistoryUI() {
   const hasHistory = history.users.length > 0 || history.playlists.length > 0 || history.tracks.length > 0;
   if (!hasHistory) {
     if (container) container.classList.add('hidden');
-    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
-    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
-    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (dropUsersList) dropUsersList.innerHTML = '<div class="empty-history">履歴はありません</div>';
+    if (dropPlaylistsList) dropPlaylistsList.innerHTML = '<div class="empty-history">履歴はありません</div>';
+    if (dropTracksList) dropTracksList.innerHTML = '<div class="empty-history">履歴はありません</div>';
     return;
   }
   if (container) container.classList.remove('hidden');
 
   // Helper to render HTML list items
   const getListHtml = (items, type) => {
-    if (items.length === 0) return '<div class="empty-history">螻･豁ｴ縺ｯ縺ゅｊ縺ｾ縺帙ｓ</div>';
+    if (items.length === 0) return '<div class="empty-history">履歴はありません</div>';
     return items.map(item => `
       <div class="history-item" data-url="${escapeHtml(item.id)}">
         <span class="history-item-title">${escapeHtml(item.name)}</span>
