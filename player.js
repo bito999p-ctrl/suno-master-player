@@ -44,8 +44,8 @@ function getNormalizedArtist(name) {
   return name;
 }
 
-// Version: 4.0.11 (Re-deployed to ensure complete file sync)
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.11';
+// Version: 4.0.12 (Re-deployed to ensure complete file sync)
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.0.12';
 
 function renderLucideIcons() {
   if (typeof window !== 'undefined' && window.lucide) {
