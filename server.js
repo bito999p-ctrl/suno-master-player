@@ -1,4 +1,4 @@
-// Version: 4.2.5
+// Version: 4.2.6
 const express = require('express');
 const path = require('path');
 const fs = require('fs');

@@ -3,7 +3,7 @@
    Theme: Fine Art Watercolor & Handmade Paper Glass Deck
    Typography: Inter & Outfit
    Icons: Ultra-Refined Thin Lines (stroke-width: 1.25px)
-   Version: 4.2.5
+   Version: 4.2.6
    ========================================================================== */
 
 :root {
@@ -54,7 +54,7 @@
   --shadow-sm: 0 2px 6px -1px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
   --shadow-md: 0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.02);
   --shadow-lg: 0 16px 36px -8px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.03);
-  --shadow-artwork: 0 16px 38px -10px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-artwork: 0 2px 4px rgba(35, 25, 15, 0.05), 0 16px 36px -8px rgba(35, 25, 15, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.95);
 
   --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -76,12 +76,11 @@ html, body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
-  background-color: var(--bg-base);
-  background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.82) 0%, rgba(249, 248, 246, 0.88) 100%), url('assets/ambient_bg.jpg');
-  background-size: cover;
-  background-position: center center;
+  background-color: #ede7dd;
+  background-image:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.50) 0%, rgba(242, 236, 226, 0.65) 45%, rgba(218, 208, 192, 0.75) 100%),
+    linear-gradient(135deg, #ede7dd 0%, #e2d8c9 100%);
   background-attachment: fixed;
-  background-repeat: no-repeat;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -163,12 +162,12 @@ a {
 
 /* Cards & Glassmorphism */
 .card {
-  background: var(--bg-card);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.88);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 18px -2px rgba(45, 35, 25, 0.05), 0 1px 3px rgba(45, 35, 25, 0.02);
 }
 
 .card-nested {
@@ -308,6 +307,18 @@ a {
   gap: 24px;
   margin: auto 0;
   border-radius: var(--radius-xl);
+  /* Physical Fine Art Watercolor Paper Sheet resting on Desk */
+  background-color: #fdfbf7;
+  background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(250, 246, 239, 0.90) 100%), url('assets/ambient_bg.jpg');
+  background-size: cover;
+  background-position: center center;
+  border: 1px solid rgba(215, 205, 190, 0.75);
+  box-shadow:
+    0 2px 5px rgba(40, 30, 20, 0.04),
+    0 12px 30px -4px rgba(40, 30, 20, 0.09),
+    0 32px 72px -10px rgba(40, 30, 20, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.95),
+    inset 0 0 50px rgba(246, 240, 228, 0.5);
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -563,9 +574,34 @@ a {
   height: 100svh;
   display: flex;
   flex-direction: column;
-  padding: 12px 16px;
+  padding: 12px 14px;
   gap: 12px;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+  .player-workspace-container {
+    max-width: 1480px;
+    height: calc(100vh - 28px);
+    height: calc(100svh - 28px);
+    max-height: calc(100vh - 28px);
+    margin: 14px auto;
+    padding: 16px 18px;
+    border-radius: 22px;
+    /* Physical Fine Art Watercolor Paper Sheet resting on Desk */
+    background-color: #fdfbf7;
+    background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.82) 0%, rgba(250, 246, 239, 0.88) 100%), url('assets/ambient_bg.jpg');
+    background-size: cover;
+    background-position: center center;
+    border: 1px solid rgba(215, 205, 190, 0.75);
+    box-shadow:
+      0 2px 5px rgba(40, 30, 20, 0.04),
+      0 12px 30px -4px rgba(40, 30, 20, 0.09),
+      0 32px 72px -10px rgba(40, 30, 20, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.95),
+      inset 0 0 60px rgba(246, 240, 228, 0.5);
+  }
 }
 
 /* App Header */
