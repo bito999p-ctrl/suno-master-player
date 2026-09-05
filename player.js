@@ -1,9 +1,9 @@
 /**
- * AetherPlayer - Complete Clean Rebuilt Frontend Controller
- * Version: 4.2.3
+ * AetherPlayer - Studio Frontend Controller
+ * Version: 4.2.5
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.3';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.5';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -30,7 +30,7 @@ let isPlaying = false;
 let isShuffle = false;
 let repeatMode = 'all'; // 'all', 'one', 'none'
 let currentSource = { type: null, url: '', name: '', cover: '' };
-let userProfileData = null;
+let parentProfile = null; // Stores user profile when navigating from a user into their playlists
 
 // Audio Analysis Cache & State
 const analysisCache = new Map();
@@ -70,6 +70,7 @@ const favoritesContainer = document.getElementById('favorites-container');
 
 // Sidebar Info
 const sidebarBackBtn = document.getElementById('sidebar-back-btn');
+const sidebarBackText = document.getElementById('sidebar-back-text');
 const sidebarToPlayerBtn = document.getElementById('sidebar-to-player-btn');
 const sourceCover = document.getElementById('source-cover');
 const sourceName = document.getElementById('source-name');
@@ -113,13 +114,6 @@ const playerPlaylistOverlay = document.getElementById('player-playlist-overlay')
 const mobileOverlayTracksList = document.getElementById('mobile-overlay-tracks-list');
 const overlayTracksCount = document.getElementById('overlay-tracks-count');
 const closePlayerBtn = document.getElementById('close-player-btn');
-
-// Utility Section
-const tabEnhancerBtn = document.getElementById('tab-enhancer-btn');
-const tabLyricsBtn = document.getElementById('tab-lyrics-btn');
-const tabEnhancer = document.getElementById('tab-enhancer');
-const tabLyrics = document.getElementById('tab-lyrics');
-const lyricsText = document.getElementById('lyrics-text');
 
 // AI HUD Telemetry
 const aiStatusEl = document.getElementById('ai-status');
@@ -238,7 +232,6 @@ function initAudio() {
     enhancer.outputNode.connect(masterGainNode);
     masterGainNode.connect(audioCtx.destination);
 
-    // Initial state: Set bypass matching toggle
     enhancer.setBypass(!isEnhancerEnabled);
   }
 }
@@ -287,7 +280,6 @@ async function runAnalysisForTrack(track, forceApply = false) {
     return;
   }
 
-  // If enhancer is disabled and not forced, do not block or run heavy analysis
   if (!isEnhancerEnabled && !forceApply) {
     return;
   }
@@ -402,7 +394,7 @@ function updateMediaSession(track) {
   if ('mediaSession' in navigator && window.MediaMetadata && track) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
-      artist: getNormalizedArtist(track.artist_name),
+      artist: getNormalizedArtist(track.artist_name || track.artist),
       album: 'AetherPlayer',
       artwork: [
         { src: track.image_url, sizes: '512x512', type: 'image/png' }
@@ -437,13 +429,11 @@ function selectTrack(index) {
 
   initAudio();
 
-  // Reset audio source
   audioPlayer.src = track.audio_url;
   audioPlayer.load();
 
-  // Update UI Elements
   if (trackTitle) trackTitle.textContent = track.title || 'Untitled Track';
-  if (trackArtist) trackArtist.textContent = getNormalizedArtist(track.artist_name);
+  if (trackArtist) trackArtist.textContent = getNormalizedArtist(track.artist_name || track.artist);
   if (trackArtwork) trackArtwork.src = track.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png';
 
   if (sunoLink) {
@@ -451,28 +441,22 @@ function selectTrack(index) {
     sunoLink.classList.remove('hidden');
   }
 
-  // Mini-player UI
   if (miniTitle) miniTitle.textContent = track.title || 'Untitled Track';
-  if (miniArtist) miniArtist.textContent = getNormalizedArtist(track.artist_name);
+  if (miniArtist) miniArtist.textContent = getNormalizedArtist(track.artist_name || track.artist);
   if (miniArtwork) miniArtwork.src = track.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png';
 
   // Lyrics
-  const lyricsContent = track.prompt || track.lyrics || track.description || track.tags || '歌詞またはプロンプト情報はありません。';
-  if (lyricsText) lyricsText.textContent = lyricsContent;
+  const lyricsContent = track.prompt || track.lyrics || track.description || track.tags || 'Select a track to view lyrics.';
   if (mobileLyricsText) mobileLyricsText.textContent = lyricsContent;
 
-  // Like buttons
   updateLikeButtonState(track.id);
 
-  // Active track styling
   document.querySelectorAll('.track-item').forEach((el, idx) => {
     el.classList.toggle('active', idx === index);
   });
 
-  // MediaSession
   updateMediaSession(track);
 
-  // Start Playback
   audioPlayer.play().then(() => {
     isPlaying = true;
     updatePlayStateUI();
@@ -482,7 +466,6 @@ function selectTrack(index) {
     updatePlayStateUI();
   });
 
-  // On-demand Mastering Analysis
   if (isEnhancerEnabled) {
     runAnalysisForTrack(track);
   }
@@ -576,7 +559,10 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
   if (!urlStr || !urlStr.trim()) return;
   const targetUrl = canonicalizeSunoUrl(urlStr.trim());
 
-  if (!isSubRequest) userProfileData = null;
+  if (!isSubRequest) {
+    // If not a sub-request (e.g. fresh search), reset parentProfile
+    parentProfile = null;
+  }
 
   if (landingBtnText) landingBtnText.classList.add('hidden');
   if (landingBtnLoader) landingBtnLoader.classList.remove('hidden');
@@ -586,19 +572,21 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
     const res = await fetch(`/api/suno?url=${encodeURIComponent(targetUrl)}`);
     if (!res.ok) {
       const errTxt = await res.text();
-      alert(`データの取得に失敗しました (Status: ${res.status}):\n${errTxt.slice(0, 120)}`);
+      alert(`Failed to load data (Status: ${res.status}):\n${errTxt.slice(0, 120)}`);
       return;
     }
 
     const data = await res.json();
     if (data.error) {
-      alert(`インポート失敗: ${data.error}`);
+      alert(`Import failed: ${data.error}`);
       return;
     }
 
-    if (!isSubRequest && data.type === 'profile') {
-      userProfileData = data;
-      userProfileData.url = targetUrl;
+    if (data.type === 'profile') {
+      parentProfile = {
+        name: data.name || 'Artist Profile',
+        url: targetUrl
+      };
     }
 
     tracks = data.tracks || [];
@@ -618,10 +606,13 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
 
     // Update Sidebar details
     if (sourceName) sourceName.textContent = currentSource.name;
-    if (sourceType) sourceType.textContent = data.type === 'profile' ? 'Artist Profile' : (data.type === 'song' ? 'Song' : 'Playlist');
+    if (sourceType) sourceType.textContent = data.type === 'profile' ? 'Artist Profile' : (data.type === 'song' ? 'Track' : 'Playlist');
     if (sourceCover) sourceCover.src = currentSource.cover || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png';
     if (tracksCountEl) tracksCountEl.textContent = tracks.length;
     if (overlayTracksCount) overlayTracksCount.textContent = tracks.length;
+
+    // Update Sidebar Back Button dynamic text
+    updateSidebarBackNavigation();
 
     updateSourceLikeButtonState();
 
@@ -647,19 +638,15 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
       if (playlistsSection) playlistsSection.classList.add('hidden');
     }
 
-    // Render Tracks List in Sidebar & Slide-up Sheet
     renderTracksList();
-
-    // Switch View from Landing to Player
     showPlayerWorkspace();
 
-    // Auto-select first track
     if (tracks.length > 0) {
       selectTrack(0);
     }
   } catch (err) {
     console.error('Import error:', err);
-    alert(`通信エラーが発生しました: ${err.message}`);
+    alert(`Connection error: ${err.message}`);
   } finally {
     if (landingBtnText) landingBtnText.classList.remove('hidden');
     if (landingBtnLoader) landingBtnLoader.classList.add('hidden');
@@ -667,10 +654,30 @@ async function importSunoUrl(urlStr, isSubRequest = false) {
   }
 }
 
+function updateSidebarBackNavigation() {
+  if (!sidebarBackText) return;
+  if (parentProfile && currentSource.type !== 'profile') {
+    sidebarBackText.textContent = `Back to @${parentProfile.name}`;
+  } else {
+    sidebarBackText.textContent = 'Back to Home';
+  }
+  window.renderLucideIcons();
+}
+
+function handleSidebarBackClick() {
+  if (parentProfile && currentSource.type !== 'profile') {
+    // Navigate back to the user profile
+    importSunoUrl(parentProfile.url, false);
+  } else {
+    // Return to Landing Screen
+    showLandingScreen();
+  }
+}
+
 function renderTracksList() {
   if (tracks.length === 0) {
-    if (tracksList) tracksList.innerHTML = '<div class="empty-list">曲がありません</div>';
-    if (mobileOverlayTracksList) mobileOverlayTracksList.innerHTML = '<div class="empty-list">曲がありません</div>';
+    if (tracksList) tracksList.innerHTML = '<div class="empty-list">No tracks loaded</div>';
+    if (mobileOverlayTracksList) mobileOverlayTracksList.innerHTML = '<div class="empty-list">No tracks loaded</div>';
     return;
   }
 
@@ -680,7 +687,7 @@ function renderTracksList() {
       <img src="${escapeHtml(t.image_url || 'https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png')}" class="track-item-cover" alt="Art">
       <div class="track-item-info">
         <span class="track-item-title">${escapeHtml(t.title || 'Untitled')}</span>
-        <span class="track-item-artist">${escapeHtml(getNormalizedArtist(t.artist_name))}</span>
+        <span class="track-item-artist">${escapeHtml(getNormalizedArtist(t.artist_name || t.artist))}</span>
       </div>
     </div>
   `).join('');
@@ -755,20 +762,6 @@ function switchMobileTab(tabName) {
     if (workspaceUtility) workspaceUtility.classList.add('active-tab');
     if (navBtnUtility) navBtnUtility.classList.add('active');
     if (miniPlayer && tracks.length > 0) miniPlayer.classList.remove('hidden');
-  }
-}
-
-function switchUtilityTab(tabName) {
-  if (tabName === 'enhancer') {
-    if (tabEnhancerBtn) tabEnhancerBtn.classList.add('active');
-    if (tabLyricsBtn) tabLyricsBtn.classList.remove('active');
-    if (tabEnhancer) tabEnhancer.classList.remove('hidden');
-    if (tabLyrics) tabLyrics.classList.add('hidden');
-  } else {
-    if (tabEnhancerBtn) tabEnhancerBtn.classList.remove('active');
-    if (tabLyricsBtn) tabLyricsBtn.classList.add('active');
-    if (tabEnhancer) tabEnhancer.classList.add('hidden');
-    if (tabLyrics) tabLyrics.classList.remove('hidden');
   }
 }
 
@@ -856,7 +849,6 @@ function saveToHistory(type, idOrUrl, name) {
   const canonical = canonicalizeSunoUrl(idOrUrl);
   let targetList = type === 'profile' || type === 'user' ? historyData.users : (type === 'playlist' ? historyData.playlists : historyData.tracks);
 
-  // Remove existing duplicate
   targetList = targetList.filter(item => item && (item.url !== canonical && item.id !== canonical));
   targetList.unshift({
     id: canonical,
@@ -888,7 +880,7 @@ function toggleTrackLike() {
     favoritesData.tracks.unshift({
       id: track.id,
       title: track.title,
-      artist_name: getNormalizedArtist(track.artist_name),
+      artist_name: getNormalizedArtist(track.artist_name || track.artist),
       image_url: track.image_url,
       url: `https://suno.com/song/${track.id}`
     });
@@ -958,7 +950,7 @@ function updateSourceLikeButtonState() {
 function renderHistoryUI() {
   loadStorageData();
   const renderList = (items, type) => {
-    if (!items || items.length === 0) return '<div class="empty-history">履歴がありません</div>';
+    if (!items || items.length === 0) return '<div class="empty-history">No history available</div>';
     return items.map(item => `
       <div class="history-item" data-url="${escapeHtml(item.url || item.id)}">
         <span class="history-item-title">${escapeHtml(item.name || item.title || item.url)}</span>
@@ -995,7 +987,7 @@ function renderHistoryUI() {
 function renderFavoritesUI() {
   loadStorageData();
   const renderList = (items, type) => {
-    if (!items || items.length === 0) return '<div class="empty-history">お気に入りがありません</div>';
+    if (!items || items.length === 0) return '<div class="empty-history">No favorites saved</div>';
     return items.map(item => `
       <div class="favorite-item" data-url="${escapeHtml(item.url || item.id)}">
         <span class="favorite-item-title">${escapeHtml(item.name || item.title || item.url)}</span>
@@ -1081,7 +1073,7 @@ function initEventListeners() {
   // Navigation Buttons
   if (backToLandingBtn) backToLandingBtn.addEventListener('click', showLandingScreen);
   if (headerLogoBtn) headerLogoBtn.addEventListener('click', showLandingScreen);
-  if (sidebarBackBtn) sidebarBackBtn.addEventListener('click', showLandingScreen);
+  if (sidebarBackBtn) sidebarBackBtn.addEventListener('click', handleSidebarBackClick);
   if (sidebarToPlayerBtn) sidebarToPlayerBtn.addEventListener('click', () => switchMobileTab('player'));
   if (closePlayerBtn) closePlayerBtn.addEventListener('click', () => switchMobileTab('library'));
 
@@ -1090,7 +1082,7 @@ function initEventListeners() {
     shareBtn.addEventListener('click', () => {
       if (navigator.clipboard && currentSource.url) {
         navigator.clipboard.writeText(currentSource.url);
-        alert('共有リンクをクリップボードにコピーしました！');
+        alert('Share link copied to clipboard!');
       }
     });
   }
@@ -1204,10 +1196,6 @@ function initEventListeners() {
     closePlaylistBtn.addEventListener('click', () => playerPlaylistOverlay.classList.remove('active-playlist'));
   }
 
-  // Utility Tabs
-  if (tabEnhancerBtn) tabEnhancerBtn.addEventListener('click', () => switchUtilityTab('enhancer'));
-  if (tabLyricsBtn) tabLyricsBtn.addEventListener('click', () => switchUtilityTab('lyrics'));
-
   // Mobile Bottom Navigation
   if (navBtnLibrary) navBtnLibrary.addEventListener('click', () => switchMobileTab('library'));
   if (navBtnPlayer) navBtnPlayer.addEventListener('click', () => switchMobileTab('player'));
@@ -1218,10 +1206,8 @@ function initEventListeners() {
     miniPlayer.addEventListener('click', () => switchMobileTab('player'));
   }
 
-  // Window Resize
   window.addEventListener('resize', handleResponsiveLayout);
 
-  // Setup MediaSession handlers
   setupMediaSessionActions();
 }
 
@@ -1229,7 +1215,6 @@ function initEventListeners() {
 // Initial Startup
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
-  // Load saved preferences
   const savedEnabled = localStorage.getItem('aether_enhancer_enabled');
   isEnhancerEnabled = savedEnabled === '1';
   if (enhancerToggle) enhancerToggle.checked = isEnhancerEnabled;
@@ -1245,7 +1230,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAiStatus(isEnhancerEnabled ? 'active' : 'idle');
   window.renderLucideIcons();
 
-  // Check URL parameters for direct import (?url=... or ?suno=...)
   const params = new URLSearchParams(window.location.search);
   const targetParam = params.get('url') || params.get('suno');
   if (targetParam) {

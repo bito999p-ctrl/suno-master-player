@@ -1,6 +1,6 @@
-<!-- Version: 4.2.3 (Clean Luxury Rebuild) -->
+<!-- Version: 4.2.5 (Fine Art Studio Edition) -->
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-C8CLCFDVX2"></script>
@@ -14,8 +14,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AetherPlayer - Suno AI & AetherMaster AI Enhancer</title>
-  <meta name="description" content="Suno AIの公開曲やプレイリストを、AetherMasterのAIマスタリング技術で補正して再生するWeb音楽プレイヤー。">
-  <meta name="keywords" content="Suno AI, AetherPlayer, AetherMaster, 音楽プレイヤー, AIマスタリング, Web Audio API, Sonografica">
+  <meta name="description" content="Dedicated music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI mastering engine.">
+  <meta name="keywords" content="Suno AI, AetherPlayer, AetherMaster, Web Music Player, AI Mastering, Web Audio API, Sonografica">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://aether-player-blush.vercel.app/">
 
@@ -23,12 +23,12 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://aether-player-blush.vercel.app/">
   <meta property="og:title" content="AetherPlayer - Suno AI & AetherMaster AI Enhancer">
-  <meta property="og:description" content="Suno AIの楽曲を、AetherMasterのAIオートマスタリング技術で再生する専用プレイヤー。">
+  <meta property="og:description" content="Dedicated music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI mastering engine.">
   <meta property="og:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
   <meta property="og:site_name" content="AetherPlayer">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AetherPlayer - Suno AI & AetherMaster AI Enhancer">
-  <meta name="twitter:description" content="Suno AIの楽曲を、AetherMasterのAIオートマスタリング技術で再生する専用プレイヤー。">
+  <meta name="twitter:description" content="Dedicated music player for Suno AI public tracks and playlists, enhanced with AetherMaster AI mastering engine.">
   <meta name="twitter:image" content="https://bito999p-ctrl.github.io/sonografica/hero_bg.png">
 
   <!-- Favicon -->
@@ -38,7 +38,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.2.3">
+  <link rel="stylesheet" href="styles.css?v=4.2.5">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -79,7 +79,7 @@
               <span class="brand-credit">Studio Sound Player</span>
             </div>
           </div>
-          <p class="landing-subtitle">Sunoの公開曲やプレイリストを、AetherMasterのAI AUTOマスタリング技術で再生する専用プレイヤー</p>
+          <p class="landing-subtitle">Play public Suno tracks & playlists enhanced with AetherMaster AI Auto-Mastering technology.</p>
         </div>
         
         <!-- Import Input Form -->
@@ -89,19 +89,19 @@
             <input 
               type="text" 
               id="landing-input" 
-              placeholder="ユーザー名 (@bito999) または プレイリストURL / ID..." 
+              placeholder="Username (@bito999) or Playlist URL / Track ID..." 
               autocomplete="off"
             >
           </div>
           <button id="landing-btn" class="btn btn-primary btn-glow">
-            <span id="landing-btn-text"><i data-lucide="play-circle"></i> 読み込む</span>
+            <span id="landing-btn-text"><i data-lucide="play-circle"></i> Load</span>
             <span id="landing-btn-loader" class="loader hidden"></span>
           </button>
         </div>
 
         <!-- Quick Samples -->
         <div class="quick-links">
-          <span class="quick-label">サンプル:</span>
+          <span class="quick-label">Samples:</span>
           <button class="quick-link-btn chip-btn" data-url="@bito999">
             <i data-lucide="user"></i> @bito999
           </button>
@@ -112,17 +112,17 @@
 
         <p class="landing-helper-text">
           <i data-lucide="info" class="helper-icon"></i>
-          <span>最大読込数: アーティスト <b>20曲</b> / プレイリスト <b>50曲</b></span>
+          <span>Max capacity: <b>20 tracks</b> (Artist) / <b>50 tracks</b> (Playlist)</span>
         </p>
 
         <!-- Segmented Tabs: History & Favorites -->
         <div id="landing-tabs-container" class="landing-tabs-container">
           <div class="landing-segment-tabs">
             <button id="landing-tab-history-btn" class="segment-tab-btn active">
-              <i data-lucide="history"></i> 最近の履歴
+              <i data-lucide="history"></i> Recent History
             </button>
             <button id="landing-tab-favorites-btn" class="segment-tab-btn">
-              <i data-lucide="heart"></i> お気に入り
+              <i data-lucide="heart"></i> Favorites
             </button>
           </div>
 
@@ -130,15 +130,15 @@
           <div id="history-container" class="history-container landing-subview">
             <div class="history-grid">
               <div class="history-col">
-                <h4><i data-lucide="user"></i> ユーザー</h4>
+                <h4><i data-lucide="user"></i> Artists</h4>
                 <div id="history-users-list" class="history-list"></div>
               </div>
               <div class="history-col">
-                <h4><i data-lucide="disc"></i> プレイリスト</h4>
+                <h4><i data-lucide="disc"></i> Playlists</h4>
                 <div id="history-playlists-list" class="history-list"></div>
               </div>
               <div class="history-col">
-                <h4><i data-lucide="music"></i> シングル曲</h4>
+                <h4><i data-lucide="music"></i> Tracks</h4>
                 <div id="history-tracks-list" class="history-list"></div>
               </div>
             </div>
@@ -148,15 +148,15 @@
           <div id="favorites-container" class="favorites-container landing-subview hidden">
             <div class="favorites-grid">
               <div class="favorites-col">
-                <h4><i data-lucide="user"></i> ユーザー</h4>
+                <h4><i data-lucide="user"></i> Artists</h4>
                 <div id="favorites-users-list" class="favorites-list"></div>
               </div>
               <div class="favorites-col">
-                <h4><i data-lucide="disc"></i> プレイリスト</h4>
+                <h4><i data-lucide="disc"></i> Playlists</h4>
                 <div id="favorites-playlists-list" class="favorites-list"></div>
               </div>
               <div class="favorites-col">
-                <h4><i data-lucide="music"></i> お気に入り曲</h4>
+                <h4><i data-lucide="music"></i> Tracks</h4>
                 <div id="favorites-tracks-list" class="favorites-list"></div>
               </div>
             </div>
@@ -164,19 +164,19 @@
         </div>
 
         <footer class="landing-copyright-note">
-          Unauthorized reproduction or redistribution strictly prohibited. © 2026 Sonografica | v4.2.0
+          Unauthorized reproduction or redistribution strictly prohibited. © 2026 Sonografica | v4.2.4
         </footer>
       </div>
     </div>
 
     <!-- ==========================================
-         2. PLAYER WORKSPACE (3-Column / Mobile Tabs)
+         2. PLAYER WORKSPACE (3-Column Layout)
          ========================================== -->
     <div id="player-workspace" class="player-workspace-container hidden">
       <!-- App Header -->
       <header class="app-header">
         <div class="header-left">
-          <div id="header-logo-btn" class="logo clickable-logo" role="button" tabindex="0" title="トップページに戻る">
+          <div id="header-logo-btn" class="logo clickable-logo" role="button" tabindex="0" title="Back to Home">
             <div class="logo-icon-badge small">
               <svg class="brand-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 3v18M6 8v8M18 8v8M2 11v2M22 11v2"/>
@@ -199,28 +199,28 @@
         <div class="header-actions">
           <!-- History Dropdown Trigger -->
           <div class="history-dropdown-wrapper">
-            <button id="history-toggle-btn" class="btn btn-secondary btn-icon-text" title="履歴 / お気に入り">
+            <button id="history-toggle-btn" class="btn btn-secondary btn-icon-text" title="History & Favorites">
               <i data-lucide="history"></i>
-              <span class="btn-text">履歴 / お気に入り</span>
+              <span class="btn-text">History & Favorites</span>
             </button>
             <div id="header-history-dropdown" class="header-history-dropdown card hidden">
               <div class="dropdown-tab-headers">
-                <button id="drop-tab-history" class="dropdown-tab-btn active"><i data-lucide="history"></i> 最近の履歴</button>
-                <button id="drop-tab-favorites" class="dropdown-tab-btn"><i data-lucide="heart"></i> お気に入り</button>
+                <button id="drop-tab-history" class="dropdown-tab-btn active"><i data-lucide="history"></i> History</button>
+                <button id="drop-tab-favorites" class="dropdown-tab-btn"><i data-lucide="heart"></i> Favorites</button>
               </div>
               
               <div id="drop-content-history" class="dropdown-tab-content">
                 <div class="dropdown-history-grid">
                   <div class="dropdown-history-col">
-                    <h4><i data-lucide="user"></i> ユーザー</h4>
+                    <h4><i data-lucide="user"></i> Artists</h4>
                     <div id="dropdown-history-users-list" class="dropdown-history-list"></div>
                   </div>
                   <div class="dropdown-history-col">
-                    <h4><i data-lucide="disc"></i> プレイリスト</h4>
+                    <h4><i data-lucide="disc"></i> Playlists</h4>
                     <div id="dropdown-history-playlists-list" class="dropdown-history-list"></div>
                   </div>
                   <div class="dropdown-history-col">
-                    <h4><i data-lucide="music"></i> 曲</h4>
+                    <h4><i data-lucide="music"></i> Tracks</h4>
                     <div id="dropdown-history-tracks-list" class="dropdown-history-list"></div>
                   </div>
                 </div>
@@ -229,15 +229,15 @@
               <div id="drop-content-favorites" class="dropdown-tab-content hidden">
                 <div class="dropdown-history-grid">
                   <div class="dropdown-history-col">
-                    <h4><i data-lucide="user"></i> ユーザー</h4>
+                    <h4><i data-lucide="user"></i> Artists</h4>
                     <div id="dropdown-favorites-users-list" class="dropdown-history-list"></div>
                   </div>
                   <div class="dropdown-history-col">
-                    <h4><i data-lucide="disc"></i> プレイリスト</h4>
+                    <h4><i data-lucide="disc"></i> Playlists</h4>
                     <div id="dropdown-favorites-playlists-list" class="dropdown-history-list"></div>
                   </div>
                   <div class="dropdown-history-col">
-                    <h4><i data-lucide="music"></i> 曲</h4>
+                    <h4><i data-lucide="music"></i> Tracks</h4>
                     <div id="dropdown-favorites-tracks-list" class="dropdown-history-list"></div>
                   </div>
                 </div>
@@ -245,13 +245,13 @@
             </div>
           </div>
 
-          <button id="back-to-landing-btn" class="btn btn-secondary btn-icon-text" title="別のURLを読み込む">
+          <button id="back-to-landing-btn" class="btn btn-secondary btn-icon-text" title="Load New URL">
             <i data-lucide="search"></i>
-            <span class="btn-text">新規読込</span>
+            <span class="btn-text">New Import</span>
           </button>
-          <button id="share-btn" class="btn btn-primary btn-icon-text" title="共有用リンクをコピー">
+          <button id="share-btn" class="btn btn-primary btn-icon-text" title="Copy Share Link">
             <i data-lucide="share-2"></i>
-            <span class="btn-text">共有</span>
+            <span class="btn-text">Share</span>
           </button>
         </div>
       </header>
@@ -263,13 +263,12 @@
         <section class="workspace-sidebar card">
           <div class="sidebar-header">
             <div class="sidebar-nav-buttons">
-              <button id="sidebar-back-btn" class="btn-ghost" title="ホームに戻る">
+              <button id="sidebar-back-btn" class="btn-ghost" title="Back">
                 <i data-lucide="arrow-left"></i>
-                <span class="desktop-only-inline">ホームに戻る</span>
-                <span class="mobile-only-inline">ホーム</span>
+                <span id="sidebar-back-text">Back to Home</span>
               </button>
-              <button id="sidebar-to-player-btn" class="btn-ghost mobile-only-inline" title="プレイヤーに戻る">
-                <i data-lucide="music"></i> プレイヤー
+              <button id="sidebar-to-player-btn" class="btn-ghost mobile-only-inline" title="Player">
+                <i data-lucide="music"></i> Player
               </button>
             </div>
             
@@ -280,7 +279,7 @@
               <div class="source-text">
                 <div class="source-title-row">
                   <h2 id="source-name">Suno Playlist</h2>
-                  <button id="source-like-btn" class="source-like-btn" title="お気に入りに追加"><i data-lucide="heart"></i></button>
+                  <button id="source-like-btn" class="source-like-btn" title="Save to Favorites"><i data-lucide="heart"></i></button>
                 </div>
                 <span id="source-type" class="source-badge">Playlist</span>
               </div>
@@ -290,42 +289,42 @@
           <div class="sidebar-content">
             <!-- Playlists List -->
             <div id="playlists-section" class="playlists-section hidden">
-              <h3 class="section-title"><i data-lucide="folder"></i> 公開プレイリスト</h3>
+              <h3 class="section-title"><i data-lucide="folder"></i> Public Playlists</h3>
               <div id="playlists-list" class="playlists-list"></div>
             </div>
 
             <!-- Tracks Section -->
             <div class="tracks-section">
               <div class="tracks-section-header">
-                <h3 class="section-title"><i data-lucide="list-music"></i> トラック一覧</h3>
+                <h3 class="section-title"><i data-lucide="list-music"></i> Tracklist</h3>
                 <span id="tracks-count" class="tracks-count-badge">0</span>
               </div>
               <div class="tracks-list-container">
                 <div id="tracks-list" class="tracks-list">
-                  <div class="empty-list">曲が読み込まれていません</div>
+                  <div class="empty-list">No tracks loaded</div>
                 </div>
               </div>
             </div>
           </div>
 
           <footer class="sidebar-copyright-note">
-            © 2026 Sonografica | v4.2.0
+            © 2026 Sonografica | v4.2.4
           </footer>
         </section>
 
         <!-- Column 2: Center Studio Player Deck -->
         <section class="workspace-player card">
           <div class="player-modal-header">
-            <button id="close-player-btn" class="close-player-btn" title="プレイヤーを閉じる">
+            <button id="close-player-btn" class="close-player-btn" title="Close Player">
               <i data-lucide="chevron-down"></i>
-              <span>閉じる</span>
+              <span>Close</span>
             </button>
             <div class="header-right-actions">
-              <button id="open-playlist-btn" class="action-pill-btn" title="プレイリストを表示">
-                <i data-lucide="list-music"></i> <span>リスト</span>
+              <button id="open-playlist-btn" class="action-pill-btn" title="View Tracklist">
+                <i data-lucide="list-music"></i> <span>Playlist</span>
               </button>
-              <button id="open-lyrics-btn" class="action-pill-btn" title="歌詞を表示">
-                <i data-lucide="file-text"></i> <span>歌詞</span>
+              <button id="open-lyrics-btn" class="action-pill-btn" title="View Lyrics">
+                <i data-lucide="file-text"></i> <span>Lyrics</span>
               </button>
             </div>
           </div>
@@ -341,9 +340,9 @@
             <!-- Track Metadata -->
             <div class="track-details">
               <div class="track-title-row">
-                <h2 id="track-title">曲を選択してください</h2>
-                <button id="like-btn" class="like-btn" title="お気に入りに追加"><i data-lucide="heart"></i></button>
-                <a id="suno-link" href="#" target="_blank" class="suno-external-link hidden" title="Sunoで開く">
+                <h2 id="track-title">Select a track to play</h2>
+                <button id="like-btn" class="like-btn" title="Save to Favorites"><i data-lucide="heart"></i></button>
+                <a id="suno-link" href="#" target="_blank" class="suno-external-link hidden" title="Open in Suno">
                   <i data-lucide="external-link"></i>
                   <span>Suno</span>
                 </a>
@@ -352,7 +351,7 @@
               
               <!-- AI Analyzing Indicator Chip -->
               <div id="ai-analyzing-indicator" class="ai-analyzing-indicator hidden">
-                <span class="pulse-dot"></span> AIマスタリング分析中...
+                <span class="pulse-dot"></span> AI Mastering Analysis...
               </div>
             </div>
 
@@ -367,11 +366,11 @@
 
             <!-- Transport Controls Deck -->
             <div class="player-controls">
-              <button id="shuffle-btn" class="ctrl-btn sub-ctrl" title="シャッフル"><i data-lucide="shuffle"></i></button>
-              <button id="prev-btn" class="ctrl-btn step-ctrl" title="前の曲"><i data-lucide="skip-back"></i></button>
-              <button id="play-pause-btn" class="ctrl-btn play-btn" title="再生"><i data-lucide="play" id="play-pause-icon"></i></button>
-              <button id="next-btn" class="ctrl-btn step-ctrl" title="次の曲"><i data-lucide="skip-forward"></i></button>
-              <button id="repeat-btn" class="ctrl-btn sub-ctrl" title="リピート"><i data-lucide="repeat"></i></button>
+              <button id="shuffle-btn" class="ctrl-btn sub-ctrl" title="Shuffle"><i data-lucide="shuffle"></i></button>
+              <button id="prev-btn" class="ctrl-btn step-ctrl" title="Previous"><i data-lucide="skip-back"></i></button>
+              <button id="play-pause-btn" class="ctrl-btn play-btn" title="Play"><i data-lucide="play" id="play-pause-icon"></i></button>
+              <button id="next-btn" class="ctrl-btn step-ctrl" title="Next"><i data-lucide="skip-forward"></i></button>
+              <button id="repeat-btn" class="ctrl-btn sub-ctrl" title="Repeat"><i data-lucide="repeat"></i></button>
             </div>
 
             <!-- Footer Volume & Mastering Controls -->
@@ -384,7 +383,7 @@
                 <div class="footer-dropdowns-row">
                   <div class="custom-select-wrapper mobile-preset-mode">
                     <select id="mobile-preset-select" class="styled-select">
-                      <option value="auto">✦ AI Auto (標準)</option>
+                      <option value="auto">✦ AI Auto (Default)</option>
                       <option value="pops">✦ Pops</option>
                       <option value="rnb">✦ R&B / Soul</option>
                       <option value="rock">✦ Rock / Alt</option>
@@ -416,11 +415,11 @@
           <!-- Slide-up Lyrics Sheet Overlay -->
           <div id="player-lyrics-overlay" class="player-lyrics-overlay">
             <div class="lyrics-overlay-header">
-              <h3><i data-lucide="file-text"></i> 歌詞 / プロンプト</h3>
+              <h3><i data-lucide="file-text"></i> Lyrics</h3>
               <button id="close-lyrics-btn" class="close-sheet-btn"><i data-lucide="x"></i></button>
             </div>
             <div id="mobile-lyrics-text" class="mobile-lyrics-text">
-              曲を選択すると歌詞が表示されます。
+              Select a track to view lyrics.
             </div>
           </div>
 
@@ -428,152 +427,140 @@
           <div id="player-playlist-overlay" class="player-playlist-overlay">
             <div class="playlist-overlay-header">
               <div class="playlist-overlay-title-group">
-                <h3><i data-lucide="list-music"></i> トラック一覧 (<span id="overlay-tracks-count">0</span>)</h3>
-                <span class="limit-spec-note-mobile">※最大50曲</span>
+                <h3><i data-lucide="list-music"></i> Tracklist (<span id="overlay-tracks-count">0</span>)</h3>
+                <span class="limit-spec-note-mobile">※ Max 50 tracks</span>
               </div>
               <button id="close-playlist-btn" class="close-sheet-btn"><i data-lucide="x"></i></button>
             </div>
             <div id="mobile-overlay-tracks-list" class="mobile-overlay-tracks-list">
-              <div class="empty-list">曲が読み込まれていません</div>
+              <div class="empty-list">No tracks loaded</div>
             </div>
           </div>
         </section>
 
-        <!-- Column 3: Sound Enhancer Studio Lab & Lyrics -->
+        <!-- Column 3: Sound Enhancer Studio Lab (Clean Dedicated Column) -->
         <section class="workspace-utility card">
-          <div class="tab-header">
-            <button id="tab-enhancer-btn" class="tab-btn active"><i data-lucide="sliders"></i> Sound Enhancer</button>
-            <button id="tab-lyrics-btn" class="tab-btn"><i data-lucide="file-text"></i> Lyrics</button>
+          <div class="utility-header">
+            <h3><i data-lucide="sliders"></i> Sound Enhancer</h3>
+            <span class="utility-sub">AetherMaster DSP</span>
           </div>
 
-          <div class="tab-body">
-            <!-- Enhancer Tab Content -->
-            <div id="tab-enhancer" class="tab-content">
-              <!-- Master Bypass Header -->
-              <div class="enhancer-header">
-                <div class="enhancer-title-block">
-                  <h3>AetherMaster Engine</h3>
-                  <p>AI Auto-Mastering Mode</p>
-                </div>
-                <label class="switch-container">
-                  <input type="checkbox" id="enhancer-toggle">
-                  <span class="switch-slider"></span>
-                </label>
+          <div class="utility-body">
+            <!-- Master Bypass Header -->
+            <div class="enhancer-header">
+              <div class="enhancer-title-block">
+                <h3>AetherMaster Engine</h3>
+                <p>AI Auto-Mastering Mode</p>
               </div>
-
-              <!-- Preset Select -->
-              <div class="preset-selection-row">
-                <span class="preset-label">マスタリング・プリセット</span>
-                <div class="custom-select-wrapper">
-                  <select id="preset-select" class="preset-select styled-select">
-                    <option value="auto">✦ AI Auto-Optimized (標準)</option>
-                    <option value="pops">✦ Pops</option>
-                    <option value="rnb">✦ R&B / Soul</option>
-                    <option value="rock">✦ Rock / Alternative</option>
-                    <option value="metal">✦ Heavy Metal / Hard Rock</option>
-                    <option value="edm">✦ EDM / Club Electronic</option>
-                    <option value="hiphop">✦ Hip-Hop / Rap</option>
-                    <option value="lofi">✦ Lo-Fi Chill</option>
-                    <option value="hardcore">✦ Hardcore Techno / Gabber</option>
-                    <option value="ambient">✦ Ambient / Cinematic</option>
-                    <option value="podcast">✦ Podcast / Voice Enhancer</option>
-                    <option value="classic">✦ Classical / Orchestral</option>
-                    <option value="jazz">✦ Jazz / Smooth Brass</option>
-                    <option value="acoustic">✦ Acoustic / Folk Singer</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- AI Status HUD Card -->
-              <div class="ai-status-hud card-nested">
-                <div class="ai-status-row">
-                  <span class="hud-label">AI Engine Status</span>
-                  <span id="ai-status" class="status-badge idle">STANDBY</span>
-                </div>
-                <div class="ai-status-row">
-                  <span class="hud-label">Dynamic Range</span>
-                  <span id="hud-dynamics-desc" class="hud-value">--</span>
-                </div>
-                <div class="ai-status-row">
-                  <span class="hud-label">Stereo Field</span>
-                  <span id="hud-stereo-desc" class="hud-value">--</span>
-                </div>
-                <div class="ai-status-row">
-                  <span class="hud-label">Detected Style</span>
-                  <span id="hud-genre-desc" class="hud-value">--</span>
-                </div>
-              </div>
-
-              <!-- DSP Parameters Telemetry Display -->
-              <div class="ai-params-display">
-                <h4 class="params-header"><i data-lucide="activity"></i> リアルタイムDSP解析テレメトリー</h4>
-                
-                <div class="param-row-grid">
-                  <div class="param-small-card">
-                    <span class="lbl">Bass EQ</span>
-                    <span id="hud-eq-low" class="val">-- dB</span>
-                  </div>
-                  <div class="param-small-card">
-                    <span class="lbl">Treble EQ</span>
-                    <span id="hud-eq-high" class="val">-- dB</span>
-                  </div>
-                  <div class="param-small-card">
-                    <span class="lbl">Stereo Width</span>
-                    <span id="hud-width" class="val">--</span>
-                  </div>
-                  <div class="param-small-card">
-                    <span class="lbl">Hiss Cut</span>
-                    <span id="hud-hiss" class="val">-- %</span>
-                  </div>
-                </div>
-
-                <div class="param-card card-nested">
-                  <span class="param-title"><i data-lucide="gauge"></i> ダイナミクス & 音圧ブースト</span>
-                  <div class="dynamics-info-row">
-                    <div class="info-cell">
-                      <span class="lbl">Threshold</span>
-                      <span id="hud-comp-thresh" class="val">-- dB</span>
-                    </div>
-                    <div class="info-cell">
-                      <span class="lbl">Ratio</span>
-                      <span id="hud-comp-ratio" class="val">--</span>
-                    </div>
-                    <div class="info-cell">
-                      <span class="lbl">Limiter Boost</span>
-                      <span id="hud-limiter-boost" class="val highlight">-- dB</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="param-card card-nested">
-                  <span class="param-title"><i data-lucide="cpu"></i> アドバンスド DSP パラメータ</span>
-                  <div class="dynamics-info-row">
-                    <div class="info-cell">
-                      <span class="lbl">Saturator</span>
-                      <span id="hud-sat-drive" class="val">--</span>
-                    </div>
-                    <div class="info-cell">
-                      <span class="lbl">De-esser</span>
-                      <span id="hud-deesser" class="val">--</span>
-                    </div>
-                    <div class="info-cell">
-                      <span class="lbl">Subsonic</span>
-                      <span id="hud-rumble" class="val">--</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+              <label class="switch-container">
+                <input type="checkbox" id="enhancer-toggle">
+                <span class="switch-slider"></span>
+              </label>
             </div>
 
-            <!-- Lyrics Tab Content -->
-            <div id="tab-lyrics" class="tab-content hidden">
-              <div class="lyrics-container">
-                <div id="lyrics-text" class="lyrics-text">
-                  曲を選択すると歌詞が表示されます。
+            <!-- Preset Select -->
+            <div class="preset-selection-row">
+              <span class="preset-label">Mastering Preset</span>
+              <div class="custom-select-wrapper">
+                <select id="preset-select" class="preset-select styled-select">
+                  <option value="auto">✦ AI Auto-Optimized (Default)</option>
+                  <option value="pops">✦ Pops</option>
+                  <option value="rnb">✦ R&B / Soul</option>
+                  <option value="rock">✦ Rock / Alternative</option>
+                  <option value="metal">✦ Heavy Metal / Hard Rock</option>
+                  <option value="edm">✦ EDM / Club Electronic</option>
+                  <option value="hiphop">✦ Hip-Hop / Rap</option>
+                  <option value="lofi">✦ Lo-Fi Chill</option>
+                  <option value="hardcore">✦ Hardcore Techno / Gabber</option>
+                  <option value="ambient">✦ Ambient / Cinematic</option>
+                  <option value="podcast">✦ Podcast / Voice Enhancer</option>
+                  <option value="classic">✦ Classical / Orchestral</option>
+                  <option value="jazz">✦ Jazz / Smooth Brass</option>
+                  <option value="acoustic">✦ Acoustic / Folk Singer</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- AI Status HUD Card -->
+            <div class="ai-status-hud card-nested">
+              <div class="ai-status-row">
+                <span class="hud-label">AI Engine Status</span>
+                <span id="ai-status" class="status-badge idle">STANDBY</span>
+              </div>
+              <div class="ai-status-row">
+                <span class="hud-label">Dynamic Range</span>
+                <span id="hud-dynamics-desc" class="hud-value">--</span>
+              </div>
+              <div class="ai-status-row">
+                <span class="hud-label">Stereo Field</span>
+                <span id="hud-stereo-desc" class="hud-value">--</span>
+              </div>
+              <div class="ai-status-row">
+                <span class="hud-label">Detected Style</span>
+                <span id="hud-genre-desc" class="hud-value">--</span>
+              </div>
+            </div>
+
+            <!-- DSP Parameters Telemetry Display -->
+            <div class="ai-params-display">
+              <h4 class="params-header"><i data-lucide="activity"></i> Real-time DSP Telemetry</h4>
+              
+              <div class="param-row-grid">
+                <div class="param-small-card">
+                  <span class="lbl">Bass EQ</span>
+                  <span id="hud-eq-low" class="val">-- dB</span>
+                </div>
+                <div class="param-small-card">
+                  <span class="lbl">Treble EQ</span>
+                  <span id="hud-eq-high" class="val">-- dB</span>
+                </div>
+                <div class="param-small-card">
+                  <span class="lbl">Stereo Width</span>
+                  <span id="hud-width" class="val">--</span>
+                </div>
+                <div class="param-small-card">
+                  <span class="lbl">Hiss Cut</span>
+                  <span id="hud-hiss" class="val">-- %</span>
+                </div>
+              </div>
+
+              <div class="param-card card-nested">
+                <span class="param-title"><i data-lucide="gauge"></i> Dynamics & Limiter Boost</span>
+                <div class="dynamics-info-row">
+                  <div class="info-cell">
+                    <span class="lbl">Threshold</span>
+                    <span id="hud-comp-thresh" class="val">-- dB</span>
+                  </div>
+                  <div class="info-cell">
+                    <span class="lbl">Ratio</span>
+                    <span id="hud-comp-ratio" class="val">--</span>
+                  </div>
+                  <div class="info-cell">
+                    <span class="lbl">Limiter Boost</span>
+                    <span id="hud-limiter-boost" class="val highlight">-- dB</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="param-card card-nested">
+                <span class="param-title"><i data-lucide="cpu"></i> Advanced DSP Engine</span>
+                <div class="dynamics-info-row">
+                  <div class="info-cell">
+                    <span class="lbl">Saturator</span>
+                    <span id="hud-sat-drive" class="val">--</span>
+                  </div>
+                  <div class="info-cell">
+                    <span class="lbl">De-esser</span>
+                    <span id="hud-deesser" class="val">--</span>
+                  </div>
+                  <div class="info-cell">
+                    <span class="lbl">Subsonic</span>
+                    <span id="hud-rumble" class="val">--</span>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </section>
 
@@ -595,13 +582,13 @@
         <img id="mini-artwork" src="https://cdn1.suno.ai/image_large_00000000-0000-0000-0000-000000000000.png" alt="Artwork" class="mini-artwork">
       </div>
       <div class="mini-track-info">
-        <div id="mini-title" class="mini-title">曲を選択してください</div>
+        <div id="mini-title" class="mini-title">Select a track to play</div>
         <div id="mini-artist" class="mini-artist">Suno Artist</div>
       </div>
       <div class="mini-player-actions">
-        <button id="mini-like-btn" class="mini-btn" title="お気に入り"><i data-lucide="heart"></i></button>
-        <button id="mini-play-btn" class="mini-btn mini-play-btn" title="再生"><i data-lucide="play" id="mini-play-icon"></i></button>
-        <button id="mini-next-btn" class="mini-btn" title="次の曲"><i data-lucide="skip-forward"></i></button>
+        <button id="mini-like-btn" class="mini-btn" title="Favorites"><i data-lucide="heart"></i></button>
+        <button id="mini-play-btn" class="mini-btn mini-play-btn" title="Play"><i data-lucide="play" id="mini-play-icon"></i></button>
+        <button id="mini-next-btn" class="mini-btn" title="Next"><i data-lucide="skip-forward"></i></button>
       </div>
     </div>
   </div>
@@ -610,19 +597,19 @@
   <nav id="mobile-nav-bar" class="mobile-nav-bar hidden">
     <button id="nav-btn-library" class="nav-btn active">
       <span class="nav-btn-icon"><i data-lucide="list-music"></i></span>
-      <span class="nav-btn-text">ライブラリ</span>
+      <span class="nav-btn-text">Library</span>
     </button>
     <button id="nav-btn-player" class="nav-btn">
       <span class="nav-btn-icon"><i data-lucide="disc"></i></span>
-      <span class="nav-btn-text">再生画面</span>
+      <span class="nav-btn-text">Player</span>
     </button>
     <button id="nav-btn-utility" class="nav-btn">
       <span class="nav-btn-icon"><i data-lucide="sliders"></i></span>
-      <span class="nav-btn-text">音質・歌詞</span>
+      <span class="nav-btn-text">Enhancer</span>
     </button>
   </nav>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.2.3"></script>
+  <script type="module" src="player.js?v=4.2.5"></script>
 </body>
 </html>
