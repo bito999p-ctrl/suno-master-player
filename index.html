@@ -1,4 +1,4 @@
-<!-- Version: 4.2.16 (Fine Art Studio Edition) -->
+<!-- Version: 4.2.17 (Fine Art Studio Edition) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,6 +32,7 @@
   <!-- Mobile Browser & PWA Integration -->
   <meta name="theme-color" content="#f7f6f3">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="AetherPlayer">
   <meta name="application-name" content="AetherPlayer">
@@ -70,7 +71,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.2.16">
+  <link rel="stylesheet" href="styles.css?v=4.2.17">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -685,7 +686,7 @@
   </div>
 
   <!-- Audio Element (hidden) -->
-  <audio id="audio-player" crossorigin="anonymous"></audio>
+  <audio id="audio-player" crossorigin="anonymous" playsinline webkit-playsinline preload="auto"></audio>
 
   <!-- Mini Player (Floating Mobile Deck) -->
   <div id="mini-player" class="mini-player hidden">
@@ -753,6 +754,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.2.16"></script>
+  <script type="module" src="player.js?v=4.2.17"></script>
 </body>
 </html>
