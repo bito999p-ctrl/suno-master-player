@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.19
+ * Version: 4.2.20
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.19';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.20';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -492,7 +492,74 @@ function updateVolume() {
   }
 }
 
+const GENRE_KEYWORD_MAP = {
+  hardcore: ['hardcore', 'gabber', 'speedcore', 'hardstyle', 'frenchcore', 'terrorcore'],
+  metal: ['metal', 'heavy metal', 'death metal', 'metalcore', 'thrash', 'djent', 'nu metal', 'hard rock'],
+  lofi: ['lo-fi', 'lofi', 'chillhop', 'bedroom pop', 'downtempo', 'lo fi', 'chill beats', 'chillout'],
+  rnb: ['r&b', 'rnb', 'soul', 'neo soul', 'motown', 'urban', 'groove', 'funk'],
+  jazz: ['jazz', 'swing', 'bossa nova', 'fusion', 'bebop', 'smooth jazz', 'brass', 'big band'],
+  classic: ['classical', 'orchestral', 'orchestra', 'symphony', 'piano solo', 'chamber', 'strings', 'cinematic classical'],
+  acoustic: ['acoustic', 'folk', 'unplugged', 'singer-songwriter', 'country', 'indie folk', 'guitar solo', 'ballad'],
+  ambient: ['ambient', 'drone', 'cinematic', 'soundtrack', 'atmospheric', 'new age', 'meditation', 'soundscape'],
+  podcast: ['podcast', 'spoken', 'voice', 'speech', 'interview', 'talk', 'radio', 'narration', 'acapella', 'vocal only'],
+  edm: ['edm', 'electronic', 'house', 'techno', 'trance', 'dubstep', 'dance', 'electro', 'future bass', 'synthwave', 'hyperpop', 'club'],
+  hiphop: ['hip hop', 'hip-hop', 'rap', 'trap', 'boom bap', 'drill', 'phonk', 'hiphop'],
+  rock: ['rock', 'alternative', 'punk', 'grunge', 'indie rock', 'guitar rock', 'j-rock', 'emo'],
+  pops: ['pop', 'j-pop', 'k-pop', 'city pop', 'idol', 'synthpop', 'dance pop', 'anime', 'anison', 'jpop']
+};
+
+function detectGenreFromTrack(track) {
+  if (!track) return null;
+  const searchStr = `${track.title || ''} ${track.tags || ''} ${track.style || ''} ${track.prompt || ''} ${track.description || ''}`.toLowerCase();
+  
+  for (const [genreKey, keywords] of Object.entries(GENRE_KEYWORD_MAP)) {
+    for (const kw of keywords) {
+      if (searchStr.includes(kw.toLowerCase())) {
+        return genreKey;
+      }
+    }
+  }
+  return null;
+}
+
+function autoSelectGenrePreset(detectedGenre, showNotification = true) {
+  if (!detectedGenre) detectedGenre = 'pops';
+  currentPreset = detectedGenre;
+  if (presetSelect) presetSelect.value = detectedGenre;
+  if (mobilePresetSelect) mobilePresetSelect.value = detectedGenre;
+  localStorage.setItem('aether_preset_v2', detectedGenre);
+  
+  applyPresetDSP();
+  
+  const genreLabels = {
+    pops: 'Pops',
+    rnb: 'R&B / Soul',
+    rock: 'Rock / Alternative',
+    metal: 'Heavy Metal',
+    edm: 'EDM / Club',
+    hiphop: 'Hip-Hop / Rap',
+    lofi: 'Lo-Fi Chill',
+    hardcore: 'Hardcore',
+    ambient: 'Ambient / Cinematic',
+    podcast: 'Podcast / Voice',
+    classic: 'Classical',
+    jazz: 'Jazz',
+    acoustic: 'Acoustic / Folk'
+  };
+  const label = genreLabels[detectedGenre] || detectedGenre.toUpperCase();
+  if (showNotification) {
+    showToast(`Mastering: ${label} preset auto-selected`);
+  }
+}
+
 function setMasteringPreset(presetKey) {
+  if (presetKey === 'auto') {
+    const track = tracks[currentTrackIndex];
+    if (track) {
+      runAnalysisForTrack(track, true);
+    }
+    return;
+  }
   currentPreset = presetKey;
   if (presetSelect) presetSelect.value = presetKey;
   if (mobilePresetSelect) mobilePresetSelect.value = presetKey;
@@ -507,22 +574,26 @@ function applyPresetDSP() {
   if (!enhancer) return;
   const basePreset = GENRE_PRESETS[currentPreset] || GENRE_PRESETS.auto;
 
-  if (currentAnalysisResult && currentPreset === 'auto') {
-    enhancer.setMasteringParams(currentAnalysisResult.suggestedParams, currentAnalysisResult.notches);
+  if (currentAnalysisResult) {
+    enhancer.setMasteringParams(currentAnalysisResult.suggestedParams || basePreset, currentAnalysisResult.notches || []);
     updateAiHudUI(currentAnalysisResult);
   } else {
-    enhancer.setMasteringParams(basePreset, currentAnalysisResult ? currentAnalysisResult.notches : []);
+    enhancer.setMasteringParams(basePreset, []);
     updateAiHudUI({ suggestedParams: basePreset, notches: [] });
   }
 }
 
 async function runAnalysisForTrack(track, forceApply = false) {
   if (!track || !track.audio_url) return;
+  const metaGenre = detectGenreFromTrack(track);
+
   if (analysisCache.has(track.audio_url)) {
     const cached = analysisCache.get(track.audio_url);
     currentAnalysisResult = cached;
+    const finalGenre = metaGenre || cached.detectedGenre || 'pops';
+    cached.detectedGenre = finalGenre;
     if (isEnhancerEnabled || forceApply) {
-      applyPresetDSP();
+      autoSelectGenrePreset(finalGenre, forceApply);
       updateAiStatus('active');
     }
     if (aiAnalyzingIndicator) aiAnalyzingIndicator.classList.add('hidden');
@@ -548,17 +619,23 @@ async function runAnalysisForTrack(track, forceApply = false) {
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     currentAudioBuffer = decodedBuffer;
 
-    const analysis = await analyzeAudioResonances(decodedBuffer, currentPreset);
+    const analysis = await analyzeAudioResonances(decodedBuffer, 'auto');
+    const finalGenre = metaGenre || analysis.detectedGenre || 'pops';
+    analysis.detectedGenre = finalGenre;
     analysisCache.set(track.audio_url, analysis);
     currentAnalysisResult = analysis;
 
-    if (isEnhancerEnabled) {
-      applyPresetDSP();
+    if (isEnhancerEnabled || forceApply) {
+      autoSelectGenrePreset(finalGenre, forceApply);
       updateAiStatus('active');
     }
   } catch (err) {
     if (err.name !== 'AbortError') {
       console.warn('[AI Mastering] Analysis warning:', err);
+    }
+    const fallbackGenre = metaGenre || 'pops';
+    if (isEnhancerEnabled || forceApply) {
+      autoSelectGenrePreset(fallbackGenre, forceApply);
     }
     updateAiStatus(isEnhancerEnabled ? 'active' : 'idle');
   } finally {
