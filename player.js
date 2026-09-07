@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.18
+ * Version: 4.2.19
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.18';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.19';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -1512,17 +1512,20 @@ function initEventListeners() {
   if (audioPlayer) {
     let lastPositionUpdate = 0;
     audioPlayer.addEventListener('timeupdate', () => {
-      if (!isUserDraggingProgress && audioPlayer.duration) {
+      if (!audioPlayer.duration) return;
+
+      // Skip DOM updates when backgrounded to eliminate CPU/GPU drain
+      if (!document.hidden && !isUserDraggingProgress) {
         const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
         if (progressBar) progressBar.value = pct;
         if (currentTimeEl) currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
         if (miniProgressFill) miniProgressFill.style.width = `${pct}%`;
+      }
 
-        const now = Date.now();
-        if (now - lastPositionUpdate > 1500) {
-          lastPositionUpdate = now;
-          updateMediaSessionPosition();
-        }
+      const now = Date.now();
+      if (now - lastPositionUpdate > 1500) {
+        lastPositionUpdate = now;
+        updateMediaSessionPosition();
       }
     });
 
@@ -1619,6 +1622,12 @@ function initEventListeners() {
       }
       if (isPlaying) {
         startKeepalive();
+      }
+      if (audioPlayer && audioPlayer.duration) {
+        const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        if (progressBar) progressBar.value = pct;
+        if (currentTimeEl) currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+        if (miniProgressFill) miniProgressFill.style.width = `${pct}%`;
       }
       updateMediaSessionPosition();
     }
