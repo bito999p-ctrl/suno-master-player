@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.17
+ * Version: 4.2.18
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.17';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.18';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -56,6 +56,27 @@ const backToLandingBtn = document.getElementById('back-to-landing-btn');
 const headerLogoBtn = document.getElementById('header-logo-btn');
 const shareBtn = document.getElementById('share-btn');
 const audioPlayer = document.getElementById('audio-player');
+const bgKeepalive = document.getElementById('bg-keepalive');
+
+function startKeepalive() {
+  if ('audioSession' in navigator) {
+    try {
+      navigator.audioSession.type = 'playback';
+    } catch (e) {}
+  }
+  const el = bgKeepalive || document.getElementById('bg-keepalive');
+  if (el && el.paused) {
+    el.volume = 0.001;
+    el.play().catch(() => {});
+  }
+}
+
+function pauseKeepalive() {
+  const el = bgKeepalive || document.getElementById('bg-keepalive');
+  if (el && !el.paused) {
+    el.pause();
+  }
+}
 
 // History & Dropdown
 const historyToggleBtn = document.getElementById('history-toggle-btn');
@@ -432,11 +453,23 @@ function handleShare() {
 // Audio Engine & DSP Management
 // ============================================================================
 function initAudio() {
+  if ('audioSession' in navigator) {
+    try {
+      navigator.audioSession.type = 'playback';
+    } catch (e) {}
+  }
   if (!audioCtx) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContextClass();
+    if (audioCtx) {
+      audioCtx.onstatechange = () => {
+        if (audioCtx.state === 'suspended' && isPlaying) {
+          audioCtx.resume().catch(() => {});
+        }
+      };
+    }
   }
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume().catch(() => {});
   }
   if (!enhancer && audioCtx) {
@@ -1505,6 +1538,7 @@ function initEventListeners() {
         navigator.mediaSession.playbackState = 'playing';
       }
       updateMediaSessionPosition();
+      startKeepalive();
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume().catch(() => {});
       }
@@ -1517,6 +1551,7 @@ function initEventListeners() {
         navigator.mediaSession.playbackState = 'paused';
       }
       updateMediaSessionPosition();
+      pauseKeepalive();
     });
 
     audioPlayer.addEventListener('ended', () => {
@@ -1527,7 +1562,10 @@ function initEventListeners() {
         playNext();
       } else {
         if (currentTrackIndex < tracks.length - 1) playNext();
-        else isPlaying = false;
+        else {
+          isPlaying = false;
+          pauseKeepalive();
+        }
       }
       updatePlayStateUI();
       updateMediaSessionPosition();
@@ -1579,6 +1617,9 @@ function initEventListeners() {
       if (audioCtx && audioCtx.state === 'suspended' && isPlaying) {
         audioCtx.resume().catch(() => {});
       }
+      if (isPlaying) {
+        startKeepalive();
+      }
       updateMediaSessionPosition();
     }
   });
@@ -1586,6 +1627,9 @@ function initEventListeners() {
   window.addEventListener('focus', () => {
     if (audioCtx && audioCtx.state === 'suspended' && isPlaying) {
       audioCtx.resume().catch(() => {});
+    }
+    if (isPlaying) {
+      startKeepalive();
     }
   });
 
