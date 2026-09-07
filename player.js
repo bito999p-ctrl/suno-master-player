@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.20
+ * Version: 4.2.21
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.20';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.21';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -492,34 +492,69 @@ function updateVolume() {
   }
 }
 
-const GENRE_KEYWORD_MAP = {
-  hardcore: ['hardcore', 'gabber', 'speedcore', 'hardstyle', 'frenchcore', 'terrorcore'],
-  metal: ['metal', 'heavy metal', 'death metal', 'metalcore', 'thrash', 'djent', 'nu metal', 'hard rock'],
-  lofi: ['lo-fi', 'lofi', 'chillhop', 'bedroom pop', 'downtempo', 'lo fi', 'chill beats', 'chillout'],
-  rnb: ['r&b', 'rnb', 'soul', 'neo soul', 'motown', 'urban', 'groove', 'funk'],
-  jazz: ['jazz', 'swing', 'bossa nova', 'fusion', 'bebop', 'smooth jazz', 'brass', 'big band'],
-  classic: ['classical', 'orchestral', 'orchestra', 'symphony', 'piano solo', 'chamber', 'strings', 'cinematic classical'],
-  acoustic: ['acoustic', 'folk', 'unplugged', 'singer-songwriter', 'country', 'indie folk', 'guitar solo', 'ballad'],
-  ambient: ['ambient', 'drone', 'cinematic', 'soundtrack', 'atmospheric', 'new age', 'meditation', 'soundscape'],
-  podcast: ['podcast', 'spoken', 'voice', 'speech', 'interview', 'talk', 'radio', 'narration', 'acapella', 'vocal only'],
-  edm: ['edm', 'electronic', 'house', 'techno', 'trance', 'dubstep', 'dance', 'electro', 'future bass', 'synthwave', 'hyperpop', 'club'],
-  hiphop: ['hip hop', 'hip-hop', 'rap', 'trap', 'boom bap', 'drill', 'phonk', 'hiphop'],
-  rock: ['rock', 'alternative', 'punk', 'grunge', 'indie rock', 'guitar rock', 'j-rock', 'emo'],
-  pops: ['pop', 'j-pop', 'k-pop', 'city pop', 'idol', 'synthpop', 'dance pop', 'anime', 'anison', 'jpop']
+const GENRE_KEYWORD_RULES = {
+  hardcore: ['hardcore', 'gabber', 'speedcore', 'hardstyle', 'frenchcore', 'terrorcore', 'uptempo'],
+  metal: ['heavy metal', 'death metal', 'thrash', 'metalcore', 'djent', 'nu metal', 'hard rock', 'power chords', 'blast beat', 'metal'],
+  lofi: ['lo-fi', 'lofi', 'chillhop', 'bedroom pop', 'downtempo', 'chill beats', 'tape saturation', 'cassette', 'lo fi', 'chillout'],
+  rnb: ['r&b', 'rnb', 'neo soul', 'motown', 'urban groove', 'soul', 'funk', 'fretless bass', 'slow jam', 'groove'],
+  jazz: ['electro-swing', 'swing', 'bossa nova', 'fusion', 'bebop', 'smooth jazz', 'brass section', 'walking bass', 'big band', 'saxophone', 'chiptune jazz', 'jazz'],
+  classic: ['orchestral', 'orchestra', 'symphony', 'chamber', 'cello', 'violin', 'legato strings', 'cinematic classical', 'choir', 'polyphony', 'classical', 'gospel'],
+  acoustic: ['acoustic guitar', 'fingerpicking', 'fingerpicked', 'unplugged', 'singer-songwriter', 'indie folk', 'felt piano', 'acoustic', 'folk'],
+  ambient: ['ambient', 'drone', 'cinematic', 'soundtrack', 'atmospheric', 'new age', 'meditation', 'soundscape', 'space ambient', 'dream pop'],
+  podcast: ['podcast', 'spoken word', 'speech', 'interview', 'narration', 'acapella', 'asmr', 'whisper', 'voice only'],
+  edm: ['edm', 'electronic', 'electro', 'house', 'techno', 'trance', 'dubstep', 'future bass', 'synthwave', 'hyperpop', 'disco', 'breakbeat', 'eurobeat', 'dnb', 'drum and bass', 'club', 'dance'],
+  hiphop: ['old school hip hop', 'hip hop', 'hip-hop', 'boom bap', 'drill', 'phonk', 'rap', 'trap'],
+  rock: ['alternative rock', 'j-rock', 'jrock', 'punk', 'grunge', 'indie rock', 'guitar rock', 'garage rock', 'psychedelic rock', 'glam rock', 'power pop', 'shoegaze', 'post-rock', 'rock'],
+  pops: ['j-pop', 'jpop', 'k-pop', 'city pop', 'idol', 'dance pop', 'anime', 'anison', 'shibuya-kei', 'art pop', 'pop']
 };
+
+function extractBracketCues(text) {
+  if (!text) return '';
+  const matches = text.match(/\[(.*?)\]/g);
+  return matches ? matches.map(m => m.slice(1, -1)).join(' ') : '';
+}
 
 function detectGenreFromTrack(track) {
   if (!track) return null;
-  const searchStr = `${track.title || ''} ${track.tags || ''} ${track.style || ''} ${track.prompt || ''} ${track.description || ''}`.toLowerCase();
-  
-  for (const [genreKey, keywords] of Object.entries(GENRE_KEYWORD_MAP)) {
+  const tagsStr = (track.tags || '').toLowerCase();
+  const styleStr = (track.style || '').toLowerCase();
+  const titleStr = (track.title || '').toLowerCase();
+  const bracketStr = extractBracketCues(track.prompt || '').toLowerCase();
+
+  const scores = {};
+  for (const genre of Object.keys(GENRE_KEYWORD_RULES)) {
+    scores[genre] = 0;
+  }
+
+  for (const [genre, keywords] of Object.entries(GENRE_KEYWORD_RULES)) {
     for (const kw of keywords) {
-      if (searchStr.includes(kw.toLowerCase())) {
-        return genreKey;
+      const kwLower = kw.toLowerCase();
+      if (tagsStr.includes(kwLower)) {
+        scores[genre] += 12;
+      }
+      if (styleStr.includes(kwLower)) {
+        scores[genre] += 8;
+      }
+      if (titleStr.includes(kwLower)) {
+        scores[genre] += 6;
+      }
+      if (bracketStr.includes(kwLower)) {
+        scores[genre] += 5;
       }
     }
   }
-  return null;
+
+  let bestGenre = null;
+  let highestScore = 0;
+
+  for (const [genre, score] of Object.entries(scores)) {
+    if (score > highestScore) {
+      highestScore = score;
+      bestGenre = genre;
+    }
+  }
+
+  return bestGenre;
 }
 
 function autoSelectGenrePreset(detectedGenre, showNotification = true) {

@@ -541,34 +541,41 @@ export function analyzeAudioResonances(buffer, userPresetKey) {
     sibilanceDynamicFreq = rawSibilancePeaks[0].freq;
   }
 
-  // 決定木型ジャンル自動検出 (2パス実効解析による周波数バランス比率分類)
+  // 決定木型ジャンル自動検出 (2パス実効解析による周波数バランス比率分類 - Suno AI 音源最適化版)
   let detectedGenre = 'pops';
-  if (actualLowMidRatio > 3.2) {
-    // 重低音が強烈な電子音楽・クラブ系
-    if (actualHighMidRatio > 0.09 || actualPresenceRatio > 0.38) {
+  if (crestFactorDb >= 11.5) {
+    // ダイナミックレンジが広く自然な強弱のある音楽（生楽器・クラシック・ジャズ・アコースティック）
+    if (actualHighMidRatio < 0.05 && actualLowMidRatio < 2.2) {
+      detectedGenre = 'classic';
+    } else if (actualLowMidRatio >= 2.2 && actualLowMidRatio <= 3.0) {
+      detectedGenre = 'jazz';
+    } else {
+      detectedGenre = 'acoustic';
+    }
+  } else if (actualLowMidRatio > 3.2) {
+    // 重低音（サブベース）が支配的な電子音楽・クラブ・ヒップホップ・ハードコア
+    if (actualHighMidRatio > 0.16) {
+      detectedGenre = 'hardcore';
+    } else if (actualHighMidRatio > 0.08 || actualPresenceRatio > 0.38) {
       detectedGenre = 'edm';
     } else {
       detectedGenre = 'hiphop';
     }
-  } else if (actualPresenceRatio > 0.42) {
-    // 中高域（1.5kHz-5kHzのギター壁・ボーカル）が際立つ激しい音楽
-    if (actualHighMidRatio > 0.12 || actualLowMidRatio > 3.0) {
+  } else if (actualHighMidRatio < 0.06 && actualLowMidRatio >= 2.3) {
+    // 高域が急峻に減衰し、ローミッドが太い Lo-Fi Chill
+    detectedGenre = 'lofi';
+  } else if (actualPresenceRatio > 0.52) {
+    // ギター壁・過激な歪みエネルギーが突出したメタル/ロック（一般的なボーカルポップスを除外する高いしきい値）
+    if (actualHighMidRatio > 0.14 || actualLowMidRatio > 3.0) {
       detectedGenre = 'metal';
     } else {
       detectedGenre = 'rock';
     }
-  } else if (crestFactorDb >= 12.8) {
-    // ダイナミックレンジが広く圧縮感のない音楽
-    if (actualLowMidRatio >= 2.2 && actualLowMidRatio <= 3.0) {
-      detectedGenre = 'jazz';
-    } else if (actualLowMidRatio < 2.2 && actualHighMidRatio < 0.03) {
-      detectedGenre = 'classic';
-    } else {
-      detectedGenre = 'acoustic';
-    }
-  } else if (actualLowMidRatio < 2.0 && actualHighMidRatio < 0.10) {
+  } else if (actualLowMidRatio < 1.8 && actualHighMidRatio < 0.08) {
+    // 低域がなくナレーション・音声主体のポッドキャスト
     detectedGenre = 'podcast';
   } else {
+    // 通常のボーカル主体のポップス・J-Pop・シンセポップ
     detectedGenre = 'pops';
   }
 

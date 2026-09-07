@@ -1,4 +1,4 @@
-// Version: 4.2.20
+// Version: 4.2.21
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -144,6 +144,8 @@ app.get('/api/suno', async (req, res) => {
                 artist = 'Bito';
               }
 
+              const tags = (clip.metadata && clip.metadata.tags) || clip.tags || '';
+              const style = (clip.metadata && clip.metadata.gpt_description_prompt) || '';
               const prompt = (clip.metadata && clip.metadata.prompt) || clip.prompt || '';
 
               tracks.push({
@@ -156,6 +158,8 @@ app.get('/api/suno', async (req, res) => {
                 duration: clip.duration || 0,
                 play_count: clip.play_count || 0,
                 upvote_count: clip.upvote_count || 0,
+                tags: tags,
+                style: style,
                 prompt: prompt,
                 description: prompt,
                 lyrics: prompt
@@ -375,6 +379,12 @@ app.get('/api/suno', async (req, res) => {
             const upvoteMatch = trackBlock.match(/"upvote_count"\s*:\s*([0-9]+)/i);
             const upvote_count = upvoteMatch ? parseInt(upvoteMatch[1], 10) : 0;
 
+            const tagsMatch = trackBlock.match(/"tags"\s*:\s*"([^"]+)"/i);
+            const tags = tagsMatch ? tagsMatch[1] : '';
+
+            const styleMatch = trackBlock.match(/"gpt_description_prompt"\s*:\s*"([^"]+)"/i);
+            const style = styleMatch ? styleMatch[1] : '';
+
             const promptMatch = trackBlock.match(/"prompt"\s*:\s*"([^"]+)"/i);
             let prompt = '';
             if (promptMatch) {
@@ -400,6 +410,8 @@ app.get('/api/suno', async (req, res) => {
               duration,
               play_count,
               upvote_count,
+              tags: tags,
+              style: style,
               prompt: prompt,
               description: prompt,
               lyrics: prompt,

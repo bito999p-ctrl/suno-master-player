@@ -50,6 +50,10 @@ async function syncPlaylist() {
         artist = 'Bito';
       }
 
+      const tags = (clip.metadata && clip.metadata.tags) || clip.tags || '';
+      const style = (clip.metadata && clip.metadata.gpt_description_prompt) || '';
+      const prompt = (clip.metadata && clip.metadata.prompt) || clip.prompt || '';
+
       tracks.push({
         id: id,
         title: title,
@@ -59,7 +63,11 @@ async function syncPlaylist() {
         duration: clip.duration || 0,
         play_count: clip.play_count || 0,
         upvote_count: clip.upvote_count || 0,
-        prompt: (clip.metadata && clip.metadata.prompt) || ''
+        tags: tags,
+        style: style,
+        prompt: prompt,
+        lyrics: prompt,
+        description: prompt
       });
     }
 
