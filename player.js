@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.22
+ * Version: 4.2.23
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.22';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.23';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -650,6 +650,14 @@ async function runAnalysisForTrack(track, forceApply = false) {
   if (!track || !track.audio_url) return;
   const metaGenre = detectGenreFromTrack(track);
 
+  // Background Optimization: If running in background, apply metadata genre instantly
+  // and avoid redundant full-track network download & FFT analysis (Spotify standard efficiency)
+  if (document.hidden && !forceApply && metaGenre) {
+    autoSelectGenrePreset(metaGenre, false);
+    updateAiStatus('active');
+    return;
+  }
+
   if (analysisCache.has(track.audio_url)) {
     const cached = analysisCache.get(track.audio_url);
     currentAnalysisResult = cached;
@@ -786,9 +794,9 @@ function updateMediaSession(track) {
       artist: getNormalizedArtist(track.artist_name || track.artist),
       album: 'AetherPlayer',
       artwork: [
-        { src: track.image_url || '', sizes: '512x512', type: 'image/png' },
-        { src: track.image_url || '', sizes: '256x256', type: 'image/png' },
-        { src: track.image_url || '', sizes: '128x128', type: 'image/png' }
+        { src: track.image_url || '', sizes: '512x512' },
+        { src: track.image_url || '', sizes: '256x256' },
+        { src: track.image_url || '', sizes: '128x128' }
       ]
     });
     navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
@@ -965,8 +973,17 @@ function togglePlay() {
 function playNext() {
   if (tracks.length === 0) return;
   if (isShuffle) {
-    const rand = Math.floor(Math.random() * tracks.length);
-    selectTrack(rand);
+    if (tracks.length > 1) {
+      let rand = Math.floor(Math.random() * tracks.length);
+      let attempts = 0;
+      while (rand === currentTrackIndex && attempts < 10) {
+        rand = Math.floor(Math.random() * tracks.length);
+        attempts++;
+      }
+      selectTrack(rand);
+    } else {
+      selectTrack(0);
+    }
   } else {
     let nextIdx = currentTrackIndex + 1;
     if (nextIdx >= tracks.length) nextIdx = 0;
@@ -976,6 +993,12 @@ function playNext() {
 
 function playPrev() {
   if (tracks.length === 0) return;
+  // Spotify standard: if > 3s into the track, restart from beginning
+  if (audioPlayer && audioPlayer.currentTime > 3.0) {
+    audioPlayer.currentTime = 0;
+    updateMediaSessionPosition();
+    return;
+  }
   let prevIdx = currentTrackIndex - 1;
   if (prevIdx < 0) prevIdx = tracks.length - 1;
   selectTrack(prevIdx);
@@ -1722,6 +1745,17 @@ function initEventListeners() {
       updatePlayStateUI();
       updateMediaSessionPosition();
     });
+
+    audioPlayer.addEventListener('error', (e) => {
+      console.warn('[AudioEngine] audioPlayer encountered playback error:', e);
+      isPlaying = false;
+      pauseKeepalive();
+      updatePlayStateUI();
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
+      showToast('Audio playback error occurred.');
+    });
   }
 
   // Background Keepalive Audio Canary (Detects OS Audio Session Interruption e.g. YouTube / Phone Call)
@@ -1730,6 +1764,16 @@ function initEventListeners() {
       if (isPlaying && audioPlayer && !audioPlayer.paused) {
         console.warn('[AudioEngine] bgKeepalive paused externally (OS audio focus loss).');
         handleAudioInterrupted();
+      }
+    });
+  }
+
+  // Become Noisy Protection: If Bluetooth/earphones disconnect, pause playback immediately
+  if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === 'function') {
+    navigator.mediaDevices.addEventListener('devicechange', () => {
+      if (isPlaying && audioPlayer && !audioPlayer.paused) {
+        console.log('[AudioEngine] Audio device changed (headphones/Bluetooth disconnected). Pausing playback.');
+        audioPlayer.pause();
       }
     });
   }
