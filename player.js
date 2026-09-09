@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.30
+ * Version: 4.2.31
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS, LOUDNESS_TARGETS } from './audio-engine.js?v=4.2.30';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS, LOUDNESS_TARGETS } from './audio-engine.js?v=4.2.31';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -588,63 +588,42 @@ function detectGenreFromTrack(track) {
   return bestGenre;
 }
 
-function autoSelectGenrePreset(detectedGenre, showNotification = true) {
-  if (!detectedGenre) detectedGenre = 'pops';
-  currentPreset = detectedGenre;
-  if (presetSelect) presetSelect.value = detectedGenre;
-  if (mobilePresetSelect) mobilePresetSelect.value = detectedGenre;
-  localStorage.setItem('aether_preset_v2', detectedGenre);
-  
-  applyPresetDSP();
-  
-  const genreLabels = {
-    pops: 'Pops',
-    rnb: 'R&B / Soul',
-    rock: 'Rock / Alternative',
-    metal: 'Heavy Metal',
-    edm: 'EDM / Club',
-    hiphop: 'Hip-Hop / Rap',
-    lofi: 'Lo-Fi Chill',
-    hardcore: 'Hardcore',
-    ambient: 'Ambient / Cinematic',
-    podcast: 'Podcast / Voice',
-    classic: 'Classical',
-    jazz: 'Jazz',
-    acoustic: 'Acoustic / Folk'
-  };
-  const label = genreLabels[detectedGenre] || detectedGenre.toUpperCase();
-  if (showNotification) {
-    showToast(`Mastering: ${label} preset auto-selected`);
-  }
-}
-
-function setMasteringPreset(presetKey) {
-  if (presetKey === 'auto') {
-    currentPreset = 'auto';
-    if (presetSelect) presetSelect.value = 'auto';
-    if (mobilePresetSelect) mobilePresetSelect.value = 'auto';
-    localStorage.setItem('aether_preset_v2', 'auto');
-
-    if (currentAnalysisResult) {
-      if (isEnhancerEnabled) {
-        applyPresetDSP();
-      }
-    } else {
-      const track = tracks[currentTrackIndex];
-      if (track) {
-        runAnalysisForTrack(track, true);
-      }
-    }
-    return;
-  }
-
+function setMasteringPreset(presetKey, notify = false) {
   currentPreset = presetKey;
   if (presetSelect) presetSelect.value = presetKey;
   if (mobilePresetSelect) mobilePresetSelect.value = presetKey;
   localStorage.setItem('aether_preset_v2', presetKey);
 
   if (isEnhancerEnabled) {
+    if (presetKey === 'auto' && !currentAnalysisResult) {
+      const track = tracks[currentTrackIndex];
+      if (track) {
+        runAnalysisForTrack(track, true);
+        return;
+      }
+    }
     applyPresetDSP();
+  }
+
+  if (notify) {
+    const genreLabels = {
+      auto: 'AI Auto-Optimized',
+      pops: 'Pops',
+      rnb: 'R&B / Soul',
+      rock: 'Rock / Alternative',
+      metal: 'Heavy Metal',
+      edm: 'EDM / Club',
+      hiphop: 'Hip-Hop / Rap',
+      lofi: 'Lo-Fi Chill',
+      hardcore: 'Hardcore',
+      ambient: 'Ambient / Cinematic',
+      podcast: 'Podcast / Voice',
+      classic: 'Classical',
+      jazz: 'Jazz',
+      acoustic: 'Acoustic / Folk'
+    };
+    const label = genreLabels[presetKey] || presetKey.toUpperCase();
+    showToast(`Mastering: ${label} preset selected`);
   }
 }
 
@@ -719,10 +698,11 @@ async function runAnalysisForTrack(track, forceApply = false) {
   if (!track || !track.audio_url) return;
   const metaGenre = detectGenreFromTrack(track);
 
-  // Background Optimization: If running in background, apply metadata genre instantly
-  // and avoid redundant full-track network download & FFT analysis (Spotify standard efficiency)
-  if (document.hidden && !forceApply && metaGenre) {
-    autoSelectGenrePreset(metaGenre, false);
+  // Background Optimization: If running in background, preserve Spotify background efficiency
+  if (document.hidden && !forceApply) {
+    if (isEnhancerEnabled) {
+      applyPresetDSP();
+    }
     updateAiStatus('active');
     return;
   }
@@ -730,10 +710,9 @@ async function runAnalysisForTrack(track, forceApply = false) {
   if (analysisCache.has(track.audio_url)) {
     const cached = analysisCache.get(track.audio_url);
     currentAnalysisResult = cached;
-    const finalGenre = metaGenre || cached.detectedGenre || 'pops';
-    cached.detectedGenre = finalGenre;
+    if (metaGenre) cached.detectedGenre = metaGenre;
     if (isEnhancerEnabled || forceApply) {
-      autoSelectGenrePreset(finalGenre, forceApply);
+      applyPresetDSP();
       updateAiStatus('active');
     }
     if (aiAnalyzingIndicator) aiAnalyzingIndicator.classList.add('hidden');
@@ -766,16 +745,15 @@ async function runAnalysisForTrack(track, forceApply = false) {
     currentAnalysisResult = analysis;
 
     if (isEnhancerEnabled || forceApply) {
-      autoSelectGenrePreset(finalGenre, forceApply);
+      applyPresetDSP();
       updateAiStatus('active');
     }
   } catch (err) {
     if (err.name !== 'AbortError') {
       console.warn('[AI Mastering] Analysis warning:', err);
     }
-    const fallbackGenre = metaGenre || 'pops';
     if (isEnhancerEnabled || forceApply) {
-      autoSelectGenrePreset(fallbackGenre, forceApply);
+      applyPresetDSP();
     }
     updateAiStatus(isEnhancerEnabled ? 'active' : 'idle');
   } finally {
@@ -830,7 +808,10 @@ function updateAiHudUI(result) {
 
   if (hudDynamicsDesc) hudDynamicsDesc.textContent = result && result.crestDesc ? result.crestDesc : 'Normal (Balanced)';
   if (hudStereoDesc) hudStereoDesc.textContent = result && result.correlationDesc ? result.correlationDesc : 'Balanced Stereo';
-  if (hudGenreDesc) hudGenreDesc.textContent = currentPreset.toUpperCase();
+  if (hudGenreDesc) {
+    const detected = result && result.detectedGenre ? result.detectedGenre.toUpperCase() : (currentAnalysisResult?.detectedGenre?.toUpperCase() || 'POPS');
+    hudGenreDesc.textContent = currentPreset === 'auto' ? `AI AUTO (${detected})` : currentPreset.toUpperCase();
+  }
 }
 
 function handleEnhancerToggleChange(isActive) {
@@ -1870,10 +1851,10 @@ function initEventListeners() {
     mobileEnhancerToggle.addEventListener('change', () => handleEnhancerToggleChange(mobileEnhancerToggle.checked));
   }
   if (presetSelect) {
-    presetSelect.addEventListener('change', () => setMasteringPreset(presetSelect.value));
+    presetSelect.addEventListener('change', () => setMasteringPreset(presetSelect.value, true));
   }
   if (mobilePresetSelect) {
-    mobilePresetSelect.addEventListener('change', () => setMasteringPreset(mobilePresetSelect.value));
+    mobilePresetSelect.addEventListener('change', () => setMasteringPreset(mobilePresetSelect.value, true));
   }
   if (loudnessSelect) {
     loudnessSelect.addEventListener('change', () => setLoudnessTarget(loudnessSelect.value));
@@ -1964,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mobileEnhancerToggle) mobileEnhancerToggle.checked = isEnhancerEnabled;
 
   const savedPreset = localStorage.getItem('aether_preset_v2') || 'auto';
-  setMasteringPreset(savedPreset);
+  setMasteringPreset(savedPreset, false);
 
   const savedLoudness = localStorage.getItem('aether_loudness_target') || 'genre';
   setLoudnessTarget(savedLoudness);
