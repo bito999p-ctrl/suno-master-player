@@ -186,7 +186,7 @@ export const LOUDNESS_TARGETS = {
   pure: { boost: 0.0, clipper: 0.0 }        // High Dynamic Range -18 LUFS target
 }
 
-function generateMasteringClipCurve(driveDb = 0.0) {
+export function generateMasteringClipCurve(driveDb = 0.0) {
   const n_samples = 65536; // high resolution for mastering precision
   const curve = new Float32Array(n_samples);
   if (!driveDb || driveDb <= 0.05) {
@@ -214,7 +214,7 @@ function generateMasteringClipCurve(driveDb = 0.0) {
   return curve;
 }
 
-function generateSoftClipCurve() {
+export function generateSoftClipCurve() {
   const n_samples = 65536;
   const curve = new Float32Array(n_samples);
   const threshold = 0.85; // Linear up to 0.85 (-1.4 dBFS) to preserve bit transparency
@@ -234,7 +234,7 @@ function generateSoftClipCurve() {
   return curve;
 }
 
-function generateSaturatorCurve(type, drive) {
+export function generateSaturatorCurve(type, drive) {
   const n_samples = 44100;
   const curve = new Float32Array(n_samples);
   
