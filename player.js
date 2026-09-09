@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.28
+ * Version: 4.2.29
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.28';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS, LOUDNESS_TARGETS } from './audio-engine.js?v=4.2.29';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -42,6 +42,7 @@ let currentAnalysisResult = null;
 let isUserDraggingProgress = false;
 let isEnhancerEnabled = false;
 let currentPreset = 'auto';
+let currentLoudnessTarget = localStorage.getItem('aether_loudness_target') || 'genre';
 
 // ============================================================================
 // DOM Element References
@@ -143,6 +144,8 @@ const repeatBtn = document.getElementById('repeat-btn');
 const volumeSlider = document.getElementById('volume-slider');
 const presetSelect = document.getElementById('preset-select');
 const mobilePresetSelect = document.getElementById('mobile-preset-select');
+const loudnessSelect = document.getElementById('loudness-select');
+const mobileLoudnessSelect = document.getElementById('mobile-loudness-select');
 const enhancerToggle = document.getElementById('enhancer-toggle');
 const mobileEnhancerToggle = document.getElementById('mobile-enhancer-toggle');
 
@@ -617,12 +620,24 @@ function autoSelectGenrePreset(detectedGenre, showNotification = true) {
 
 function setMasteringPreset(presetKey) {
   if (presetKey === 'auto') {
-    const track = tracks[currentTrackIndex];
-    if (track) {
-      runAnalysisForTrack(track, true);
+    currentPreset = 'auto';
+    if (presetSelect) presetSelect.value = 'auto';
+    if (mobilePresetSelect) mobilePresetSelect.value = 'auto';
+    localStorage.setItem('aether_preset_v2', 'auto');
+
+    if (currentAnalysisResult) {
+      if (isEnhancerEnabled) {
+        applyPresetDSP();
+      }
+    } else {
+      const track = tracks[currentTrackIndex];
+      if (track) {
+        runAnalysisForTrack(track, true);
+      }
     }
     return;
   }
+
   currentPreset = presetKey;
   if (presetSelect) presetSelect.value = presetKey;
   if (mobilePresetSelect) mobilePresetSelect.value = presetKey;
@@ -633,17 +648,68 @@ function setMasteringPreset(presetKey) {
   }
 }
 
+function setLoudnessTarget(targetKey) {
+  currentLoudnessTarget = targetKey;
+  if (loudnessSelect) loudnessSelect.value = targetKey;
+  if (mobileLoudnessSelect) mobileLoudnessSelect.value = targetKey;
+  localStorage.setItem('aether_loudness_target', targetKey);
+
+  if (isEnhancerEnabled) {
+    applyPresetDSP();
+  }
+
+  const loudnessLabels = {
+    genre: 'Genre Default (標準)',
+    streaming: 'Streaming (-14 LUFS)',
+    club: 'Club / Modern (-9 LUFS)',
+    loud: 'Loud & Punchy (-7 LUFS)',
+    pure: 'Pure Dynamics (-18 LUFS)'
+  };
+  const label = loudnessLabels[targetKey] || targetKey.toUpperCase();
+  showToast(`Loudness Target: ${label}`);
+}
+
 function applyPresetDSP() {
   if (!enhancer) return;
-  const basePreset = GENRE_PRESETS[currentPreset] || GENRE_PRESETS.auto;
+  let targetParams;
+  const notches = currentAnalysisResult ? (currentAnalysisResult.notches || []) : [];
 
-  if (currentAnalysisResult) {
-    enhancer.setMasteringParams(currentAnalysisResult.suggestedParams || basePreset, currentAnalysisResult.notches || []);
-    updateAiHudUI(currentAnalysisResult);
+  if (currentPreset === 'auto') {
+    if (currentAnalysisResult && currentAnalysisResult.suggestedParams) {
+      targetParams = { ...currentAnalysisResult.suggestedParams };
+    } else {
+      targetParams = { ...(GENRE_PRESETS.auto || {}) };
+    }
   } else {
-    enhancer.setMasteringParams(basePreset, []);
-    updateAiHudUI({ suggestedParams: basePreset, notches: [] });
+    // Specific manual genre preset selected
+    if (currentAudioBuffer) {
+      // Dynamic acoustic resonance analysis tailored to this song with the chosen genre target!
+      const dynamicResult = analyzeAudioResonances(currentAudioBuffer, currentPreset);
+      targetParams = { ...dynamicResult.suggestedParams };
+    } else {
+      const basePreset = GENRE_PRESETS[currentPreset] || GENRE_PRESETS.auto;
+      targetParams = { ...basePreset };
+      // Retain measured input gain staging and corrective cleaning from previous analysis if available
+      if (currentAnalysisResult && currentAnalysisResult.suggestedParams) {
+        targetParams.inputGainDb = currentAnalysisResult.suggestedParams.inputGainDb;
+        targetParams.rumbleCutEnabled = currentAnalysisResult.suggestedParams.rumbleCutEnabled;
+        targetParams.hissReductionAmount = currentAnalysisResult.suggestedParams.hissReductionAmount;
+        targetParams.deesserAmount = currentAnalysisResult.suggestedParams.deesserAmount;
+      }
+    }
   }
+
+  // Apply Loudness Target overrides if selected
+  if (currentLoudnessTarget && currentLoudnessTarget !== 'genre') {
+    const t = LOUDNESS_TARGETS[currentLoudnessTarget];
+    if (t) {
+      if (t.boost !== null) targetParams.limiterBoost = t.boost;
+      if (t.clipper !== null) targetParams.clipperDrive = t.clipper;
+    }
+  }
+
+  enhancer.setMasteringParams(targetParams, notches);
+  updateAiHudUI({ suggestedParams: targetParams, notches });
 }
 
 async function runAnalysisForTrack(track, forceApply = false) {
@@ -1806,6 +1872,12 @@ function initEventListeners() {
   if (mobilePresetSelect) {
     mobilePresetSelect.addEventListener('change', () => setMasteringPreset(mobilePresetSelect.value));
   }
+  if (loudnessSelect) {
+    loudnessSelect.addEventListener('change', () => setLoudnessTarget(loudnessSelect.value));
+  }
+  if (mobileLoudnessSelect) {
+    mobileLoudnessSelect.addEventListener('change', () => setLoudnessTarget(mobileLoudnessSelect.value));
+  }
 
   // Sheet Overlays
   if (openLyricsBtn && playerLyricsOverlay) {
@@ -1890,6 +1962,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const savedPreset = localStorage.getItem('aether_preset_v2') || 'auto';
   setMasteringPreset(savedPreset);
+
+  const savedLoudness = localStorage.getItem('aether_loudness_target') || 'genre';
+  setLoudnessTarget(savedLoudness);
 
   initEventListeners();
   loadStorageData();

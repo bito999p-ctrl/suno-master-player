@@ -3,8 +3,9 @@
  * Automatically synced from audio-mastering-tool/app.js.
  */
 
-// Global mock state required by analyzeAudioResonances
-const baseLoudnessTarget = 'genre';
+// Global state required by analyzeAudioResonances
+export let baseLoudnessTarget = undefined;
+export function setEngineLoudnessTarget(val) { baseLoudnessTarget = val; }
 const params = { limiterBoost: 3.5, clipperDrive: 1.5 };
 
 export const GENRE_PRESETS = {
