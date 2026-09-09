@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.24
+ * Version: 4.2.25
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.24';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.25';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -743,7 +743,11 @@ function updateAiHudUI(result) {
 
   if (hudCompThresh) hudCompThresh.textContent = `${(sug.compThreshold || -8).toFixed(1)} dB`;
   if (hudCompRatio) hudCompRatio.textContent = `${(sug.compRatio || 1.35).toFixed(2)}:1`;
-  if (hudLimiterBoost) hudLimiterBoost.textContent = `+${(sug.limiterBoost || 3.5).toFixed(1)} dB`;
+  if (hudLimiterBoost) {
+    const boost = sug.limiterBoost !== undefined ? sug.limiterBoost : 3.5;
+    const clip = sug.clipperDrive ? ` (Clip: +${Number(sug.clipperDrive).toFixed(1)}dB)` : '';
+    hudLimiterBoost.textContent = `+${Number(boost).toFixed(1)} dB${clip}`;
+  }
 
   if (hudSatDrive) {
     hudSatDrive.textContent = sug.satEnabled && sug.satDrive > 0 ? `${sug.satType ? sug.satType.toUpperCase() : 'TUBE'} (${sug.satDrive})` : 'OFF';
