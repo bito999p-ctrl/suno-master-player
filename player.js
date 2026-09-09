@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.23
+ * Version: 4.2.24
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.23';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS } from './audio-engine.js?v=4.2.24';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -478,7 +478,7 @@ function initAudio() {
     try {
       navigator.audioSession.type = 'playback';
       navigator.audioSession.addEventListener('statechange', () => {
-        if (navigator.audioSession.state === 'interrupted') {
+        if (navigator.audioSession.state === 'interrupted' && isPlaying) {
           console.warn('[AudioEngine] navigator.audioSession interrupted by external audio.');
           handleAudioInterrupted();
         }
@@ -490,14 +490,14 @@ function initAudio() {
     audioCtx = new AudioContextClass();
     if (audioCtx) {
       audioCtx.onstatechange = () => {
-        if (audioCtx.state === 'interrupted') {
-          console.warn('[AudioEngine] audioCtx state changed to interrupted.');
+        if (audioCtx.state === 'interrupted' && isPlaying) {
+          console.warn('[AudioEngine] audioCtx state changed to interrupted while playing.');
           handleAudioInterrupted();
         }
       };
     }
   }
-  if (audioCtx && audioCtx.state === 'suspended' && isPlaying) {
+  if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') && isPlaying) {
     audioCtx.resume().catch(() => {});
   }
   if (!enhancer && audioCtx) {
@@ -833,9 +833,13 @@ function setupMediaSessionActions() {
   };
 
   safeSetHandler('play', () => {
-    if (audioCtx && audioCtx.state === 'suspended') {
+    if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
       audioCtx.resume().catch(() => {});
     }
+    if ('audioSession' in navigator) {
+      try { navigator.audioSession.type = 'playback'; } catch (e) {}
+    }
+    startKeepalive();
     if (audioPlayer.paused) {
       audioPlayer.play().catch(() => {});
     }
@@ -935,6 +939,10 @@ function selectTrack(index, autoPlay = true) {
   updateBrowserUrl();
 
   if (autoPlay) {
+    if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
+      audioCtx.resume().catch(() => {});
+    }
+    startKeepalive();
     audioPlayer.play().then(() => {
       isPlaying = true;
       updatePlayStateUI();
@@ -966,6 +974,13 @@ function togglePlay() {
   if (isPlaying) {
     audioPlayer.pause();
   } else {
+    if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
+      audioCtx.resume().catch(e => console.warn('[AudioCtx] Resume error:', e));
+    }
+    if ('audioSession' in navigator) {
+      try { navigator.audioSession.type = 'playback'; } catch (e) {}
+    }
+    startKeepalive();
     audioPlayer.play().catch(e => console.warn('[Audio] Play error:', e));
   }
 }
@@ -1677,11 +1692,6 @@ function initEventListeners() {
     audioPlayer.addEventListener('timeupdate', () => {
       if (!audioPlayer.duration) return;
 
-      if ((audioCtx && audioCtx.state === 'interrupted') || ('audioSession' in navigator && navigator.audioSession.state === 'interrupted')) {
-        handleAudioInterrupted();
-        return;
-      }
-
       // Skip DOM updates when backgrounded to eliminate CPU/GPU drain
       if (!document.hidden && !isUserDraggingProgress) {
         const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
@@ -1710,12 +1720,17 @@ function initEventListeners() {
       }
       updateMediaSessionPosition();
       startKeepalive();
-      if (audioCtx && audioCtx.state === 'suspended') {
+      if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
         audioCtx.resume().catch(() => {});
       }
     });
 
     audioPlayer.addEventListener('pause', () => {
+      // Natural track ending: 'ended' event will handle transitioning to the next track.
+      // Do not set isPlaying = false or pause keepalive, which would break continuous background playback!
+      if (audioPlayer.ended) {
+        return;
+      }
       isPlaying = false;
       updatePlayStateUI();
       if ('mediaSession' in navigator) {
@@ -1726,10 +1741,6 @@ function initEventListeners() {
     });
 
     audioPlayer.addEventListener('ended', () => {
-      if (!isPlaying || (audioCtx && audioCtx.state === 'interrupted') || ('audioSession' in navigator && navigator.audioSession.state === 'interrupted')) {
-        handleAudioInterrupted();
-        return;
-      }
       if (repeatMode === 'one') {
         audioPlayer.currentTime = 0;
         audioPlayer.play().catch(() => {});
@@ -1761,7 +1772,7 @@ function initEventListeners() {
   // Background Keepalive Audio Canary (Detects OS Audio Session Interruption e.g. YouTube / Phone Call)
   if (bgKeepalive) {
     bgKeepalive.addEventListener('pause', () => {
-      if (isPlaying && audioPlayer && !audioPlayer.paused) {
+      if (isPlaying && audioPlayer && !audioPlayer.paused && !audioPlayer.ended) {
         console.warn('[AudioEngine] bgKeepalive paused externally (OS audio focus loss).');
         handleAudioInterrupted();
       }
@@ -1821,14 +1832,14 @@ function initEventListeners() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       if (audioPlayer && audioPlayer.paused && isPlaying) {
-        handleAudioInterrupted();
-        return;
+        isPlaying = false;
+        updatePlayStateUI();
+        pauseKeepalive();
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'paused';
+        }
       }
-      if ((audioCtx && audioCtx.state === 'interrupted') || ('audioSession' in navigator && navigator.audioSession.state === 'interrupted')) {
-        handleAudioInterrupted();
-        return;
-      }
-      if (audioCtx && audioCtx.state === 'suspended' && isPlaying) {
+      if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') && isPlaying) {
         audioCtx.resume().catch(() => {});
       }
       if (isPlaying) {
@@ -1846,14 +1857,14 @@ function initEventListeners() {
 
   window.addEventListener('focus', () => {
     if (audioPlayer && audioPlayer.paused && isPlaying) {
-      handleAudioInterrupted();
-      return;
+      isPlaying = false;
+      updatePlayStateUI();
+      pauseKeepalive();
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
     }
-    if ((audioCtx && audioCtx.state === 'interrupted') || ('audioSession' in navigator && navigator.audioSession.state === 'interrupted')) {
-      handleAudioInterrupted();
-      return;
-    }
-    if (audioCtx && audioCtx.state === 'suspended' && isPlaying) {
+    if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') && isPlaying) {
       audioCtx.resume().catch(() => {});
     }
     if (isPlaying) {
