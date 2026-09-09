@@ -1,4 +1,4 @@
-<!-- Version: 4.2.29 (Fine Art Studio Edition) -->
+<!-- Version: 4.2.30 (Fine Art Studio Edition) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,7 +71,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.2.29">
+  <link rel="stylesheet" href="styles.css?v=4.2.30">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -515,15 +515,6 @@
                       <option value="acoustic">✦ Acoustic</option>
                     </select>
                   </div>
-                  <div class="custom-select-wrapper mobile-loudness-mode">
-                    <select id="mobile-loudness-select" class="styled-select" title="Loudness Target">
-                      <option value="genre">💿 Genre (標準)</option>
-                      <option value="streaming">📻 Streaming (-14)</option>
-                      <option value="club">🔥 Club (-9 LUFS)</option>
-                      <option value="loud">⚡ Loud (-7 LUFS)</option>
-                      <option value="pure">🍃 Pure (-18 LUFS)</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div class="player-mastering-control">
@@ -606,19 +597,6 @@
               </div>
             </div>
 
-            <!-- Loudness Target Select -->
-            <div class="preset-selection-row">
-              <span class="preset-label">Loudness Target</span>
-              <div class="custom-select-wrapper">
-                <select id="loudness-select" class="preset-select styled-select">
-                  <option value="genre">💿 Genre Default (標準おすすめ)</option>
-                  <option value="streaming">📻 Streaming (-14 LUFS / Safe)</option>
-                  <option value="club">🔥 Club / Modern (-9 LUFS / Punchy)</option>
-                  <option value="loud">⚡ Loud & Punchy (-7 LUFS / Intense)</option>
-                  <option value="pure">🍃 Pure Dynamics (-18 LUFS / Flat)</option>
-                </select>
-              </div>
-            </div>
 
             <!-- AI Status HUD Card -->
             <div class="ai-status-hud card-nested">
@@ -778,6 +756,6 @@
   </div>
 
   <!-- JS Scripts -->
-  <script type="module" src="player.js?v=4.2.29"></script>
+  <script type="module" src="player.js?v=4.2.30"></script>
 </body>
 </html>

@@ -1,9 +1,9 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.29
+ * Version: 4.2.30
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS, LOUDNESS_TARGETS } from './audio-engine.js?v=4.2.29';
+import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS, LOUDNESS_TARGETS } from './audio-engine.js?v=4.2.30';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -648,7 +648,7 @@ function setMasteringPreset(presetKey) {
   }
 }
 
-function setLoudnessTarget(targetKey) {
+function setLoudnessTarget(targetKey, notify = false) {
   currentLoudnessTarget = targetKey;
   if (loudnessSelect) loudnessSelect.value = targetKey;
   if (mobileLoudnessSelect) mobileLoudnessSelect.value = targetKey;
@@ -658,16 +658,19 @@ function setLoudnessTarget(targetKey) {
     applyPresetDSP();
   }
 
-  const loudnessLabels = {
-    genre: 'Genre Default (標準)',
-    streaming: 'Streaming (-14 LUFS)',
-    club: 'Club / Modern (-9 LUFS)',
-    loud: 'Loud & Punchy (-7 LUFS)',
-    pure: 'Pure Dynamics (-18 LUFS)'
-  };
-  const label = loudnessLabels[targetKey] || targetKey.toUpperCase();
-  showToast(`Loudness Target: ${label}`);
+  if (notify) {
+    const loudnessLabels = {
+      genre: 'Genre Default (標準)',
+      streaming: 'Streaming (-14 LUFS)',
+      club: 'Club / Modern (-9 LUFS)',
+      loud: 'Loud & Punchy (-7 LUFS)',
+      pure: 'Pure Dynamics (-18 LUFS)'
+    };
+    const label = loudnessLabels[targetKey] || targetKey.toUpperCase();
+    showToast(`Loudness Target: ${label}`);
+  }
 }
+window.setLoudnessTarget = setLoudnessTarget;
 
 function applyPresetDSP() {
   if (!enhancer) return;
