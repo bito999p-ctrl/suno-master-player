@@ -18,7 +18,19 @@
       "use": "@vercel/static"
     },
     {
-      "src": "audio-engine.js",
+      "src": "aether5-worklet.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "aether5-worker.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "visuals.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "engine/*.js",
       "use": "@vercel/static"
     }
   ],

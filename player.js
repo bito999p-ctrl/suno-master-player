@@ -1,16 +1,16 @@
 /**
  * AetherPlayer - Studio Frontend Controller
- * Version: 4.2.31
+ * Version: 5.1.0 (AetherMaster 5 engine)
  */
 
-import { AetherEnhancer, analyzeAudioResonances, GENRE_PRESETS, LOUDNESS_TARGETS } from './audio-engine.js?v=4.2.31';
+import { GENRES } from './engine/genres.js?v=5.1.0';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
   if (typeof window !== 'undefined' && window.lucide) {
     window.lucide.createIcons({
       attrs: {
-        'stroke-width': 1.25
+        'stroke-width': 1.75
       }
     });
   }
@@ -20,7 +20,7 @@ window.renderLucideIcons = function() {
 // State Management
 // ============================================================================
 let audioCtx = null;
-let enhancer = null;
+let enhancer = null; // AudioWorkletNode running the AetherMaster 5 chain
 let sourceNode = null;
 let masterGainNode = null;
 
@@ -37,8 +37,6 @@ let parentProfile = null; // Stores user profile when navigating from a user int
 const analysisCache = new Map();
 let isAnalyzingCurrentTrack = false;
 let activeAbortController = null;
-let currentAudioBuffer = null;
-let currentAnalysisResult = null;
 let isUserDraggingProgress = false;
 let isEnhancerEnabled = false;
 let currentPreset = 'auto';
@@ -503,16 +501,28 @@ function initAudio() {
   if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') && isPlaying) {
     audioCtx.resume().catch(() => {});
   }
-  if (!enhancer && audioCtx) {
-    enhancer = new AetherEnhancer(audioCtx);
+  if (!sourceNode && audioCtx) {
     sourceNode = audioCtx.createMediaElementSource(audioPlayer);
     masterGainNode = audioCtx.createGain();
-
-    sourceNode.connect(enhancer.inputNode);
-    enhancer.outputNode.connect(masterGainNode);
+    sourceNode.connect(masterGainNode); // dry until the engine worklet is loaded
     masterGainNode.connect(audioCtx.destination);
-
-    enhancer.setBypass(!isEnhancerEnabled);
+    // tap for the visuals (visuals.js)
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.78;
+    masterGainNode.connect(analyser);
+    window.aetherAnalyser = analyser;
+    window.dispatchEvent(new Event('aether:audio'));
+    if (audioCtx.audioWorklet) {
+      audioCtx.audioWorklet.addModule(new URL('./aether5-worklet.js?v=5.1.0', import.meta.url)).then(() => {
+        enhancer = new AudioWorkletNode(audioCtx, 'aether5-stream', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
+        sourceNode.disconnect();
+        sourceNode.connect(enhancer);
+        enhancer.connect(masterGainNode);
+        enhancer.port.postMessage({ type: 'enable', on: isEnhancerEnabled });
+        if (currentTuned) enhancer.port.postMessage({ type: 'params', params: currentTuned.params });
+      }).catch((e) => console.warn('[AudioEngine] AetherMaster 5 worklet failed to load, playing dry:', e));
+    }
   }
 }
 
@@ -523,243 +533,202 @@ function updateVolume() {
   }
 }
 
-const GENRE_KEYWORD_RULES = {
-  hardcore: ['hardcore', 'gabber', 'speedcore', 'hardstyle', 'frenchcore', 'terrorcore', 'uptempo'],
-  metal: ['heavy metal', 'death metal', 'thrash', 'metalcore', 'djent', 'nu metal', 'hard rock', 'power chords', 'blast beat', 'metal'],
-  lofi: ['lo-fi', 'lofi', 'chillhop', 'bedroom pop', 'downtempo', 'chill beats', 'tape saturation', 'cassette', 'lo fi', 'chillout'],
-  rnb: ['r&b', 'rnb', 'neo soul', 'motown', 'urban groove', 'soul', 'funk', 'fretless bass', 'slow jam', 'groove'],
-  jazz: ['electro-swing', 'swing', 'bossa nova', 'fusion', 'bebop', 'smooth jazz', 'brass section', 'walking bass', 'big band', 'saxophone', 'chiptune jazz', 'jazz'],
-  classic: ['orchestral', 'orchestra', 'symphony', 'chamber', 'cello', 'violin', 'legato strings', 'cinematic classical', 'choir', 'polyphony', 'classical', 'gospel'],
-  acoustic: ['acoustic guitar', 'fingerpicking', 'fingerpicked', 'unplugged', 'singer-songwriter', 'indie folk', 'felt piano', 'acoustic', 'folk'],
-  ambient: ['ambient', 'drone', 'cinematic', 'soundtrack', 'atmospheric', 'new age', 'meditation', 'soundscape', 'space ambient', 'dream pop'],
-  podcast: ['podcast', 'spoken word', 'speech', 'interview', 'narration', 'acapella', 'asmr', 'whisper', 'voice only'],
-  edm: ['edm', 'electronic', 'electro', 'house', 'techno', 'trance', 'dubstep', 'future bass', 'synthwave', 'hyperpop', 'disco', 'breakbeat', 'eurobeat', 'dnb', 'drum and bass', 'club', 'dance'],
-  hiphop: ['old school hip hop', 'hip hop', 'hip-hop', 'boom bap', 'drill', 'phonk', 'rap', 'trap'],
-  rock: ['alternative rock', 'j-rock', 'jrock', 'punk', 'grunge', 'indie rock', 'guitar rock', 'garage rock', 'psychedelic rock', 'glam rock', 'power pop', 'shoegaze', 'post-rock', 'rock'],
-  pops: ['j-pop', 'jpop', 'k-pop', 'city pop', 'idol', 'dance pop', 'anime', 'anison', 'shibuya-kei', 'art pop', 'pop']
-};
+// AetherMaster 5 genres (same as the AetherMaster 5 app). Old preset keys map to the nearest one.
+const GENRE_LABELS = { auto: 'AI Auto', ...Object.fromEntries(GENRES.map((g) => [g.id, g.label])) };
+const OLD_PRESETS = { pops: 'pop', rnb: 'pop', metal: 'rock', hardcore: 'edm', ambient: 'ballad', podcast: 'acoustic', classic: 'acoustic', jazz: 'acoustic', custom: 'auto' };
+const normalizePreset = (k) => (GENRE_LABELS[k] ? k : OLD_PRESETS[k] || 'auto');
 
-function extractBracketCues(text) {
-  if (!text) return '';
-  const matches = text.match(/\[(.*?)\]/g);
-  return matches ? matches.map(m => m.slice(1, -1)).join(' ') : '';
-}
-
-function detectGenreFromTrack(track) {
-  if (!track) return null;
-  const tagsStr = (track.tags || '').toLowerCase();
-  const styleStr = (track.style || '').toLowerCase();
-  const titleStr = (track.title || '').toLowerCase();
-  const bracketStr = extractBracketCues(track.prompt || '').toLowerCase();
-
-  const scores = {};
-  for (const genre of Object.keys(GENRE_KEYWORD_RULES)) {
-    scores[genre] = 0;
-  }
-
-  for (const [genre, keywords] of Object.entries(GENRE_KEYWORD_RULES)) {
-    for (const kw of keywords) {
-      const kwLower = kw.toLowerCase();
-      if (tagsStr.includes(kwLower)) {
-        scores[genre] += 12;
-      }
-      if (styleStr.includes(kwLower)) {
-        scores[genre] += 8;
-      }
-      if (titleStr.includes(kwLower)) {
-        scores[genre] += 6;
-      }
-      if (bracketStr.includes(kwLower)) {
-        scores[genre] += 5;
-      }
-    }
-  }
-
-  let bestGenre = null;
-  let highestScore = 0;
-
-  for (const [genre, score] of Object.entries(scores)) {
-    if (score > highestScore) {
-      highestScore = score;
-      bestGenre = genre;
-    }
-  }
-
-  return bestGenre;
-}
+// Loudness target overrides (null = follow the analysis / genre)
+const LOUDNESS_TARGETS = { genre: null, streaming: -14, club: -9, loud: -7, pure: -18 };
 
 function setMasteringPreset(presetKey, notify = false) {
+  presetKey = normalizePreset(presetKey);
   currentPreset = presetKey;
   if (presetSelect) presetSelect.value = presetKey;
   if (mobilePresetSelect) mobilePresetSelect.value = presetKey;
   localStorage.setItem('aether_preset_v2', presetKey);
 
-  if (isEnhancerEnabled) {
-    if (presetKey === 'auto' && !currentAnalysisResult) {
-      const track = tracks[currentTrackIndex];
-      if (track) {
-        runAnalysisForTrack(track, true);
-        return;
-      }
-    }
-    applyPresetDSP();
-  }
+  if (isEnhancerEnabled) applyPresetDSP();
 
-  if (notify) {
-    const genreLabels = {
-      auto: 'AI Auto-Optimized',
-      pops: 'Pops',
-      rnb: 'R&B / Soul',
-      rock: 'Rock / Alternative',
-      metal: 'Heavy Metal',
-      edm: 'EDM / Club',
-      hiphop: 'Hip-Hop / Rap',
-      lofi: 'Lo-Fi Chill',
-      hardcore: 'Hardcore',
-      ambient: 'Ambient / Cinematic',
-      podcast: 'Podcast / Voice',
-      classic: 'Classical',
-      jazz: 'Jazz',
-      acoustic: 'Acoustic / Folk'
-    };
-    const label = genreLabels[presetKey] || presetKey.toUpperCase();
-    showToast(`Mastering: ${label} preset selected`);
-  }
+  if (notify) showToast(`Mastering: ${GENRE_LABELS[presetKey]}`);
 }
 
 function setLoudnessTarget(targetKey, notify = false) {
+  if (!(targetKey in LOUDNESS_TARGETS)) targetKey = 'genre';
   currentLoudnessTarget = targetKey;
   if (loudnessSelect) loudnessSelect.value = targetKey;
   if (mobileLoudnessSelect) mobileLoudnessSelect.value = targetKey;
   localStorage.setItem('aether_loudness_target', targetKey);
 
-  if (isEnhancerEnabled) {
-    applyPresetDSP();
-  }
+  if (isEnhancerEnabled) applyPresetDSP();
 
   if (notify) {
-    const loudnessLabels = {
-      genre: 'Genre Default (標準)',
-      streaming: 'Streaming (-14 LUFS)',
-      club: 'Club / Modern (-9 LUFS)',
-      loud: 'Loud & Punchy (-7 LUFS)',
-      pure: 'Pure Dynamics (-18 LUFS)'
-    };
-    const label = loudnessLabels[targetKey] || targetKey.toUpperCase();
-    showToast(`Loudness Target: ${label}`);
+    const t = LOUDNESS_TARGETS[targetKey];
+    showToast(`Loudness Target: ${t == null ? 'Genre Default (標準)' : `${t} LUFS`}`);
   }
 }
 window.setLoudnessTarget = setLoudnessTarget;
 
+// re-tune the current track for the chosen genre / loudness target
 function applyPresetDSP() {
-  if (!enhancer) return;
-  let targetParams;
-  const notches = currentAnalysisResult ? (currentAnalysisResult.notches || []) : [];
-
-  if (currentPreset === 'auto') {
-    if (currentAnalysisResult && currentAnalysisResult.suggestedParams) {
-      targetParams = { ...currentAnalysisResult.suggestedParams };
-    } else {
-      targetParams = { ...(GENRE_PRESETS.auto || {}) };
-    }
-  } else {
-    // Specific manual genre preset selected
-    if (currentAudioBuffer) {
-      // Dynamic acoustic resonance analysis tailored to this song with the chosen genre target!
-      const dynamicResult = analyzeAudioResonances(currentAudioBuffer, currentPreset);
-      targetParams = { ...dynamicResult.suggestedParams };
-    } else {
-      const basePreset = GENRE_PRESETS[currentPreset] || GENRE_PRESETS.auto;
-      targetParams = { ...basePreset };
-      // Retain measured input gain staging and corrective cleaning from previous analysis if available
-      if (currentAnalysisResult && currentAnalysisResult.suggestedParams) {
-        targetParams.inputGainDb = currentAnalysisResult.suggestedParams.inputGainDb;
-        targetParams.rumbleCutEnabled = currentAnalysisResult.suggestedParams.rumbleCutEnabled;
-        targetParams.hissReductionAmount = currentAnalysisResult.suggestedParams.hissReductionAmount;
-        targetParams.deesserAmount = currentAnalysisResult.suggestedParams.deesserAmount;
-      }
-    }
-  }
-
-  // Apply Loudness Target overrides if selected
-  if (currentLoudnessTarget && currentLoudnessTarget !== 'genre') {
-    const t = LOUDNESS_TARGETS[currentLoudnessTarget];
-    if (t) {
-      if (t.boost !== null) targetParams.limiterBoost = t.boost;
-      if (t.clipper !== null) targetParams.clipperDrive = t.clipper;
-    }
-  }
-
-  enhancer.setMasteringParams(targetParams, notches);
-  updateAiHudUI({ suggestedParams: targetParams, notches });
+  const track = tracks[currentTrackIndex];
+  if (track) runAnalysisForTrack(track, true);
 }
 
-async function runAnalysisForTrack(track, forceApply = false) {
-  if (!track || !track.audio_url) return;
-  const metaGenre = detectGenreFromTrack(track);
+// ---------------------------------------------------------------- AetherMaster 5 engine glue
+// Per song: fetch + decode once. A 24 s excerpt goes to the tuner worker (quick first sound,
+// quick genre / target changes); the whole song goes to the analyzer worker, whose diagnosis
+// then refines the tuning. The next track is prepared while this one plays, and final results
+// are kept across visits. The enhancer worklet runs the realtime chain on the stream.
+let currentTuned = null;
+const songState = new Map(); // url -> { ready, tuning, pending }
+const tuneKey = (url) => `${url}|${currentPreset}|${currentLoudnessTarget}`;
+const currentUrl = () => tracks[currentTrackIndex]?.audio_url;
 
-  // Background Optimization: If running in background, preserve Spotify background efficiency
-  if (document.hidden && !forceApply) {
-    if (isEnhancerEnabled) {
-      applyPresetDSP();
-    }
-    updateAiStatus('active');
-    return;
+const STORE = 'aether5_tuned_v1', STORE_MAX = 150;
+const persisted = (() => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } })();
+function persist(k, result) {
+  delete persisted[k];
+  persisted[k] = result;
+  const keys = Object.keys(persisted);
+  for (let i = 0; i < keys.length - STORE_MAX; i++) delete persisted[keys[i]];
+  try { localStorage.setItem(STORE, JSON.stringify(persisted)); } catch (e) {}
+}
+function getCached(k) {
+  if (!analysisCache.has(k) && persisted[k]) analysisCache.set(k, persisted[k]);
+  return analysisCache.get(k);
+}
+
+function makeWorker(onMessage) {
+  const w = new Worker(new URL('./aether5-worker.js?v=5.1.0', import.meta.url), { type: 'module' });
+  w.onmessage = (e) => onMessage(e.data);
+  return w;
+}
+let tuner = null, analyzer = null, analyzerJobs = [];
+const getTuner = () => tuner || (tuner = makeWorker(onTunerMessage));
+
+function onTunerMessage(m) {
+  const st = songState.get(m.key);
+  if (m.type === 'ready') {
+    if (st) st.ready = true;
+    requestTune(m.key);
+  } else if (m.type === 'tuned') {
+    const k = `${m.key}|${m.genre}|${m.targetKey}`;
+    const result = { url: m.key, params: m.params, info: m.info, final: m.final };
+    if (!(analysisCache.get(k)?.final && !m.final)) analysisCache.set(k, result);
+    if (m.final) persist(k, result);
+    if (st) st.tuning = false;
+    if (k === tuneKey(currentUrl())) applyTuned(result);
+    if (st && st.pending) { st.pending = false; requestTune(m.key); }
+    else if (m.final && m.key === currentUrl()) prefetchNext();
+  } else if (m.type === 'error') {
+    console.warn('[AI Mastering] Analysis warning:', m.message);
+    if (st) st.tuning = false;
+    if (m.message === 'not loaded') songState.delete(m.key); // evicted: loads again when needed
+    if (m.key === currentUrl() && !currentTuned) { showAnalyzing(false); updateAiStatus('idle'); }
   }
+}
 
-  if (analysisCache.has(track.audio_url)) {
-    const cached = analysisCache.get(track.audio_url);
-    currentAnalysisResult = cached;
-    if (metaGenre) cached.detectedGenre = metaGenre;
-    if (isEnhancerEnabled || forceApply) {
-      applyPresetDSP();
-      updateAiStatus('active');
-    }
-    if (aiAnalyzingIndicator) aiAnalyzingIndicator.classList.add('hidden');
-    return;
+function onAnalyzerMessage(m) {
+  analyzerJobs = analyzerJobs.filter((u) => u !== m.key);
+  if (m.type === 'diag') {
+    getTuner().postMessage({ type: 'diag', key: m.key, diag: m.diag });
+    requestTune(m.key);
+  } else console.warn('[AI Mastering] Analysis warning:', m.message);
+}
+
+function diagnoseSong(url, L, R, fs) {
+  // drop queued work for songs that are neither playing nor up next
+  const keep = new Set([currentUrl(), tracks[nextIndex()]?.audio_url]);
+  if (analyzer && analyzerJobs.some((u) => !keep.has(u))) { analyzer.terminate(); analyzer = null; analyzerJobs = []; }
+  if (!analyzer) analyzer = makeWorker(onAnalyzerMessage);
+  analyzerJobs.push(url);
+  analyzer.postMessage({ type: 'diagnose', key: url, L, R, fs }, [L.buffer, R.buffer]);
+}
+
+// tune a loaded song for the current genre / target (one tune in flight per song)
+function requestTune(url) {
+  const st = songState.get(url);
+  if (!st || !st.ready) return;
+  if (st.tuning) { st.pending = true; return; }
+  st.tuning = true;
+  getTuner().postMessage({ type: 'tune', key: url, genre: currentPreset, target: LOUDNESS_TARGETS[currentLoudnessTarget], targetKey: currentLoudnessTarget });
+}
+
+// 6 evenly spaced 4 s pieces (the whole song when it is short)
+function songExcerpt(L, R, fs) {
+  const n = L.length, K = 6, seg = Math.round(4 * fs);
+  if (n < 40 * fs) return { L: L.slice(), R: R.slice(), partial: false };
+  const eL = new Float32Array(K * seg), eR = new Float32Array(K * seg);
+  for (let k = 0; k < K; k++) {
+    const s = Math.round(((k + 0.5) * n) / K - seg / 2);
+    eL.set(L.subarray(s, s + seg), k * seg); eR.set(R.subarray(s, s + seg), k * seg);
   }
+  return { L: eL, R: eR, partial: true };
+}
 
-  if (!isEnhancerEnabled && !forceApply) {
-    return;
-  }
-
-  isAnalyzingCurrentTrack = true;
-  if (aiAnalyzingIndicator) aiAnalyzingIndicator.classList.remove('hidden');
-  updateAiStatus('loading');
-
+async function loadSong(url) {
+  if (songState.has(url)) return;
+  const st = { ready: false, tuning: false, pending: false };
+  songState.set(url, st);
   try {
-    const controller = new AbortController();
-    activeAbortController = controller;
-
-    const res = await fetch(track.audio_url, { signal: controller.signal });
-    const arrayBuffer = await res.arrayBuffer();
-    
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.arrayBuffer();
     if (!audioCtx) initAudio();
-    const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    currentAudioBuffer = decodedBuffer;
-
-    const analysis = await analyzeAudioResonances(decodedBuffer, 'auto');
-    const finalGenre = metaGenre || analysis.detectedGenre || 'pops';
-    analysis.detectedGenre = finalGenre;
-    analysisCache.set(track.audio_url, analysis);
-    currentAnalysisResult = analysis;
-
-    if (isEnhancerEnabled || forceApply) {
-      applyPresetDSP();
-      updateAiStatus('active');
-    }
+    const buf = await audioCtx.decodeAudioData(data);
+    if (songState.get(url) !== st) return;
+    const L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L, fs = buf.sampleRate;
+    const ex = songExcerpt(L, R, fs);
+    getTuner().postMessage({ type: 'excerpt', key: url, fs, partial: ex.partial, L: ex.L, R: ex.R }, [ex.L.buffer, ex.R.buffer]);
+    if (ex.partial) diagnoseSong(url, L.slice(), R.slice(), fs);
   } catch (err) {
-    if (err.name !== 'AbortError') {
-      console.warn('[AI Mastering] Analysis warning:', err);
-    }
-    if (isEnhancerEnabled || forceApply) {
-      applyPresetDSP();
-    }
-    updateAiStatus(isEnhancerEnabled ? 'active' : 'idle');
-  } finally {
-    isAnalyzingCurrentTrack = false;
-    if (aiAnalyzingIndicator) aiAnalyzingIndicator.classList.add('hidden');
+    songState.delete(url);
+    console.warn('[AI Mastering] Analysis warning:', err);
+    if (url === currentUrl() && !currentTuned) { showAnalyzing(false); updateAiStatus('idle'); }
   }
+}
+
+// the track that plays after this one (the shuffle pick is drawn in advance so it can be prepared)
+let shuffleNext = -1;
+function nextIndex() {
+  if (!tracks.length) return -1;
+  if (!isShuffle) return (currentTrackIndex + 1) % tracks.length;
+  if (tracks.length === 1) return 0;
+  while (shuffleNext < 0 || shuffleNext >= tracks.length || shuffleNext === currentTrackIndex) shuffleNext = Math.floor(Math.random() * tracks.length);
+  return shuffleNext;
+}
+function prefetchNext() {
+  const url = tracks[nextIndex()]?.audio_url;
+  if (!isEnhancerEnabled || !url || url === currentUrl() || getCached(tuneKey(url))?.final) return;
+  loadSong(url);
+}
+
+function showAnalyzing(on) {
+  isAnalyzingCurrentTrack = on;
+  if (aiAnalyzingIndicator) aiAnalyzingIndicator.classList.toggle('hidden', !on);
+}
+
+function applyTuned(result) {
+  currentTuned = result;
+  if (enhancer) enhancer.port.postMessage({ type: 'params', params: result ? result.params : null });
+  updateAiHudUI(result);
+  if (result) { showAnalyzing(false); updateAiStatus(isEnhancerEnabled ? 'active' : 'idle'); }
+}
+
+function runAnalysisForTrack(track, forceApply = false) {
+  if (!track || !track.audio_url) return;
+  if (!isEnhancerEnabled && !forceApply) return;
+  const url = track.audio_url;
+  const cached = getCached(tuneKey(url));
+  if (cached) applyTuned(cached);
+  // otherwise play dry until this song is ready; a genre / target change keeps the current sound
+  else if (currentTuned?.url !== url) applyTuned(null);
+  if (cached && cached.final) return prefetchNext();
+  if (!cached) { showAnalyzing(true); updateAiStatus('loading'); }
+  if (!songState.has(url)) return loadSong(url);
+  // a non-final result gets refined when the song's full diagnosis arrives
+  if (!cached) requestTune(url);
 }
 
 function updateAiStatus(status) {
@@ -778,40 +747,29 @@ function updateAiStatus(status) {
 }
 
 function updateAiHudUI(result) {
-  const sug = result ? result.suggestedParams : (GENRE_PRESETS[currentPreset] || GENRE_PRESETS.auto);
-  if (!sug) return;
-
-  if (hudEqLow) hudEqLow.textContent = `${sug.eqLowGain > 0 ? '+' : ''}${(sug.eqLowGain || 0).toFixed(1)} dB`;
-  if (hudEqHigh) hudEqHigh.textContent = `${sug.eqHighGain > 0 ? '+' : ''}${(sug.eqHighGain || 0).toFixed(1)} dB`;
-  if (hudWidth) hudWidth.textContent = `${(sug.stereoWidth || 1.15).toFixed(2)}x`;
-  
-  const hissAmount = sug.hissReductionAmount || 0;
-  if (hudHiss) hudHiss.textContent = hissAmount > 0 ? `${hissAmount}%` : 'OFF';
-
-  if (hudCompThresh) hudCompThresh.textContent = `${(sug.compThreshold || -8).toFixed(1)} dB`;
-  if (hudCompRatio) hudCompRatio.textContent = `${(sug.compRatio || 1.35).toFixed(2)}:1`;
-  if (hudLimiterBoost) {
-    const boost = sug.limiterBoost !== undefined ? sug.limiterBoost : 3.5;
-    const clip = sug.clipperDrive ? ` (Clip: +${Number(sug.clipperDrive).toFixed(1)}dB)` : '';
-    hudLimiterBoost.textContent = `+${Number(boost).toFixed(1)} dB${clip}`;
+  const set = (el, t) => { if (el) el.textContent = t; };
+  const sgn = (v, unit = ' dB') => `${v > 0 ? '+' : ''}${(+v || 0).toFixed(1)}${unit}`;
+  const p = result && result.params, info = result && result.info;
+  if (!p) {
+    for (const el of [hudEqLow, hudEqHigh, hudWidth, hudHiss, hudCompThresh, hudCompRatio, hudLimiterBoost,
+      hudSatDrive, hudDeesser, hudRumble, hudDynamicsDesc, hudStereoDesc, hudGenreDesc]) set(el, '--');
+    return;
   }
-
-  if (hudSatDrive) {
-    hudSatDrive.textContent = sug.satEnabled && sug.satDrive > 0 ? `${sug.satType ? sug.satType.toUpperCase() : 'TUBE'} (${sug.satDrive})` : 'OFF';
-  }
-  if (hudDeesser) {
-    hudDeesser.textContent = sug.deesserAmount > 0 ? `${sug.deesserAmount}%` : 'OFF';
-  }
-  if (hudRumble) {
-    hudRumble.textContent = sug.rumbleCutEnabled ? 'ACTIVE (90Hz)' : 'BYPASS (18Hz)';
-  }
-
-  if (hudDynamicsDesc) hudDynamicsDesc.textContent = result && result.crestDesc ? result.crestDesc : 'Normal (Balanced)';
-  if (hudStereoDesc) hudStereoDesc.textContent = result && result.correlationDesc ? result.correlationDesc : 'Balanced Stereo';
-  if (hudGenreDesc) {
-    const detected = result && result.detectedGenre ? result.detectedGenre.toUpperCase() : (currentAnalysisResult?.detectedGenre?.toUpperCase() || 'POPS');
-    hudGenreDesc.textContent = currentPreset === 'auto' ? `AI AUTO (${detected})` : currentPreset.toUpperCase();
-  }
+  set(hudEqLow, sgn(p.bassDb));
+  set(hudEqHigh, sgn(p.highShelfDb));
+  set(hudWidth, sgn(p.width, '%'));
+  const bands = p.dyn.filter((d) => d.on && d.depth > 0);
+  set(hudHiss, bands.length ? `${bands.length} bands` : 'OFF');
+  set(hudCompThresh, `${p.glueThr.toFixed(1)} dB`);
+  set(hudCompRatio, `${p.glueRatio.toFixed(2)}:1`);
+  set(hudLimiterBoost, `${sgn(p.driveDb)} → ${p.targetLufs.toFixed(1)} LUFS`);
+  set(hudSatDrive, p.colorDrive > 0 ? sgn(p.colorDrive) : 'OFF');
+  const de = p.dyn.find((d) => d.id === 'deess');
+  set(hudDeesser, de && de.on && de.depth > 0 ? `-${de.depth.toFixed(1)} dB` : 'OFF');
+  set(hudRumble, p.hpfHz > 10 ? `${Math.round(p.hpfHz)} Hz` : 'OFF');
+  set(hudDynamicsDesc, `Crest ${info.crestDb.toFixed(1)} dB / LRA ${info.lra.toFixed(1)} LU`);
+  set(hudStereoDesc, `Width ${sgn(p.width, '%')} · Mono < ${Math.round(p.monoHz)} Hz`);
+  set(hudGenreDesc, currentPreset === 'auto' ? `AI AUTO (${GENRE_LABELS[info.guess] || info.guess})` : GENRE_LABELS[currentPreset]);
 }
 
 function handleEnhancerToggleChange(isActive) {
@@ -822,9 +780,7 @@ function handleEnhancerToggleChange(isActive) {
   if (mobileEnhancerToggle) mobileEnhancerToggle.checked = isActive;
 
   initAudio();
-  if (enhancer) {
-    enhancer.setBypass(!isActive);
-  }
+  if (enhancer) enhancer.port.postMessage({ type: 'enable', on: isActive });
 
   if (isActive) {
     const track = tracks[currentTrackIndex];
@@ -1043,13 +999,9 @@ function playNext() {
   if (tracks.length === 0) return;
   if (isShuffle) {
     if (tracks.length > 1) {
-      let rand = Math.floor(Math.random() * tracks.length);
-      let attempts = 0;
-      while (rand === currentTrackIndex && attempts < 10) {
-        rand = Math.floor(Math.random() * tracks.length);
-        attempts++;
-      }
-      selectTrack(rand);
+      const next = nextIndex(); // drawn in advance so it could be prepared
+      shuffleNext = -1;
+      selectTrack(next);
     } else {
       selectTrack(0);
     }
@@ -1833,11 +1785,22 @@ function initEventListeners() {
     });
   }
 
-  // Become Noisy Protection: If Bluetooth/earphones disconnect, pause playback immediately
+  // Become Noisy Protection: pause when an audio output (Bluetooth / earphones) goes away,
+  // but keep playing when one is connected. Where the browser hides the output list (no ids,
+  // e.g. mobile without permissions) the OS / browser pause the media element themselves.
   if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === 'function') {
-    navigator.mediaDevices.addEventListener('devicechange', () => {
-      if (isPlaying && audioPlayer && !audioPlayer.paused) {
-        console.log('[AudioEngine] Audio device changed (headphones/Bluetooth disconnected). Pausing playback.');
+    const listOutputs = () => navigator.mediaDevices.enumerateDevices()
+      .then((ds) => ds.filter((d) => d.kind === 'audiooutput').map((d) => d.deviceId))
+      .catch(() => null);
+    let outputs = null;
+    listOutputs().then((o) => { outputs = o; });
+    navigator.mediaDevices.addEventListener('devicechange', async () => {
+      const prev = outputs, now = await listOutputs();
+      outputs = now;
+      if (!prev || !now) return;
+      const removed = now.length < prev.length || prev.some((id) => id && !now.includes(id));
+      if (removed && isPlaying && audioPlayer && !audioPlayer.paused) {
+        console.log('[AudioEngine] Audio output disconnected (headphones/Bluetooth). Pausing playback.');
         audioPlayer.pause();
       }
     });
