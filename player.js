@@ -3,8 +3,9 @@
  * Version: 5.1.0 (AetherMaster 5 engine)
  */
 
-import { GENRES } from './engine/genres.js?v=5.4.0';
-import { ENGINE_VERSION } from './engine/version.js?v=5.4.0';
+import { GENRES } from './engine/genres.js?v=5.5.0';
+import { ENGINE_VERSION } from './engine/version.js?v=5.5.0';
+import { LANG, tr, setLang } from './engine/i18n.js';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -47,6 +48,7 @@ let currentLoudnessTarget = localStorage.getItem('aether_loudness_target') || 'g
 // DOM Element References
 // ============================================================================
 document.getElementById('engine-ver').textContent = `Engine ${ENGINE_VERSION}`;
+translateStatic();
 const landingScreen = document.getElementById('landing-screen');
 const playerWorkspace = document.getElementById('player-workspace');
 const landingInput = document.getElementById('landing-input');
@@ -539,7 +541,7 @@ function updateVolume() {
 const GENRE_LABELS = { auto: 'AI Auto', ...Object.fromEntries(GENRES.map((g) => [g.id, g.label])) };
 const OLD_PRESETS = { pops: 'pop', rnb: 'pop', metal: 'rock', hardcore: 'edm', ambient: 'ballad', podcast: 'acoustic', classic: 'acoustic', jazz: 'acoustic', custom: 'auto' };
 const normalizePreset = (k) => (GENRE_LABELS[k] ? k : OLD_PRESETS[k] || 'auto');
-const GENRE_INFO = { auto: { hint: '曲に合わせてAIが自動で調整', use: '迷った時' }, ...Object.fromEntries(GENRES.map((g) => [g.id, g])) };
+const GENRE_INFO = { auto: { hint: tr('曲に合わせてAIが自動で調整', 'AI adjusts to each song'), use: tr('迷った時', 'when unsure') }, ...Object.fromEntries(GENRES.map((g) => [g.id, g])) };
 const presetHint = document.getElementById('preset-hint');
 
 // The open list shows when to pick each genre ("こもって聴こえる時"); the closed select keeps the short name.
@@ -570,7 +572,7 @@ function setMasteringPreset(presetKey, notify = false) {
   if (isEnhancerEnabled) applyPresetDSP();
 
   const info = GENRE_INFO[presetKey];
-  if (presetHint) presetHint.textContent = `${info.hint}（${info.use}に）`;
+  if (presetHint) presetHint.textContent = tr(`${info.hint}（${info.use}に）`, `${info.hint} (${info.use})`);
   if (notify) showToast(`${GENRE_LABELS[presetKey]}：${info.hint}`);
 }
 
@@ -585,7 +587,7 @@ function setLoudnessTarget(targetKey, notify = false) {
 
   if (notify) {
     const t = LOUDNESS_TARGETS[targetKey];
-    showToast(`Loudness Target: ${t == null ? 'Genre Default (標準)' : `${t} LUFS`}`);
+    showToast(`Loudness Target: ${t == null ? tr('Genre Default (標準)', 'Genre default') : `${t} LUFS`}`);
   }
 }
 window.setLoudnessTarget = setLoudnessTarget;
@@ -640,7 +642,7 @@ function getCached(k) {
 }
 
 function makeWorker(onMessage) {
-  const w = new Worker(new URL('./aether5-worker.js?v=5.4.0', import.meta.url), { type: 'module' });
+  const w = new Worker(new URL(`./aether5-worker.js?v=5.5.0&lang=${LANG}`, import.meta.url), { type: 'module' });
   w.onmessage = (e) => onMessage(e.data);
   return w;
 }
@@ -1972,3 +1974,29 @@ document.addEventListener('DOMContentLoaded', () => {
     importSunoUrl(trackUrl, false, trackParam);
   }
 });
+
+// index.html mixes English UI with a few Japanese strings; show one language throughout.
+function translateStatic() {
+  document.documentElement.lang = LANG;
+  for (const b of document.querySelectorAll('.lang-sw')) {
+    b.querySelector('span').textContent = LANG === 'ja' ? 'EN' : '日本語';
+    b.title = LANG === 'ja' ? 'Switch to English' : '日本語に切り替え';
+    b.onclick = () => setLang(LANG === 'ja' ? 'en' : 'ja');
+  }
+  if (LANG === 'ja') return;
+  const hero = document.querySelector('.hero-title');
+  if (hero) hero.innerHTML = 'Your Suno songs,<br><span class="grad-text">sounding their best.</span>';
+  const EN = {
+    'AI が曲を解析中…': 'AI is analysing the song…', '音量: おまかせ': 'Loudness: auto', 'おまかせ（ジャンル標準）': 'Auto (genre default)',
+    'Pure −18 LUFS（ダイナミック）': 'Pure −18 LUFS (dynamic)', 'AI Auto（おまかせ）': 'AI Auto', '好みの音': 'Your tone',
+    '低音': 'Bass', '高音': 'Treble', '低音を下げる': 'Less bass', '低音を上げる': 'More bass', '高音を下げる': 'Less treble', '高音を上げる': 'More treble',
+    'ジャンルとは別に、低音・高音を好みで少し足し引き（±3段階、全曲に適用）': 'Nudge bass and treble to taste, on top of the genre (±3 steps, applies to every song)',
+    '省エネ表示': 'Battery saver',
+    'アニメーションと波形表示を止めて電池を節約。音質は変わりません（Androidは残量20%以下で自動ON）': 'Stops animations and the waveform to save battery. Sound is unchanged (turns on automatically on Android below 20%)',
+  };
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n; (n = w.nextNode());) { const k = n.nodeValue.trim(); if (EN[k]) n.nodeValue = n.nodeValue.replace(k, EN[k]); }
+  for (const el of document.querySelectorAll('[title],[aria-label]'))
+    for (const a of ['title', 'aria-label']) { const v = el.getAttribute(a); if (v && EN[v]) el.setAttribute(a, EN[v]); }
+  for (const o of document.querySelectorAll('option')) { const g = GENRES.find((x) => x.id === o.value); if (g) o.textContent = g.label; }
+}

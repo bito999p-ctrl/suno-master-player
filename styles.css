@@ -182,6 +182,7 @@ svg.lucide { width: 18px; height: 18px; flex: none; }
 }
 .nav-link:hover { background: var(--surface); color: var(--fg); }
 .nav-link svg { width: 16px; height: 16px; }
+button.nav-link { background: none; border: 0; font-family: inherit; cursor: pointer; }
 
 .segmented { display: inline-flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
 .segmented button {
