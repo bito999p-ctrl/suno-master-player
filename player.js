@@ -3,7 +3,8 @@
  * Version: 5.1.0 (AetherMaster 5 engine)
  */
 
-import { GENRES } from './engine/genres.js?v=5.3.0';
+import { GENRES } from './engine/genres.js?v=5.4.0';
+import { ENGINE_VERSION } from './engine/version.js?v=5.4.0';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -45,6 +46,7 @@ let currentLoudnessTarget = localStorage.getItem('aether_loudness_target') || 'g
 // ============================================================================
 // DOM Element References
 // ============================================================================
+document.getElementById('engine-ver').textContent = `Engine ${ENGINE_VERSION}`;
 const landingScreen = document.getElementById('landing-screen');
 const playerWorkspace = document.getElementById('player-workspace');
 const landingInput = document.getElementById('landing-input');
@@ -638,7 +640,7 @@ function getCached(k) {
 }
 
 function makeWorker(onMessage) {
-  const w = new Worker(new URL('./aether5-worker.js?v=5.3.0', import.meta.url), { type: 'module' });
+  const w = new Worker(new URL('./aether5-worker.js?v=5.4.0', import.meta.url), { type: 'module' });
   w.onmessage = (e) => onMessage(e.data);
   return w;
 }
