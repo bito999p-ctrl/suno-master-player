@@ -3,7 +3,7 @@
  * Version: 5.1.0 (AetherMaster 5 engine)
  */
 
-import { GENRES } from './engine/genres.js?v=5.2.1';
+import { GENRES } from './engine/genres.js?v=5.3.0';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -601,10 +601,29 @@ function applyPresetDSP() {
 // are kept across visits. The enhancer worklet runs the realtime chain on the stream.
 let currentTuned = null;
 const songState = new Map(); // url -> { ready, tuning, pending }
-const tuneKey = (url) => `${url}|${currentPreset}|${currentLoudnessTarget}`;
+// listener tone preference (低音 / 高音, -3..+3), applied on top of the genre for every song
+const TONE_KEY = 'aether5_tone';
+let tone = (() => { try { const t = JSON.parse(localStorage.getItem(TONE_KEY)); return { bass: t?.bass | 0, treble: t?.treble | 0 }; } catch (e) { return { bass: 0, treble: 0 }; } })();
+const toneKey = () => `${tone.bass},${tone.treble}`;
+function syncTone() {
+  for (const el of document.querySelectorAll('[data-tone-val]')) { const v = tone[el.dataset.toneVal]; el.textContent = v > 0 ? `+${v}` : v; }
+  for (const b of document.querySelectorAll('.tone-btn')) { const v = tone[b.dataset.tone] + +b.dataset.step; b.disabled = v < -3 || v > 3; }
+}
+let toneTimer = 0;
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.tone-btn'); if (!b) return;
+  const v = tone[b.dataset.tone] + +b.dataset.step; if (v < -3 || v > 3) return;
+  tone = { ...tone, [b.dataset.tone]: v };
+  try { localStorage.setItem(TONE_KEY, JSON.stringify(tone)); } catch (err) {}
+  syncTone();
+  clearTimeout(toneTimer); // quick taps re-tune once
+  toneTimer = setTimeout(() => { if (isEnhancerEnabled) applyPresetDSP(); }, 250);
+});
+syncTone();
+const tuneKey = (url) => `${url}|${currentPreset}|${currentLoudnessTarget}|${toneKey()}`;
 const currentUrl = () => tracks[currentTrackIndex]?.audio_url;
 
-const STORE = 'aether5_tuned_v2', STORE_MAX = 150;
+const STORE = 'aether5_tuned_v3', STORE_MAX = 150;
 const persisted = (() => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } })();
 function persist(k, result) {
   delete persisted[k];
@@ -619,7 +638,7 @@ function getCached(k) {
 }
 
 function makeWorker(onMessage) {
-  const w = new Worker(new URL('./aether5-worker.js?v=5.2.0', import.meta.url), { type: 'module' });
+  const w = new Worker(new URL('./aether5-worker.js?v=5.3.0', import.meta.url), { type: 'module' });
   w.onmessage = (e) => onMessage(e.data);
   return w;
 }
@@ -632,7 +651,7 @@ function onTunerMessage(m) {
     if (st) st.ready = true;
     requestTune(m.key);
   } else if (m.type === 'tuned') {
-    const k = `${m.key}|${m.genre}|${m.targetKey}`;
+    const k = `${m.key}|${m.genre}|${m.targetKey}|${m.toneKey}`;
     const result = { url: m.key, params: m.params, info: m.info, final: m.final };
     if (!(analysisCache.get(k)?.final && !m.final)) analysisCache.set(k, result);
     if (m.final) persist(k, result);
@@ -671,7 +690,7 @@ function requestTune(url) {
   if (!st || !st.ready) return;
   if (st.tuning) { st.pending = true; return; }
   st.tuning = true;
-  getTuner().postMessage({ type: 'tune', key: url, genre: currentPreset, target: LOUDNESS_TARGETS[currentLoudnessTarget], targetKey: currentLoudnessTarget });
+  getTuner().postMessage({ type: 'tune', key: url, genre: currentPreset, target: LOUDNESS_TARGETS[currentLoudnessTarget], targetKey: currentLoudnessTarget, tone, toneKey: toneKey() });
 }
 
 // 6 evenly spaced 4 s pieces (the whole song when it is short)

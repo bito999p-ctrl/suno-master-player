@@ -71,7 +71,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=5.1.2">
+  <link rel="stylesheet" href="styles.css?v=5.1.3">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -409,6 +409,10 @@
                     <option value="pure">Pure −18</option>
                   </select></div>
                 </div>
+                <div class="tone-ctl" data-compact>
+                  <span class="tone-item"><span class="tone-label">低音</span><button type="button" class="tone-btn" data-tone="bass" data-step="-1" aria-label="低音を下げる">−</button><span class="tone-val" data-tone-val="bass">0</span><button type="button" class="tone-btn" data-tone="bass" data-step="1" aria-label="低音を上げる">＋</button></span>
+                  <span class="tone-item"><span class="tone-label">高音</span><button type="button" class="tone-btn" data-tone="treble" data-step="-1" aria-label="高音を下げる">−</button><span class="tone-val" data-tone-val="treble">0</span><button type="button" class="tone-btn" data-tone="treble" data-step="1" aria-label="高音を上げる">＋</button></span>
+                </div>
               </div>
             </div>
           </div>
@@ -470,6 +474,14 @@
                 <option value="loud">Loud −7 LUFS</option>
                 <option value="pure">Pure −18 LUFS（ダイナミック）</option>
               </select></div>
+            </div>
+            <div class="field">
+              <span class="field-label">好みの音</span>
+              <div class="tone-ctl">
+                <span class="tone-item"><span class="tone-label">低音</span><button type="button" class="tone-btn" data-tone="bass" data-step="-1" aria-label="低音を下げる">−</button><span class="tone-val" data-tone-val="bass">0</span><button type="button" class="tone-btn" data-tone="bass" data-step="1" aria-label="低音を上げる">＋</button></span>
+                <span class="tone-item"><span class="tone-label">高音</span><button type="button" class="tone-btn" data-tone="treble" data-step="-1" aria-label="高音を下げる">−</button><span class="tone-val" data-tone-val="treble">0</span><button type="button" class="tone-btn" data-tone="treble" data-step="1" aria-label="高音を上げる">＋</button></span>
+              </div>
+              <span class="field-note">ジャンルとは別に、低音・高音を好みで少し足し引き（±3段階、全曲に適用）</span>
             </div>
             <div class="field saver-field">
               <div class="saver-row">
@@ -566,7 +578,7 @@
     </div>
   </div>
 
-  <script type="module" src="player.js?v=5.2.1"></script>
+  <script type="module" src="player.js?v=5.3.0"></script>
   <script type="module" src="visuals.js?v=5.1.1"></script>
 </body>
 </html>

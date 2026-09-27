@@ -21,9 +21,12 @@ function tune(m) {
   const g = GENRES.find((x) => x.id === m.genre);
   if (g) applyDeltas(p, genreDeltas(g, { diag, dec: auto.decisions, p }).deltas);
   if (m.target != null) p.targetLufs = m.target;
+  // listener tone preference: one step = about 1.2 dB top shelf (+ a little air) / 1.5 dB low shelf
+  const t = m.tone || {};
+  if (t.bass || t.treble) applyDeltas(p, { bassDb: 1.5 * (t.bass | 0), highShelfDb: 1.2 * (t.treble | 0), airDb: 0.6 * (t.treble | 0) });
   const c = E.calibrate(p);
   c.driveDb = +(E.solveLoudness(c) + song.corr).toFixed(2);
-  self.postMessage({ type: 'tuned', final: song.full, key: m.key, genre: m.genre, targetKey: m.targetKey, params: c,
+  self.postMessage({ type: 'tuned', final: song.full, key: m.key, genre: m.genre, targetKey: m.targetKey, toneKey: m.toneKey, params: c,
     info: { guess: guessGenre(diag, auto.decisions), crestDb: diag.crestDb, lra: diag.lra, lufs: diag.lufs } });
 }
 
