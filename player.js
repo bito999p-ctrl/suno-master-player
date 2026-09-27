@@ -3,7 +3,7 @@
  * Version: 5.1.0 (AetherMaster 5 engine)
  */
 
-import { GENRES } from './engine/genres.js?v=5.1.0';
+import { GENRES } from './engine/genres.js?v=5.2.1';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
 window.renderLucideIcons = function() {
@@ -537,6 +537,23 @@ function updateVolume() {
 const GENRE_LABELS = { auto: 'AI Auto', ...Object.fromEntries(GENRES.map((g) => [g.id, g.label])) };
 const OLD_PRESETS = { pops: 'pop', rnb: 'pop', metal: 'rock', hardcore: 'edm', ambient: 'ballad', podcast: 'acoustic', classic: 'acoustic', jazz: 'acoustic', custom: 'auto' };
 const normalizePreset = (k) => (GENRE_LABELS[k] ? k : OLD_PRESETS[k] || 'auto');
+const GENRE_INFO = { auto: { hint: '曲に合わせてAIが自動で調整', use: '迷った時' }, ...Object.fromEntries(GENRES.map((g) => [g.id, g])) };
+const presetHint = document.getElementById('preset-hint');
+
+// The open list shows when to pick each genre ("こもって聴こえる時"); the closed select keeps the short name.
+function expandGenreOptions(sel, on) {
+  for (const o of sel.options) {
+    const info = GENRE_INFO[o.value];
+    if (info) o.textContent = on ? `${GENRE_LABELS[o.value]} ─ ${info.use}` : GENRE_LABELS[o.value];
+  }
+}
+for (const sel of [presetSelect, mobilePresetSelect]) {
+  if (!sel) continue;
+  sel.addEventListener('pointerdown', () => expandGenreOptions(sel, true));
+  sel.addEventListener('focus', () => expandGenreOptions(sel, true));
+  sel.addEventListener('keydown', () => expandGenreOptions(sel, true));
+  for (const ev of ['change', 'blur']) sel.addEventListener(ev, () => expandGenreOptions(sel, false));
+}
 
 // Loudness target overrides (null = follow the analysis / genre)
 const LOUDNESS_TARGETS = { genre: null, streaming: -14, club: -9, loud: -7, pure: -18 };
@@ -550,7 +567,9 @@ function setMasteringPreset(presetKey, notify = false) {
 
   if (isEnhancerEnabled) applyPresetDSP();
 
-  if (notify) showToast(`Mastering: ${GENRE_LABELS[presetKey]}`);
+  const info = GENRE_INFO[presetKey];
+  if (presetHint) presetHint.textContent = `${info.hint}（${info.use}に）`;
+  if (notify) showToast(`${GENRE_LABELS[presetKey]}：${info.hint}`);
 }
 
 function setLoudnessTarget(targetKey, notify = false) {
@@ -585,7 +604,7 @@ const songState = new Map(); // url -> { ready, tuning, pending }
 const tuneKey = (url) => `${url}|${currentPreset}|${currentLoudnessTarget}`;
 const currentUrl = () => tracks[currentTrackIndex]?.audio_url;
 
-const STORE = 'aether5_tuned_v1', STORE_MAX = 150;
+const STORE = 'aether5_tuned_v2', STORE_MAX = 150;
 const persisted = (() => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } })();
 function persist(k, result) {
   delete persisted[k];
@@ -600,7 +619,7 @@ function getCached(k) {
 }
 
 function makeWorker(onMessage) {
-  const w = new Worker(new URL('./aether5-worker.js?v=5.1.0', import.meta.url), { type: 'module' });
+  const w = new Worker(new URL('./aether5-worker.js?v=5.2.0', import.meta.url), { type: 'module' });
   w.onmessage = (e) => onMessage(e.data);
   return w;
 }
