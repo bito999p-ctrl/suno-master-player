@@ -627,7 +627,9 @@ syncTone();
 const tuneKey = (url) => `${url}|${currentPreset}|${currentLoudnessTarget}|${toneKey()}`;
 const currentUrl = () => tracks[currentTrackIndex]?.audio_url;
 
-const STORE = 'aether5_tuned_v3', STORE_MAX = 150;
+// saved tunings are only valid for the engine that made them: key by version, drop older ones
+const STORE = `aether5_tuned_${ENGINE_VERSION}`, STORE_MAX = 150;
+try { for (const k of Object.keys(localStorage)) if (k.startsWith('aether5_tuned_') && k !== STORE) localStorage.removeItem(k); } catch (e) {}
 const persisted = (() => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } })();
 function persist(k, result) {
   delete persisted[k];
