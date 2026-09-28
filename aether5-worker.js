@@ -6,7 +6,7 @@
 // difference between excerpt and song is added back to the drive.
 import { Session } from './engine/session.js';
 import { diagnose } from './engine/analyze.js';
-import { prescribe } from './engine/prescribe.js';
+import { prescribe, tameAir } from './engine/prescribe.js';
 import { GENRES, guessGenre, genreDeltas } from './engine/genres.js';
 import { applyDeltas } from './engine/spices.js';
 
@@ -16,11 +16,23 @@ const KEEP = 4;
 function tune(m) {
   const song = songs.get(m.key);
   if (!song) return self.postMessage({ type: 'error', key: m.key, message: 'not loaded' });
-  const { E, diag, auto } = song;
-  const p = structuredClone(auto.params);
+  const { E, diag } = song;
   const g = GENRES.find((x) => x.id === m.genre);
-  if (g) applyDeltas(p, genreDeltas(g, { diag, dec: auto.decisions, p }).deltas);
-  if (m.target != null) p.targetLufs = m.target;
+  const withGenre = (auto) => {
+    const p = structuredClone(auto.params);
+    if (g) applyDeltas(p, genreDeltas(g, { diag, dec: song.auto.decisions, p }).deltas);
+    if (m.target != null) p.targetLufs = m.target;
+    return p;
+  };
+  // 9-10 kHz match: measured once per diagnosis and genre, before the listener's tone
+  const air = song.air ||= {};
+  if (air[m.genre] == null) {
+    const c0 = E.calibrate(withGenre(song.auto));
+    c0.driveDb = E.solveLoudness(c0);
+    air[m.genre] = E.airExcess(c0);
+  }
+  const auto = tameAir(song.auto, air[m.genre]);
+  const p = withGenre(auto);
   // listener tone preference: one step = about 1.2 dB top shelf (+ a little air) / 1.5 dB low shelf
   const t = m.tone || {};
   if (t.bass || t.treble) applyDeltas(p, { bassDb: 1.5 * (t.bass | 0), highShelfDb: 1.2 * (t.treble | 0), airDb: 0.6 * (t.treble | 0) });
@@ -43,7 +55,7 @@ self.onmessage = (e) => {
     } else if (m.type === 'diag') { // tuner: full-song diagnosis arrived
       const song = songs.get(m.key);
       if (!song) return;
-      song.diag = m.diag; song.auto = prescribe(m.diag); song.full = true;
+      song.diag = m.diag; song.auto = prescribe(m.diag); song.air = null; song.full = true;
       song.corr = Math.max(-2, Math.min(2, song.exLufs - m.diag.lufs));
     } else if (m.type === 'tune') {
       tune(m);
