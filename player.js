@@ -3,8 +3,8 @@
  * Version: 5.1.0 (AetherMaster 5 engine)
  */
 
-import { GENRES } from './engine/genres.js?v=5.6.0';
-import { ENGINE_VERSION } from './engine/version.js?v=5.6.0';
+import { GENRES } from './engine/genres.js?v=5.7.0';
+import { ENGINE_VERSION } from './engine/version.js?v=5.7.0';
 import { LANG, tr, setLang } from './engine/i18n.js';
 
 // Global Icon Render Helper (Ultra-Thin 1.25px)
@@ -644,7 +644,7 @@ function getCached(k) {
 }
 
 function makeWorker(onMessage) {
-  const w = new Worker(new URL(`./aether5-worker.js?v=5.6.0&lang=${LANG}`, import.meta.url), { type: 'module' });
+  const w = new Worker(new URL(`./aether5-worker.js?v=5.7.0&lang=${LANG}`, import.meta.url), { type: 'module' });
   w.onmessage = (e) => onMessage(e.data);
   return w;
 }
