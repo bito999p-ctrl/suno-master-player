@@ -666,7 +666,10 @@ function onTunerMessage(m) {
   } else if (m.type === 'error') {
     console.warn('[AI Mastering] Analysis warning:', m.message);
     if (st) st.tuning = false;
-    if (m.message === 'not loaded') songState.delete(m.key); // evicted: loads again when needed
+    if (m.message === 'not loaded') { // evicted from the tuner: load again (now if it is playing)
+      songState.delete(m.key);
+      if (m.key === currentUrl() && isEnhancerEnabled) return void loadSong(m.key);
+    }
     if (m.key === currentUrl() && !currentTuned) { showAnalyzing(false); updateAiStatus('idle'); }
   }
 }
@@ -682,7 +685,12 @@ function onAnalyzerMessage(m) {
 function diagnoseSong(url, L, R, fs) {
   // drop queued work for songs that are neither playing nor up next
   const keep = new Set([currentUrl(), tracks[nextIndex()]?.audio_url]);
-  if (analyzer && analyzerJobs.some((u) => !keep.has(u))) { analyzer.terminate(); analyzer = null; analyzerJobs = []; }
+  if (analyzer && analyzerJobs.some((u) => !keep.has(u))) {
+    // terminating drops every queued job: forget those songs so they load again, and reload the kept ones now
+    const dropped = analyzerJobs;
+    analyzer.terminate(); analyzer = null; analyzerJobs = [];
+    for (const u of dropped) { if (u === url) continue; songState.delete(u); if (keep.has(u)) loadSong(u); }
+  }
   if (!analyzer) analyzer = makeWorker(onAnalyzerMessage);
   analyzerJobs.push(url);
   analyzer.postMessage({ type: 'diagnose', key: url, L, R, fs }, [L.buffer, R.buffer]);
@@ -709,7 +717,7 @@ function songExcerpt(L, R, fs) {
   return { L: eL, R: eR, partial: true };
 }
 
-async function loadSong(url) {
+async function loadSong(url, attempt = 0) {
   if (songState.has(url)) return;
   const st = { ready: false, tuning: false, pending: false };
   songState.set(url, st);
@@ -725,8 +733,11 @@ async function loadSong(url) {
     getTuner().postMessage({ type: 'excerpt', key: url, fs, partial: ex.partial, L: ex.L, R: ex.R }, [ex.L.buffer, ex.R.buffer]);
     if (ex.partial) diagnoseSong(url, L.slice(), R.slice(), fs);
   } catch (err) {
+    if (songState.get(url) !== st) return;
     songState.delete(url);
     console.warn('[AI Mastering] Analysis warning:', err);
+    // one retry for the playing song (network hiccup); otherwise it would stay dry until reselected
+    if (attempt === 0 && url === currentUrl() && isEnhancerEnabled) return void setTimeout(() => { if (url === currentUrl() && !songState.has(url)) loadSong(url, 1); }, 1500);
     if (url === currentUrl() && !currentTuned) { showAnalyzing(false); updateAiStatus('idle'); }
   }
 }
