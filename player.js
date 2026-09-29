@@ -813,7 +813,7 @@ function updateAiHudUI(result) {
   set(hudEqLow, sgn(p.bassDb));
   set(hudEqHigh, sgn(p.highShelfDb));
   set(hudWidth, sgn(p.width, '%'));
-  const bands = p.dyn.filter((d) => d.on && d.depth > 0);
+  const bands = p.dyn.filter((d) => d.on && (d.depth > 0 || d.fast > 0));
   set(hudHiss, bands.length ? `${bands.length} bands` : 'OFF');
   set(hudCompThresh, `${p.glueThr.toFixed(1)} dB`);
   set(hudCompRatio, `${p.glueRatio.toFixed(2)}:1`);
