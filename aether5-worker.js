@@ -6,7 +6,7 @@
 // difference between excerpt and song is added back to the drive.
 import { Session } from './engine/session.js';
 import { diagnose } from './engine/analyze.js';
-import { prescribe, tameAir } from './engine/prescribe.js';
+import { prescribe, tameAir, liftHigh } from './engine/prescribe.js';
 import { GENRES, guessGenre, genreDeltas } from './engine/genres.js';
 import { applyDeltas } from './engine/spices.js';
 
@@ -31,7 +31,14 @@ function tune(m) {
     c0.driveDb = E.solveLoudness(c0);
     air[m.genre] = E.airExcess(c0);
   }
-  const auto = tameAir(song.auto, air[m.genre]);
+  // highs the loud-only bells took too far: measured on the tamed master, shelf raised to the target
+  const hf = song.hf ||= {};
+  if (hf[m.genre] == null) {
+    const c1 = E.calibrate(withGenre(tameAir(song.auto, air[m.genre])));
+    c1.driveDb = E.solveLoudness(c1);
+    hf[m.genre] = E.masterHf(c1);
+  }
+  const auto = liftHigh(tameAir(song.auto, air[m.genre]), hf[m.genre], diag.loudSpec);
   const p = withGenre(auto);
   // listener tone preference: one step = about 1.2 dB top shelf (+ a little air) / 1.5 dB low shelf
   const t = m.tone || {};
@@ -55,7 +62,7 @@ self.onmessage = (e) => {
     } else if (m.type === 'diag') { // tuner: full-song diagnosis arrived
       const song = songs.get(m.key);
       if (!song) return;
-      song.diag = m.diag; song.auto = prescribe(m.diag); song.air = null; song.full = true;
+      song.diag = m.diag; song.auto = prescribe(m.diag); song.air = null; song.hf = null; song.full = true;
       song.corr = Math.max(-2, Math.min(2, song.exLufs - m.diag.lufs));
     } else if (m.type === 'tune') {
       tune(m);
