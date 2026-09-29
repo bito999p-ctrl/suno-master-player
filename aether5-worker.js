@@ -38,7 +38,7 @@ function tune(m) {
     c1.driveDb = E.solveLoudness(c1);
     hf[m.genre] = E.masterHf(c1);
   }
-  const auto = liftHigh(tameAir(song.auto, air[m.genre]), hf[m.genre], diag.loudSpec);
+  const auto = liftHigh(tameAir(song.auto, air[m.genre]), hf[m.genre], diag.loudSpec, diag.hfLoud && diag.hfLoud.above12kDb);
   const p = withGenre(auto);
   // listener tone preference: one step = about 1.2 dB top shelf (+ a little air) / 1.5 dB low shelf
   const t = m.tone || {};
