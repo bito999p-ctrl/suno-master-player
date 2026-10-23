@@ -101,7 +101,7 @@ app.get('/api/suno', async (req, res) => {
 
   try {
     const parsedUrl = new URL(targetUrl);
-    if (!parsedUrl.hostname.endsWith('suno.com')) {
+    if (parsedUrl.protocol !== 'https:' || (parsedUrl.hostname !== 'suno.com' && !parsedUrl.hostname.endsWith('.suno.com'))) {
       return res.status(400).json({ error: 'URL must be a suno.com link' });
     }
 
