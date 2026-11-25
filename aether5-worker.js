@@ -6,7 +6,7 @@
 // difference between excerpt and song is added back to the drive.
 import { Session } from './engine/session.js';
 import { diagnose } from './engine/analyze.js';
-import { prescribe, tameAir, liftHigh } from './engine/prescribe.js';
+import { prescribe, tameAir, liftHigh, tameKick } from './engine/prescribe.js';
 import { GENRES, guessGenre, genreDeltas } from './engine/genres.js';
 import { applyDeltas } from './engine/spices.js';
 
@@ -38,7 +38,15 @@ function tune(m) {
     c1.driveDb = E.solveLoudness(c1);
     hf[m.genre] = E.masterHf(c1);
   }
-  const auto = liftHigh(tameAir(song.auto, air[m.genre]), hf[m.genre], diag.loudSpec, diag.hfLoud && diag.hfLoud.above12kDb);
+  const lifted = liftHigh(tameAir(song.auto, air[m.genre]), hf[m.genre], diag.loudSpec, diag.hfLoud && diag.hfLoud.above12kDb);
+  // kick guard: the master's kick-band peak/RMS must not exceed the source's (measured on the excerpt)
+  const kick = song.kick ||= {};
+  if (kick[m.genre] == null) {
+    const c2 = E.calibrate(withGenre(lifted));
+    c2.driveDb = E.solveLoudness(c2);
+    kick[m.genre] = E.kickExcess(c2);
+  }
+  const auto = tameKick(lifted, kick[m.genre]);
   const p = withGenre(auto);
   // listener tone preference: one step = about 1.2 dB top shelf (+ a little air) / 1.5 dB low shelf
   const t = m.tone || {};
@@ -62,7 +70,7 @@ self.onmessage = (e) => {
     } else if (m.type === 'diag') { // tuner: full-song diagnosis arrived
       const song = songs.get(m.key);
       if (!song) return;
-      song.diag = m.diag; song.auto = prescribe(m.diag); song.air = null; song.hf = null; song.full = true;
+      song.diag = m.diag; song.auto = prescribe(m.diag); song.air = null; song.hf = null; song.kick = null; song.full = true;
       song.corr = Math.max(-2, Math.min(2, song.exLufs - m.diag.lufs));
     } else if (m.type === 'tune') {
       tune(m);
